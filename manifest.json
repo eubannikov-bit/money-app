@@ -1,0 +1,22 @@
+{
+  "name": "Евгений и Аннушка",
+  "short_name": "Е + А",
+  "description": "Семейный бюджет и планировщик",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9f9f8",
+  "theme_color": "#ffffff",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
