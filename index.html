@@ -380,22 +380,28 @@ document.getElementById('month-sub').textContent=months[now.getMonth()]+' '+now.
 async function sendToSheets(entry){
   setSyncState('wait','отправка...','');
   try{
-    await fetch(SHEETS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(entry)});
+    await fetch(SHEETS_URL,{
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify(entry)
+    });
     entry.synced=true;
     setSyncState('ok','подключено к Google Sheets','запись добавлена в таблицу');
   }catch(e){
     entry.synced=false;
     setSyncState('err','ошибка отправки','проверьте подключение');
   }
-  saveData();renderEntries();
+  saveData();
+  renderEntries();
 }
 
 async function postActionToSheets(payload){
   try{
     await fetch(SHEETS_URL,{
       method:'POST',
-      mode:'cors',
-      headers:{'Content-Type':'application/json'},
+      mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
       body:JSON.stringify(payload)
     });
     return true;
