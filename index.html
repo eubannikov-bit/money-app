@@ -25,29 +25,29 @@
 }
 html,body{height:100%;overflow:hidden;background:var(--bg2)}
 
-html,body{width:100%;max-width:100%;position:relative}
+html,body{background:#fff5f7;width:100%;max-width:100%;position:relative}
 .wrap{margin:0 auto}
 .scr,.modal,.card,.card-flush,.stats,.pair-row,.toolbar,.hdr,.nav{max-width:100%}
 
-body{font-family:var(--font);display:flex;justify-content:center;align-items:stretch}
+body{background:#fff5f7;font-family:var(--font);display:flex;justify-content:center;align-items:stretch}
 .wrap{width:100%;max-width:430px;background:var(--bg2);display:flex;flex-direction:column;height:100%;position:relative;overflow:hidden}
-.nav{display:flex;padding:10px 8px calc(var(--safe-bottom) + 10px);gap:2px;background:var(--bg);border-top:1px solid var(--line);flex-shrink:0}
+.nav{display:flex;padding:10px 8px calc(var(--safe-bottom) + 10px);gap:2px;background:#fff5f7;border-top:1px solid var(--line);flex-shrink:0}
 .ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border-radius:6px;cursor:pointer;transition:background .12s}
 .ni.on .nic,.ni.on .nil{color:var(--accent)}
 .nic{color:var(--text3);display:flex;align-items:center;justify-content:center;width:20px;height:20px}
 .nil{font-size:9px;color:var(--text3);letter-spacing:.03em}
 .scr{display:none;flex-direction:column;flex:1;overflow:hidden}
 .scr.on{display:flex}
-.body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 16px}
+.body{background:#fff5f7;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 16px}
 .hdr{padding:16px 16px 8px;display:flex;justify-content:space-between;align-items:flex-end;flex-shrink:0}
 .htitle{font-size:24px;font-weight:500;color:var(--text);letter-spacing:-.02em;line-height:1}
 .hsub{font-size:12px;color:var(--text3);margin-top:3px;font-family:var(--mono)}
 .btn-plus{width:32px;height:32px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;line-height:1;font-family:var(--font)}
 .btn-text{background:none;border:1px solid var(--line2);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;color:var(--text2);font-family:var(--font)}
-.card{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:8px}
-.card-flush{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:8px}
+.card{background:#fff5f7;border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:8px}
+.card-flush{background:#fff5f7;border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:8px}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
-.stat{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.stat{background:#fff5f7;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
 .stat-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;font-family:var(--mono)}
 .stat-val{font-size:20px;font-weight:500;color:var(--text);letter-spacing:-.02em}
 .toolbar{display:flex;align-items:center;justify-content:space-between;padding:0 16px 10px;gap:8px;flex-shrink:0}
@@ -67,7 +67,7 @@ body{font-family:var(--font);display:flex;justify-content:center;align-items:str
 .prog-fill{height:100%;border-radius:2px;transition:width .3s}
 .mbg{display:none;position:absolute;inset:0;background:rgba(17,17,16,.32);align-items:flex-end;z-index:20}
 .mbg.on{display:flex}
-.modal{background:var(--bg);border-radius:24px 24px 0 0;padding:20px 20px calc(var(--safe-bottom) + 20px);width:100%;max-height:90%;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid var(--line)}
+.modal{background:#fff5f7;border-radius:24px 24px 0 0;padding:20px 20px calc(var(--safe-bottom) + 20px);width:100%;max-height:90%;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid var(--line)}
 .modal-title{font-size:16px;font-weight:500;color:var(--text);margin-bottom:16px;letter-spacing:-.01em}
 .flabel{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;font-family:var(--mono)}
 .frow{margin-bottom:10px}
@@ -82,7 +82,7 @@ textarea{resize:vertical;min-height:56px}
 .ttype-btn{padding:10px;font-size:13px;border:none;cursor:pointer;font-family:var(--font);background:var(--bg2);color:var(--text3);transition:all .12s}
 .ttype-btn.on-exp{background:var(--accent);color:#fff}
 .ttype-btn.on-inc{background:var(--green);color:#fff}
-.cb{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--bg)}
+.cb{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#fff5f7}
 .cb.done{background:var(--green);border-color:var(--green)}
 .cal-names{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;gap:1px}
@@ -94,7 +94,7 @@ textarea{resize:vertical;min-height:56px}
 .cd.td.ev::after{background:#fff}
 .wish-img-box{width:60px;height:60px;border-radius:6px;background:var(--bg3);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .link-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:var(--bg3);border-radius:20px;font-size:10px;color:var(--text2);text-decoration:none;border:1px solid var(--line2);font-family:var(--mono)}
-.sync-row{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bg);border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
+.sync-row{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#fff5f7;border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
 .sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .3s}
 .sync-dot.ok{background:var(--green)}.sync-dot.wait{background:var(--amber)}.sync-dot.err{background:var(--red)}.sync-dot.idle{background:var(--line2)}
 .date-sep{font-size:10px;color:var(--text3);font-family:var(--mono);letter-spacing:.04em;padding:8px 14px 4px;background:var(--bg2)}
@@ -103,7 +103,7 @@ textarea{resize:vertical;min-height:56px}
 .bud-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
 .bud-row:last-child{border-bottom:none}
 .pair-row{display:flex;gap:8px;margin-bottom:10px}
-.pair-card{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:8px}
+.pair-card{flex:1;background:#fff5f7;border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:8px}
 
 .pull-indicator{display:none;position:absolute;top:6px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:6px 12px;border-radius:999px;font-size:11px;z-index:6;font-family:var(--font)}
 .pull-indicator.on{display:block}
@@ -139,12 +139,12 @@ body,.wrap,.scr,.body,.card,.card-flush,.stat,.pair-card,.row-item,.bud-row,.ni,
 .pie-callout{position:absolute;font-size:10px;color:var(--text2);line-height:1.15;max-width:104px}
 .pie-callout .pct{font-family:var(--mono);font-size:9px;color:var(--text3)}
 .pie-line{position:absolute;height:1px;background:var(--line2);transform-origin:left center}
-.swipe-wrap{position:relative;overflow:hidden;background:var(--bg)}
+.swipe-wrap{position:relative;overflow:hidden;background:#fff5f7}
 .swipe-actions{position:absolute;top:0;right:0;bottom:0;display:flex;z-index:1}
 .swipe-btn{width:70px;border:none;color:#fff;font-family:var(--font);font-size:12px;cursor:pointer}
 .swipe-btn.edit{background:#111110}
 .swipe-btn.delete{background:#c0392b}
-.swipe-content{position:relative;z-index:2;background:var(--bg);transition:transform .22s ease}
+.swipe-content{position:relative;z-index:2;background:#fff5f7;transition:transform .22s ease}
 .swipe-wrap.swiped .swipe-content{transform:translateX(-140px)}
 
 </style>
@@ -343,6 +343,13 @@ body,.wrap,.scr,.body,.card,.card-flush,.stat,.pair-card,.row-item,.bud-row,.ni,
   <div class="mbg" id="m-spender-detail">
     <div class="modal">
       <div class="modal-title" id="spender-detail-title">расходы пользователя</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <select id="spender-detail-month" onchange="refreshSpenderDetail()" style="flex:1;font-size:13px;padding:5px 28px 5px 10px;font-family:var(--font)"></select>
+      </div>
+      <div class="stat" style="margin-bottom:10px">
+        <div class="stat-lbl">общая сумма за месяц</div>
+        <div class="stat-val" id="spender-detail-total">0 ₽</div>
+      </div>
       <div class="chart-stage" style="margin-top:4px"><canvas id="spender-pie-chart" width="240" height="240" style="margin:0 auto;display:block"></canvas></div>
       <div id="spender-pie-legend" style="margin-top:10px"></div>
       <div class="brow"><button class="btn-save" onclick="closeM('spender-detail')">закрыть</button></div>
@@ -891,6 +898,7 @@ const CAT_COLORS=['#534AB7','#1D9E75','#D85A30','#BA7517','#185FA5','#993556','#
 const MONTHS_RU=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
 let pieChart=null;
 let spenderPieChart=null;
+let currentSpenderWho='';
 
 function buildMonthSel(){
   const sel=document.getElementById('budget-month-sel');
@@ -1044,14 +1052,41 @@ function saveBudget(){
 
 function monthKey(dateStr){return (dateStr||'').slice(0,7);}
 function pctChange(curr,prev){if(!prev&&!curr)return '0%';if(!prev)return '+100%';const v=((curr-prev)/prev)*100;return (v>0?'+':'')+Math.round(v)+'%';}
-function openProfileStats(who){
+function buildSpenderMonthOptions(who){
+  const sel=document.getElementById('spender-detail-month');
+  const months={};
+  entries.filter(e=>e.type==='expense' && e.who===who).forEach(e=>{
+    if(e.date && e.date.length>=7) months[e.date.substring(0,7)] = true;
+  });
   const now=new Date();
-  const cur=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  const filtered=entries.filter(e=>e.type==='expense' && e.who===who && monthKey(e.date)===cur);
+  const curKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  months[curKey]=true;
+  const keys=Object.keys(months).sort().reverse();
+  sel.innerHTML=keys.map(k=>{
+    const p=k.split('-');
+    return `<option value="${k}">${MONTHS_RU[parseInt(p[1],10)-1]} ${p[0]}</option>`;
+  }).join('');
+  if(keys.includes(curKey)) sel.value=curKey;
+}
+
+function refreshSpenderDetail(){
+  const who=currentSpenderWho;
+  if(!who) return;
+  const sel=document.getElementById('spender-detail-month');
+  const month=sel ? sel.value : '';
+  const filtered=entries.filter(e=>e.type==='expense' && e.who===who && (!month || monthKey(e.date)===month));
   const catTotals={};
   filtered.forEach(e=>{ catTotals[e.cat]=(catTotals[e.cat]||0)+(Number(e.amount)||0); });
-  document.getElementById('spender-detail-title').textContent='расходы - ' + who;
+  const total=filtered.reduce((s,e)=>s+(Number(e.amount)||0),0);
+  document.getElementById('spender-detail-total').textContent=total.toLocaleString('ru')+' ₽';
   drawSpenderPieChart(catTotals, who);
+}
+
+function openProfileStats(who){
+  currentSpenderWho=who;
+  document.getElementById('spender-detail-title').textContent='расходы - ' + who;
+  buildSpenderMonthOptions(who);
+  refreshSpenderDetail();
   openM('spender-detail');
 }
 function openBudgetCategory(cat){
