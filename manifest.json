@@ -1,12 +1,11 @@
 {
   "name": "Евгений и Аннушка",
-  "short_name": "Е + А",
-  "description": "Семейный бюджет и планировщик",
-  "start_url": "/",
+  "short_name": "Бюджет",
+  "start_url": "/money-app/",
+  "scope": "/money-app/",
   "display": "standalone",
-  "background_color": "#f9f9f8",
-  "theme_color": "#ffffff",
-  "orientation": "portrait",
+  "background_color": "#fff8fa",
+  "theme_color": "#fff8fa",
   "icons": [
     {
       "src": "icon.png",
