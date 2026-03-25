@@ -42,7 +42,7 @@ body{font-family:var(--font);display:flex;justify-content:center;align-items:str
 .hdr{padding:16px 16px 8px;display:flex;justify-content:space-between;align-items:flex-end;flex-shrink:0}
 .htitle{font-size:24px;font-weight:500;color:var(--text);letter-spacing:-.02em;line-height:1}
 .hsub{font-size:12px;color:var(--text3);margin-top:3px;font-family:var(--mono)}
-.btn-plus{position:fixed;right:16px;bottom:90px;z-index:999;width:56px;height:56px;font-size:22px;width:32px;height:32px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;line-height:1;font-family:var(--font)}
+.btn-plus{position:fixed;right:16px;bottom:90px;z-index:999;width:60px;height:60px;font-size:28px;line-height:1;width:32px;height:32px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;line-height:1;font-family:var(--font)}
 .btn-text{background:none;border:1px solid var(--line2);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;color:var(--text2);font-family:var(--font)}
 .card{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:8px}
 .card-flush{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:8px}
@@ -163,7 +163,7 @@ body{
 .tab,.sort-btn,.btn-text,input[type=text],input[type=number],input[type=date],input[type=url],select,textarea{
   background: rgba(255,247,250,0.9) !important;
 }
-.tab.on,.btn-plus{position:fixed;right:16px;bottom:90px;z-index:999;width:56px;height:56px;font-size:22px;
+.tab.on,.btn-plus{position:fixed;right:16px;bottom:90px;z-index:999;width:60px;height:60px;font-size:28px;line-height:1;
   background:#d78ea8 !important;
   border-color:#d78ea8 !important;
   color:#fff !important;
@@ -227,16 +227,15 @@ body{
 
   <div class="scr on" id="s-money">
 
-<div id="date-header" style="padding:10px 16px 6px;font-size:13px;color:#b88397;font-family:var(--mono)">
-</div>
+<div id="date-header" style="position:absolute;top:18px;right:16px;font-size:12px;color:#b88397;font-family:var(--mono);z-index:20"></div>
 
     <div class="hdr">
       <div><div class="htitle">Расходы</div><div class="hsub" id="month-sub"></div></div>
-      <button class="btn-plus" onclick="openM('add-entry')">+</button>
+      <button class="btn-plus" onclick="editingEntryIdx=-1;openM('add-entry')" aria-label="Добавить операцию">+</button>
     </div>
     <div class="toolbar">
       <div class="tabs-row">
-        <button class="tab on" id="tt-all" onclick="switchET('all')">все</button>
+        <button class="tab on" id="tt-all" onclick="switchET('all')">+</button>
         <button class="tab" id="tt-expense" onclick="switchET('expense')">расходы</button>
         <button class="tab" id="tt-income" onclick="switchET('income')">доходы</button>
       </div>
@@ -301,13 +300,13 @@ body{
 
   <div class="scr" id="s-travel">
     <div class="hdr"><div><div class="htitle">Путешествия</div></div><button class="btn-plus" onclick="openM('add-trip')">+</button></div>
-    <div class="toolbar"><div class="tabs-row"><button class="tab on" id="trt-all" onclick="switchTT('all')">все</button><button class="tab" id="trt-planned" onclick="switchTT('planned')">планируем</button><button class="tab" id="trt-done" onclick="switchTT('done')">были</button></div></div>
+    <div class="toolbar"><div class="tabs-row"><button class="tab on" id="trt-all" onclick="switchTT('all')">+</button><button class="tab" id="trt-planned" onclick="switchTT('planned')">планируем</button><button class="tab" id="trt-done" onclick="switchTT('done')">были</button></div></div>
     <div class="body"><div id="trips-list"></div></div>
   </div>
 
   <div class="scr" id="s-wish">
     <div class="hdr"><div><div class="htitle">Хочу</div></div><button class="btn-plus" onclick="openM('add-wish')">+</button></div>
-    <div class="toolbar"><div class="tabs-row"><button class="tab on" id="wt-all" onclick="switchWT('all')">все</button><button class="tab" id="wt-me" onclick="switchWT('me')">Евгений</button><button class="tab" id="wt-them" onclick="switchWT('them')">Аннушка</button></div></div>
+    <div class="toolbar"><div class="tabs-row"><button class="tab on" id="wt-all" onclick="switchWT('all')">+</button><button class="tab" id="wt-me" onclick="switchWT('me')">Евгений</button><button class="tab" id="wt-them" onclick="switchWT('them')">Аннушка</button></div></div>
     <div class="body"><div id="wishes-list"></div></div>
   </div>
 
@@ -1329,11 +1328,10 @@ function renderDateHeader(){
   const el = document.getElementById('date-header');
   if(!el) return;
   const now = new Date();
-  const months = ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
-  const m = months[now.getMonth()];
   const y = now.getFullYear();
-  const d = now.getDate();
-  el.textContent = m + ' ' + y + ' - сегодня ' + d;
+  const m = String(now.getMonth()+1).padStart(2,'0');
+  const d = String(now.getDate()).padStart(2,'0');
+  el.textContent = `${y}/${m}/${d}`;
 }
 
 renderDateHeader();
