@@ -1244,9 +1244,36 @@ function syncFromSheets(){
   setSyncState('wait','загрузка данных...','');
   const script=document.createElement('script');
   const cb='cb'+Date.now();
+  let finished=false;
+  const timeout=setTimeout(function(){
+    if(finished) return;
+    finished=true;
+    try{ if(script.parentNode) script.parentNode.removeChild(script); }catch(e){}
+    try{ delete window[cb]; }catch(e){}
+    setSyncState('err','ошибка синхронизации','не удалось получить данные из Google Sheets');
+  }, 10000);
+
+  script.onerror=function(){
+    if(finished) return;
+    finished=true;
+    clearTimeout(timeout);
+    try{ if(script.parentNode) script.parentNode.removeChild(script); }catch(e){}
+    try{ delete window[cb]; }catch(e){}
+    setSyncState('err','ошибка синхронизации','скрипт Google не загрузился');
+  };
+
   window[cb]=function(data){
-    document.head.removeChild(script);
-    delete window[cb];
+    if(finished) return;
+    finished=true;
+    clearTimeout(timeout);
+    try{ if(script.parentNode) script.parentNode.removeChild(script); }catch(e){}
+    try{ delete window[cb]; }catch(e){}
+
+    if(data && data.error){
+      setSyncState('err','ошибка синхронизации', String(data.error));
+      return;
+    }
+
     if(data&&data.entries&&data.entries.length>0){
       entries=(data.entries || []).map(function(e){
         var who=e.who||'';
@@ -1260,31 +1287,33 @@ function syncFromSheets(){
         if(String(e.who || '').trim()==='Кто тратил') return false;
         return !!(e.cat || e.amount || e.comment || e.who || e.date);
       });
+
       if(data.budget && data.budget.cats){
         budget.cats = Object.assign({}, budget.cats || {}, data.budget.cats);
       }
       if(data.budget && typeof data.budget.sal1 !== 'undefined') budget.sal1 = Number(data.budget.sal1) || 0;
       if(data.budget && typeof data.budget.sal2 !== 'undefined') budget.sal2 = Number(data.budget.sal2) || 0;
+
       saveData();
       renderEntries();
       buildMonthSel();
       renderBudget();
-      setSyncState('ok','синхронизировано',''+data.entries.length+' записей загружено и бюджет обновлён');
-    } else {
-      if(data && data.budget && data.budget.cats){
-        budget.cats = Object.assign({}, budget.cats || {}, data.budget.cats);
-        saveData();
-        renderBudget();
-      }
-      setSyncState('ok','подключено к Google Sheets','записи отправляются автоматически');
+      setSyncState('ok','синхронизировано',''+entries.length+' записей загружено');
+      return;
     }
+
+    if(data && data.budget && data.budget.cats){
+      budget.cats = Object.assign({}, budget.cats || {}, data.budget.cats);
+      saveData();
+      renderBudget();
+      setSyncState('ok','синхронизировано','бюджет обновлён');
+      return;
+    }
+
+    setSyncState('err','нет данных','Google Sheets ответил без записей');
   };
-  script.onerror=function(){
-    document.head.removeChild(script);
-    delete window[cb];
-    setSyncState('ok','подключено к Google Sheets','');
-  };
-  script.src=SHEETS_URL+'?callback='+cb+'&t='+Date.now();
+
+  script.src=SHEETS_URL+'?callback='+cb+'&t='+(Date.now());
   document.head.appendChild(script);
 }
 (function(){
@@ -1333,6 +1362,7 @@ function syncFromSheets(){
   });
 })();
 syncFromSheets();
+setTimeout(syncFromSheets, 1500);
 
 // Load Chart.js dynamically
 (function(){
