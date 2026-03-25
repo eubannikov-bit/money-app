@@ -373,69 +373,37 @@ async function postActionToSheets(payload){
 }
 
 let _syncInProgress=false;
-function syncFromSheets(retry = true){
+function syncFromSheets(){
+  if(_syncInProgress)return;
+  _syncInProgress=true;
   setSyncState('wait','загрузка данных...','');
-
-  const cb='cb_'+Date.now()+'_'+(++entrySeq);
-  let done=false;
-
-  function cleanup(script){
-    if(done) return;
-    done = true;
-    try{document.head.removeChild(script);}catch(e){}
+  const cb='cb'+Date.now()+'_'+(++entrySeq);
+  const script=document.createElement('script');
+  const timer=setTimeout(()=>{
+    try{document.head.removeChild(script);}catch(x){}
     delete window[cb];
-  }
-
-  return new Promise((resolve,reject)=>{
-
-    const script=document.createElement('script');
-
-    window[cb]=function(data){
-      cleanup(script);
-      try{
-        processSheetData(data);
-        setSyncState('ok','синхронизировано',entries.length+' записей');
-        resolve();
-      }catch(err){
-        setSyncState('err','ошибка данных',err.message||'');
-        reject(err);
-      }
-    };
-
-    script.onerror=function(){
-      cleanup(script);
-      fallback();
-    };
-
-    const timeout=setTimeout(()=>{
-      cleanup(script);
-      fallback();
-    },25000);
-
-    function fallback(){
-      if(!retry){
-        setSyncState('err','ошибка синхронизации','Load failed');
-        reject();
-        return;
-      }
-
-      fetch(SHEETS_URL + '?t=' + Date.now())
-        .then(r=>r.json())
-        .then(data=>{
-          processSheetData(data);
-          setSyncState('ok','fallback sync','данные получены');
-          resolve();
-        })
-        .catch(()=>{
-          setSyncState('err','ошибка синхронизации','Load failed');
-          reject();
-        });
-    }
-
-    script.src = SHEETS_URL + '?callback=' + cb + '&t=' + Date.now();
-    document.head.appendChild(script);
-  });
+    _syncInProgress=false;
+    setSyncState('err','таймаут синхронизации','попробуйте ещё раз');
+  },10000);
+  window[cb]=function(data){
+    clearTimeout(timer);
+    try{document.head.removeChild(script);}catch(x){}
+    delete window[cb];
+    _syncInProgress=false;
+    try{processSheetData(data);}
+    catch(err){setSyncState('err','ошибка данных',err.message||'');}
+  };
+  script.onerror=function(){
+    clearTimeout(timer);
+    try{document.head.removeChild(script);}catch(x){}
+    delete window[cb];
+    _syncInProgress=false;
+    setSyncState('err','ошибка загрузки','проверьте подключение');
+  };
+  script.src=SHEETS_URL+'?callback='+cb+'&t='+Date.now();
+  document.head.appendChild(script);
 }
+
 function normalizeSheetDate(raw){
   if(raw===null||raw===undefined||raw==='')return'';
   if(typeof raw==='number'&&isFinite(raw)){
