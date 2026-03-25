@@ -42,7 +42,7 @@ body{font-family:var(--font);display:flex;justify-content:center;align-items:str
 .hdr{padding:16px 16px 8px;display:flex;justify-content:space-between;align-items:flex-end;flex-shrink:0}
 .htitle{font-size:24px;font-weight:500;color:var(--text);letter-spacing:-.02em;line-height:1}
 .hsub{font-size:12px;color:var(--text3);margin-top:3px;font-family:var(--mono)}
-.btn-plus{position:fixed;right:19px;top:178px;z-index:999;width:60px;height:60px;font-size:28px;line-height:1;width:32px;height:32px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;line-height:1;font-family:var(--font)}
+.btn-plus{position:fixed;right:16px;bottom:90px;z-index:999;width:60px;height:60px;font-size:28px;line-height:1;width:32px;height:32px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;line-height:1;font-family:var(--font)}
 .btn-text{background:none;border:1px solid var(--line2);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;color:var(--text2);font-family:var(--font)}
 .card{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:8px}
 .card-flush{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:8px}
@@ -163,7 +163,7 @@ body{
 .tab,.sort-btn,.btn-text,input[type=text],input[type=number],input[type=date],input[type=url],select,textarea{
   background: rgba(255,247,250,0.9) !important;
 }
-.tab.on,.btn-plus{position:fixed;right:19px;top:178px;z-index:999;width:60px;height:60px;font-size:28px;line-height:1;
+.tab.on,.btn-plus{position:fixed;right:16px;bottom:90px;z-index:999;width:60px;height:60px;font-size:28px;line-height:1;
   background:#d78ea8 !important;
   border-color:#d78ea8 !important;
   color:#fff !important;
@@ -230,8 +230,8 @@ body{
 <div id="date-header" style="position:absolute;top:18px;right:16px;font-size:12px;color:#b88397;font-family:var(--mono);z-index:20"></div>
 
     <div class="hdr">
-      <div><div class="htitle">Деньги</div><div class="hsub" id="month-sub"></div></div>
-      <button class="btn-plus" onclick="editingEntryIdx=-1;openM('add-entry')" aria-label="Добавить операцию">+</button>
+      <div><div class="htitle">Расходы</div><div class="hsub" id="month-sub"></div></div>
+      
     </div>
     <div class="toolbar">
       <div class="tabs-row">
@@ -1291,10 +1291,46 @@ function syncFromSheets(){
   const screen=document.getElementById('s-money');
   const body=screen.querySelector('.body');
   const ind=document.getElementById('pull-indicator');
-  let startY=0,pulling=false;
-  body.addEventListener('touchstart',e=>{if(body.scrollTop<=0){startY=e.touches[0].clientY;pulling=true;}},{passive:true});
-  body.addEventListener('touchmove',e=>{if(!pulling)return;const dy=e.touches[0].clientY-startY;if(dy>60)ind.classList.add('on');},{passive:true});
-  body.addEventListener('touchend',()=>{if(ind.classList.contains('on')){ind.classList.remove('on');syncFromSheets();}pulling=false;});
+  let startY=0,pulling=false,maxDy=0;
+
+  function resetIndicator(){
+    ind.classList.remove('on');
+    ind.textContent='обновляю...';
+  }
+
+  body.addEventListener('touchstart',e=>{
+    if(body.scrollTop<=0){
+      startY=e.touches[0].clientY;
+      maxDy=0;
+      pulling=true;
+    }
+  },{passive:true});
+
+  body.addEventListener('touchmove',e=>{
+    if(!pulling) return;
+    const dy=e.touches[0].clientY-startY;
+    maxDy=Math.max(maxDy,dy);
+    if(dy>55){
+      ind.classList.add('on');
+      ind.textContent = dy>120 ? 'отпустите, чтобы добавить операцию' : 'отпустите, чтобы обновить';
+    } else {
+      resetIndicator();
+    }
+  },{passive:true});
+
+  body.addEventListener('touchend',()=>{
+    if(!pulling) return;
+    if(maxDy>120){
+      editingEntryIdx=-1;
+      resetEntryForm();
+      openM('add-entry');
+    } else if(maxDy>55){
+      syncFromSheets();
+    }
+    pulling=false;
+    maxDy=0;
+    resetIndicator();
+  });
 })();
 syncFromSheets();
 
