@@ -42,7 +42,7 @@ body{font-family:var(--font);display:flex;justify-content:center;align-items:str
 .hdr{padding:calc(var(--safe-top) + 16px) 16px 8px;display:flex;justify-content:space-between;align-items:flex-end;flex-shrink:0}
 .htitle{font-size:24px;font-weight:500;color:var(--text);letter-spacing:-.02em;line-height:1}
 .hsub{font-size:12px;color:var(--text3);margin-top:3px;font-family:var(--mono)}
-.btn-plus{width:32px;height:32px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;line-height:1;font-family:var(--font)}
+.btn-plus{width:52px;height:52px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;line-height:1;font-family:var(--font);box-shadow:0 10px 22px rgba(215,142,168,0.22)}
 .btn-text{background:none;border:1px solid var(--line2);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;color:var(--text2);font-family:var(--font)}
 .card{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:8px}
 .card-flush{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:8px}
@@ -236,7 +236,7 @@ body{
 
     <div class="hdr">
       <div><div class="htitle">Деньги</div></div>
-      
+      <button class="btn-plus" onclick="editingEntryIdx=-1;resetEntryForm();openM('add-entry')" aria-label="Добавить операцию">+</button>
     </div>
     <div class="toolbar">
       <div class="tabs-row">
@@ -1337,21 +1337,25 @@ function processSheetData(data){
 
 function syncFromSheets(){
   setSyncState('wait','загрузка данных...','');
-  var cb = 'cb' + Date.now();
-  var script = document.createElement('script');
-  window[cb] = function(data){
-    try{ document.head.removeChild(script); }catch(x){}
-    delete window[cb];
-    try{ processSheetData(data); }
-    catch(err){ setSyncState('err','ошибка синхронизации', err.message||''); }
-  };
-  script.onerror = function(){
-    try{ document.head.removeChild(script); }catch(x){}
-    delete window[cb];
-    setSyncState('err','ошибка загрузки','проверьте подключение');
-  };
-  script.src = SHEETS_URL + '?callback=' + cb + '&t=' + Date.now();
-  document.head.appendChild(script);
+
+  fetch(SHEETS_URL + '?t=' + Date.now(), {
+    method: 'GET',
+    cache: 'no-store'
+  })
+    .then(function(res){
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    })
+    .then(function(data){
+      processSheetData(data);
+    })
+    .catch(function(err){
+      setSyncState(
+        'err',
+        'ошибка синхронизации',
+        err && err.message ? err.message : 'не удалось получить данные'
+      );
+    });
 }
 (function(){
   const screen=document.getElementById('s-money');
@@ -1378,7 +1382,7 @@ function syncFromSheets(){
     maxDy=Math.max(maxDy,dy);
     if(dy>55){
       ind.classList.add('on');
-      ind.textContent = dy>120 ? 'отпустите, чтобы добавить операцию' : 'отпустите, чтобы обновить';
+      ind.textContent = 'отпустите, чтобы обновить';
     } else {
       resetIndicator();
     }
@@ -1386,11 +1390,7 @@ function syncFromSheets(){
 
   body.addEventListener('touchend',()=>{
     if(!pulling) return;
-    if(maxDy>120){
-      editingEntryIdx=-1;
-      resetEntryForm();
-      openM('add-entry');
-    } else if(maxDy>55){
+    if(maxDy>55){
       syncFromSheets();
     }
     pulling=false;
