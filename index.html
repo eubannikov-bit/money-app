@@ -42,7 +42,7 @@ body{font-family:var(--font);display:flex;justify-content:center;align-items:str
 .hdr{padding:16px 16px 8px;display:flex;justify-content:space-between;align-items:flex-end;flex-shrink:0}
 .htitle{font-size:24px;font-weight:500;color:var(--text);letter-spacing:-.02em;line-height:1}
 .hsub{font-size:12px;color:var(--text3);margin-top:3px;font-family:var(--mono)}
-.btn-plus{width:32px;height:32px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;line-height:1;font-family:var(--font)}
+.btn-plus{position:fixed;right:16px;bottom:90px;z-index:999;width:56px;height:56px;font-size:22px;width:32px;height:32px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;line-height:1;font-family:var(--font)}
 .btn-text{background:none;border:1px solid var(--line2);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;color:var(--text2);font-family:var(--font)}
 .card{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:8px}
 .card-flush{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:8px}
@@ -163,7 +163,7 @@ body{
 .tab,.sort-btn,.btn-text,input[type=text],input[type=number],input[type=date],input[type=url],select,textarea{
   background: rgba(255,247,250,0.9) !important;
 }
-.tab.on,.btn-plus{
+.tab.on,.btn-plus{position:fixed;right:16px;bottom:90px;z-index:999;width:56px;height:56px;font-size:22px;
   background:#d78ea8 !important;
   border-color:#d78ea8 !important;
   color:#fff !important;
@@ -188,7 +188,7 @@ body{
   background:#d78ea8 !important;
   border-color:#d78ea8 !important;
   color:#fff !important;
-  box-shadow:0 10px 22px rgba(215,142,168,0.22) !important;
+  box-shadow:0 14px 30px rgba(215,142,168,0.35) !important;
 }
 .btn-cancel,.btn-text,.sort-btn,.tab{
   border-color:#ebccd7 !important;
@@ -226,6 +226,10 @@ body{
   <div class="pull-indicator" id="pull-indicator">обновляю...</div>
 
   <div class="scr on" id="s-money">
+
+<div id="date-header" style="padding:10px 16px 6px;font-size:13px;color:#b88397;font-family:var(--mono)">
+</div>
+
     <div class="hdr">
       <div><div class="htitle">Расходы</div><div class="hsub" id="month-sub"></div></div>
       <button class="btn-plus" onclick="openM('add-entry')">+</button>
@@ -1320,6 +1324,19 @@ document.addEventListener('click', function(e){
   }
 });
 
+
+function renderDateHeader(){
+  const el = document.getElementById('date-header');
+  if(!el) return;
+  const now = new Date();
+  const months = ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+  const m = months[now.getMonth()];
+  const y = now.getFullYear();
+  const d = now.getDate();
+  el.textContent = m + ' ' + y + ' - сегодня ' + d;
+}
+
+renderDateHeader();
 </script>
 </body>
 </html>
