@@ -25,10 +25,10 @@
 html,body{height:100%;overflow:hidden;background:var(--bg2)}
 body{font-family:var(--font);display:flex;justify-content:center;align-items:stretch;background:linear-gradient(180deg,#fff8fb 0%,#fff1f5 55%,#ffeef4 100%)}
 .wrap{width:100%;max-width:430px;background:transparent;display:flex;flex-direction:column;height:100%;position:relative;overflow:hidden}
-.nav{display:flex;padding:12px 4px calc(var(--safe-bot) + 26px);gap:0;background:rgba(255,245,248,.94);border-top:1px solid var(--line);flex-shrink:0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
-.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;border-radius:8px;cursor:pointer;transition:background .12s}
+.nav{display:flex;padding:8px 0 calc(var(--safe-bot) + 12px);gap:0;background:rgba(255,245,248,.94);border-top:1px solid var(--line);flex-shrink:0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:6px 0;cursor:pointer;transition:background .12s}
 .ni.on .nic,.ni.on .nil{color:var(--accent)}
-.nic{color:var(--text3);display:flex;align-items:center;justify-content:center;width:26px;height:26px}
+.nic{color:var(--text3);display:flex;align-items:center;justify-content:center;width:22px;height:22px}
 .nil{display:none}
 .scr{display:none;flex-direction:column;flex:1;overflow:hidden;opacity:0;transform:translateY(8px);transition:opacity .28s cubic-bezier(.4,0,.2,1),transform .28s cubic-bezier(.4,0,.2,1)}
 .scr.on{display:flex;opacity:1;transform:none}
@@ -80,8 +80,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .wish-img-box{width:54px;height:54px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .link-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:var(--bg3);border-radius:20px;font-size:15px;color:var(--text2);text-decoration:none;border:1px solid var(--line2);font-family:var(--mono)}
 .sync-row{display:flex;align-items:center;gap:0;padding:9px 14px;background:rgba(255,246,249,.9);border:1px solid var(--line);border-radius:12px;margin-bottom:8px}
-.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .3s}
-.sync-dot.ok{background:var(--accent)}.sync-dot.wait{background:var(--amber)}.sync-dot.err{background:var(--red)}.sync-dot.idle{background:var(--line2)}
+.sync-dot{width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:opacity .2s}
+.sync-dot.ok svg path{stroke:var(--accent)}
+.sync-dot.err svg line{stroke:var(--red)}
+.sync-row{transition:max-height .35s cubic-bezier(.4,0,.2,1),opacity .25s,margin .35s;overflow:hidden;max-height:80px;opacity:1}
+.sync-row.hidden{max-height:0;opacity:0;margin-bottom:0;padding-top:0;padding-bottom:0;border:none}
 .date-sep{font-size:15px;color:#cb8fa3;font-family:var(--mono);letter-spacing:.04em;padding:8px 14px 4px;background:rgba(255,241,245,.82)}
 .empty{text-align:center;padding:28px 0;color:var(--text3);font-size:15px;font-family:var(--mono)}
 .section-lbl{font-size:15px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;padding:4px 0 8px;font-family:var(--mono)}
@@ -131,7 +134,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .breakdown-row{display:flex;align-items:center;gap:8px;padding:6px 0}
 .hdr-right{display:flex;align-items:center;gap:8px}
 .month-sel-small{font-size:15px;padding:4px 28px 4px 10px;border-radius:8px;border:1px solid var(--line2);background:rgba(255,247,250,.9);color:var(--text);font-family:var(--font);-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3l3 4 3-4' fill='none' stroke='%23c09aa7' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
-.fab{position:fixed;right:20px;bottom:calc(var(--safe-bot) + 108px);z-index:25;width:54px;height:54px;border-radius:50%;background:rgba(215,142,168,.88);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;line-height:1;font-family:var(--font);box-shadow:0 6px 20px rgba(215,142,168,.42),0 2px 8px rgba(215,142,168,.22);-webkit-tap-highlight-color:transparent}
+.fab{position:fixed;right:20px;bottom:calc(var(--safe-bot) + 90px);z-index:25;width:54px;height:54px;border-radius:50%;background:rgba(215,142,168,.88);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;line-height:1;font-family:var(--font);box-shadow:0 6px 20px rgba(215,142,168,.42),0 2px 8px rgba(215,142,168,.22);-webkit-tap-highlight-color:transparent}
 .fab:active{transform:scale(.94)}
 .thumb-list{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .thumb-list img{width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
@@ -143,12 +146,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .goal-detail-view{display:none}
 .goal-detail-view.on{display:block}
 
-.anl-user-filter{display:flex;gap:6px;margin-bottom:8px}
-.anl-compare-filter{display:flex;gap:6px;margin-bottom:12px}
-.anl-compare-btn{flex:1;padding:5px 8px;border-radius:8px;font-size:11px;cursor:pointer;border:1px solid var(--line2);background:rgba(255,247,250,.9);color:var(--text3);font-family:var(--mono);text-align:center;transition:all .12s;letter-spacing:.02em}
-.anl-compare-btn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-.anl-user-btn{flex:1;padding:6px 8px;border-radius:8px;font-size:12px;cursor:pointer;border:1px solid var(--line2);background:rgba(255,247,250,.9);color:var(--text3);font-family:var(--font);text-align:center;transition:all .12s}
-.anl-user-btn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.anl-selects-row{display:flex;gap:8px;margin-bottom:10px}
+.anl-select{flex:1;font-family:var(--font);font-size:13px;background:rgba(255,247,250,.9);border:1px solid var(--line2);color:var(--text);border-radius:8px;padding:7px 28px 7px 10px;outline:none;-webkit-appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3l3 4 3-4' fill='none' stroke='%23c09aa7' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+.anl-user-filter{display:none}
+.anl-compare-filter{display:none}
+.anl-user-btn,.anl-compare-btn{display:none}
 </style>
 </head>
 <body>
@@ -186,12 +188,20 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div id="breakdown-block" style="display:none;margin-bottom:8px"></div>
       <div class="sync-row" id="sync-row">
         <div style="width:24px;height:24px;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-right:10px">
-          <div class="sync-dot ok" id="sync-dot"></div>
-          <div class="sync-spin" id="sync-spin"></div>
+          <!-- spinner -->
+          <div class="sync-spin" id="sync-spin" style="display:none"></div>
+          <!-- ok checkmark -->
+          <div class="sync-dot" id="sync-dot" style="display:none">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3.5 3.5 6.5-7" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <!-- error cross -->
+          <div class="sync-err" id="sync-err" style="display:none">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><line x1="4" y1="4" x2="12" y2="12" stroke="var(--red)" stroke-width="1.6" stroke-linecap="round"/><line x1="12" y1="4" x2="4" y2="12" stroke="var(--red)" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </div>
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sync-title">Подключено к Google Sheets</div>
-          <div style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-top:1px" id="sync-sub">Записи отправляются автоматически</div>
+          <div style="font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sync-title">Синхронизация...</div>
+          <div style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-top:1px" id="sync-sub"></div>
         </div>
       </div>
       <div class="card-flush"><div id="entries-list"><div class="empty">нет записей</div></div></div>
@@ -225,16 +235,16 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
       <div class="card"><div class="section-lbl">категории</div><div id="budget-cats"></div></div>
       <div id="goals-block"></div>
-      <div style="margin-bottom:8px">
-        <div class="anl-user-filter" id="anl-user-filter">
-          <button class="anl-user-btn on" id="anl-u-all" onclick="setAnlUser('all')">Общее</button>
-          <button class="anl-user-btn" id="anl-u-e" onclick="setAnlUser('Евгений')">Евгений</button>
-          <button class="anl-user-btn" id="anl-u-a" onclick="setAnlUser('Аннушка')">Аннушка</button>
-        </div>
-        <div class="anl-compare-filter" id="anl-compare-filter">
-          <button class="anl-compare-btn on" id="anl-c-month" onclick="setAnlCompare('month')">К прошлому месяцу</button>
-          <button class="anl-compare-btn" id="anl-c-year" onclick="setAnlCompare('year')">Год к году</button>
-        </div>
+      <div class="anl-selects-row">
+        <select class="anl-select" id="anl-user-sel" onchange="setAnlUser(this.value)">
+          <option value="all">Общее</option>
+          <option value="Евгений">Евгений</option>
+          <option value="Аннушка">Аннушка</option>
+        </select>
+        <select class="anl-select" id="anl-compare-sel" onchange="setAnlCompare(this.value)">
+          <option value="month">К прошлому месяцу</option>
+          <option value="year">Год к году</option>
+        </select>
       </div>
       <div class="analytics-block" id="analytics-block"></div>
       <div class="insights-block" id="insights-block"></div>
@@ -512,15 +522,31 @@ function getPrevMonthKey(k){
 }
 
 // sync/state
-function setSyncState(s,t,sub){
+let _syncHideTimer=null;
+function setSyncState(st,t,sub){
+  const row=document.getElementById('sync-row');
   const dot=document.getElementById('sync-dot');
+  const err=document.getElementById('sync-err');
   const spin=document.getElementById('sync-spin');
-  const syncing=s==='wait';
-  if(dot){dot.className='sync-dot '+(s||'idle');dot.style.display=syncing?'none':'';}
-  if(spin){spin.classList.toggle('spinning',syncing);}
-  document.getElementById('sync-title').textContent=t;
-  document.getElementById('sync-sub').textContent=sub||'';
-  if(s==='ok'||s==='err'){if(typeof window._ptrStop==='function')window._ptrStop();}
+  const title=document.getElementById('sync-title');
+  const subEl=document.getElementById('sync-sub');
+  if(_syncHideTimer){clearTimeout(_syncHideTimer);_syncHideTimer=null;}
+  // Показать row
+  if(row)row.classList.remove('hidden');
+  // Управление иконками
+  if(spin)spin.style.display=(st==='wait')?'':'none';
+  if(spin)spin.classList.toggle('spinning',st==='wait');
+  if(dot)dot.style.display=(st==='ok')?'flex':'none';
+  if(err)err.style.display=(st==='err')?'flex':'none';
+  if(title)title.textContent=t;
+  if(subEl)subEl.textContent=sub||'';
+  if(st==='ok'||st==='err'){
+    if(typeof window._ptrStop==='function')window._ptrStop();
+    // Скрыть через 2.5 сек после ok
+    if(st==='ok'){
+      _syncHideTimer=setTimeout(()=>{if(row)row.classList.add('hidden');},2500);
+    }
+  }
 }
 
 async function sendToSheets(entry){
@@ -1175,18 +1201,14 @@ let anlUser='all'; // 'all' | 'Евгений' | 'Аннушка'
 let anlCompare='month'; // 'month' | 'year'
 function setAnlCompare(mode){
   anlCompare=mode;
-  const cm=document.getElementById('anl-c-month');
-  const cy=document.getElementById('anl-c-year');
-  if(cm)cm.classList.toggle('on',mode==='month');
-  if(cy)cy.classList.toggle('on',mode==='year');
+  const sel=document.getElementById('anl-compare-sel');
+  if(sel)sel.value=mode;
   renderBudgetAnalytics();
 }
 function setAnlUser(u){
   anlUser=u;
-  ['all','Евгений','Аннушка'].forEach(v=>{
-    const btn=document.getElementById('anl-u-'+( v==='all'?'all':v==='Евгений'?'e':'a'));
-    if(btn)btn.classList.toggle('on',v===u);
-  });
+  const sel=document.getElementById('anl-user-sel');
+  if(sel)sel.value=u;
   renderBudgetAnalytics();
 }
 function renderBudgetAnalytics(){
