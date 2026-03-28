@@ -25,10 +25,10 @@
 html,body{height:100%;overflow:hidden;background:var(--bg2)}
 body{font-family:var(--font);display:flex;justify-content:center;align-items:stretch;background:linear-gradient(180deg,#fff8fb 0%,#fff1f5 55%,#ffeef4 100%)}
 .wrap{width:100%;max-width:430px;background:transparent;display:flex;flex-direction:column;height:100%;position:relative;overflow:hidden}
-.nav{display:flex;padding:10px 4px calc(var(--safe-bot) + 20px);gap:0;background:rgba(255,245,248,.94);border-top:1px solid var(--line);flex-shrink:0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.nav{display:flex;padding:12px 4px calc(var(--safe-bot) + 26px);gap:0;background:rgba(255,245,248,.94);border-top:1px solid var(--line);flex-shrink:0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;border-radius:8px;cursor:pointer;transition:background .12s}
 .ni.on .nic,.ni.on .nil{color:var(--accent)}
-.nic{color:var(--text3);display:flex;align-items:center;justify-content:center;width:24px;height:24px}
+.nic{color:var(--text3);display:flex;align-items:center;justify-content:center;width:26px;height:26px}
 .nil{display:none}
 .scr{display:none;flex-direction:column;flex:1;overflow:hidden;opacity:0;transform:translateY(8px);transition:opacity .28s cubic-bezier(.4,0,.2,1),transform .28s cubic-bezier(.4,0,.2,1)}
 .scr.on{display:flex;opacity:1;transform:none}
@@ -92,17 +92,17 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .swipe-btn.delete{background:#d94f6e}
 .swipe-content{position:relative;z-index:2;background:#fff6f9;transition:transform .26s cubic-bezier(.4,0,.2,1)}
 .swipe-wrap.swiped .swipe-content{transform:translateX(-140px)}
-.ptr-wrap{position:absolute;top:calc(var(--safe-top) + 110px);left:50%;transform:translateX(-50%);z-index:9;pointer-events:none;display:flex;flex-direction:column;align-items:center;width:calc(100% - 32px)}
+.ptr-wrap{position:absolute;top:calc(var(--safe-top) + 80px);left:50%;transform:translateX(-50%);z-index:9;pointer-events:none;display:flex;flex-direction:column;align-items:center;width:auto}
 .ptr-arrow{width:28px;height:28px;display:flex;align-items:center;justify-content:center;opacity:0;transform:translateY(-12px);transition:opacity .18s,transform .18s}
 .ptr-arrow svg{transition:transform .22s cubic-bezier(.4,0,.2,1)}
 .ptr-arrow.visible{opacity:1;transform:translateY(0)}
 .ptr-arrow.flip svg{transform:rotate(180deg)}
-.ptr-loader-card{display:none;align-items:center;gap:10px;background:rgba(255,248,250,.96);border:1px solid var(--line);border-radius:12px;padding:10px 14px;backdrop-filter:blur(12px);box-shadow:0 4px 16px rgba(215,142,168,.12);width:100%}
-.ptr-loader-card.on{display:flex}
-.ptr-loader-spin{width:18px;height:18px;border:2px solid rgba(215,142,168,.25);border-top-color:var(--accent);border-radius:50%;flex-shrink:0}
-.ptr-loader-spin.spinning{animation:ptr-spin .7s linear infinite}
+.ptr-loader-card{display:none}
+.ptr-loader-spin{display:none}
 .ptr-loader{display:none}
-.ptr-loader.spinning{opacity:1;animation:ptr-spin .7s linear infinite}
+/* sync-row spinner */
+.sync-spin{width:14px;height:14px;border:1.5px solid rgba(215,142,168,.3);border-top-color:var(--accent);border-radius:50%;flex-shrink:0;opacity:0;transition:opacity .18s}
+.sync-spin.spinning{opacity:1;animation:ptr-spin .7s linear infinite}
 @keyframes ptr-spin{to{transform:rotate(360deg)}}
 .pull-indicator{display:none}
 .chart-stage{position:relative;width:220px;height:220px;margin:0 auto}
@@ -131,7 +131,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .breakdown-row{display:flex;align-items:center;gap:8px;padding:6px 0}
 .hdr-right{display:flex;align-items:center;gap:8px}
 .month-sel-small{font-size:15px;padding:4px 28px 4px 10px;border-radius:8px;border:1px solid var(--line2);background:rgba(255,247,250,.9);color:var(--text);font-family:var(--font);-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3l3 4 3-4' fill='none' stroke='%23c09aa7' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
-.fab{position:fixed;right:20px;bottom:calc(var(--safe-bot) + 100px);z-index:25;width:54px;height:54px;border-radius:50%;background:rgba(215,142,168,.88);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;line-height:1;font-family:var(--font);box-shadow:0 6px 20px rgba(215,142,168,.42),0 2px 8px rgba(215,142,168,.22);-webkit-tap-highlight-color:transparent}
+.fab{position:fixed;right:20px;bottom:calc(var(--safe-bot) + 108px);z-index:25;width:54px;height:54px;border-radius:50%;background:rgba(215,142,168,.88);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;line-height:1;font-family:var(--font);box-shadow:0 6px 20px rgba(215,142,168,.42),0 2px 8px rgba(215,142,168,.22);-webkit-tap-highlight-color:transparent}
 .fab:active{transform:scale(.94)}
 .thumb-list{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .thumb-list img{width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
@@ -152,10 +152,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 <div class="wrap">
   <div class="ptr-wrap" id="ptr-wrap">
     <div class="ptr-arrow" id="ptr-arrow"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M3 9l5 5 5-5" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-    <div class="ptr-loader-card" id="ptr-loader-card">
-      <div class="ptr-loader-spin" id="ptr-loader-spin"></div>
-      <span style="font-size:13px;color:var(--text2);font-family:var(--font)">Загрузка данных...</span>
-    </div>
   </div>
 
   <!-- ДЕНЬГИ -->
@@ -185,9 +181,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="stat"><div class="stat-lbl">записей</div><div class="stat-val" id="s-cnt">0</div></div>
       </div>
       <div id="breakdown-block" style="display:none;margin-bottom:8px"></div>
-      <div class="sync-row">
+      <div class="sync-row" id="sync-row">
         <div class="sync-dot ok" id="sync-dot"></div>
-        <div style="flex:1"><div style="font-size:15px;font-weight:500;color:var(--text)" id="sync-title">Подключено к Google Sheets</div><div style="font-size:15px;color:var(--text3);font-family:var(--mono);margin-top:1px" id="sync-sub">Записи отправляются автоматически</div></div>
+        <div class="sync-spin" id="sync-spin"></div>
+        <div style="flex:1"><div style="font-size:15px;font-weight:500;color:var(--text)" id="sync-title">Подключено к Google Sheets</div><div style="font-size:13px;color:var(--text3);font-family:var(--mono);margin-top:1px" id="sync-sub">Записи отправляются автоматически</div></div>
       </div>
       <div class="card-flush"><div id="entries-list"><div class="empty">нет записей</div></div></div>
     </div>
@@ -364,11 +361,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
   <div class="nav">
-    <div class="ni on" id="n-money" onclick="switchS('money')"><div class="nic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><text x="1" y="13" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="500" fill="currentColor">₽</text></svg></div><div class="nil">деньги</div></div>
-    <div class="ni" id="n-budget" onclick="switchS('budget')"><div class="nic"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.3"/><path d="M9 9L9 2.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M9 9L14.5 12.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="9" cy="9" r="2.5" fill="currentColor" opacity=".18"/></svg></div><div class="nil">бюджет</div></div>
-    <div class="ni" id="n-tasks" onclick="switchS('tasks')"><div class="nic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M3 8h10M3 12h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></div><div class="nil">задачи</div></div>
-    <div class="ni" id="n-travel" onclick="switchS('travel')"><div class="nic"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M15.5 7.5a1.5 1.5 0 01-1.5 1.5H11l-2 4H8l1-4H6l-1 1.5H4l.5-3L4 3.5h1L6 5h3l-1-4h1l2 4h3a1.5 1.5 0 011.5 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="nil">поездки</div></div>
-    <div class="ni" id="n-wish" onclick="switchS('wish')"><div class="nic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 13s-5-3.5-5-7a3 3 0 016 0 3 3 0 016 0c0 3.5-5 7-5 7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg></div><div class="nil">хочу</div></div>
+    <div class="ni on" id="n-money" onclick="switchS('money')"><div class="nic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><text x="2" y="19" font-family="system-ui,-apple-system,sans-serif" font-size="18" font-weight="600" fill="currentColor">₽</text></svg></div><div class="nil">деньги</div></div>
+    <div class="ni" id="n-budget" onclick="switchS('budget')"><div class="nic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 12L12 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 12L18.5 16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="12" r="3" fill="currentColor" opacity=".15"/></svg></div><div class="nil">бюджет</div></div>
+    <div class="ni" id="n-tasks" onclick="switchS('tasks')"><div class="nic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div><div class="nil">задачи</div></div>
+    <div class="ni" id="n-travel" onclick="switchS('travel')"><div class="nic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a2 2 0 01-2 2H15l-2.5 5H11l1.2-5H8.5L7 15H5.5L7 12 5.5 9H7l1.5 1.5 3.7-1.5L11 4h1.5l2.5 5H19a2 2 0 012 2z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="nil">поездки</div></div>
+    <div class="ni" id="n-wish" onclick="switchS('wish')"><div class="nic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 20S4 15 4 9a4 4 0 018 0 4 4 0 018 0c0 6-8 11-8 11z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div><div class="nil">хочу</div></div>
   </div>
   <!-- MODAL: финансовая цель -->
   <div class="mbg" id="m-add-goal">
@@ -417,7 +414,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 const SHEETS_URL='https://script.google.com/macros/s/AKfycbz5wj1lgHA_lIZ8VOx6XxyrtdEz3RGweVeDAdn6zckSNomM3fCOIC2XzGAKuF2gu-FR/exec';
 const EXP_CATS=['Аренда / ипотека','Коммунальные услуги','Интернет и мобильная связь','Кредиты и займы','Страховки','Продукты питания','Рестораны, кафе, доставка','Бытовая химия и хозтовары','Бензин / проездной / такси','Обслуживание и ремонт авто','Парковка / штрафы','Одежда и обувь','Косметика, салоны, уход','Аксессуары / прочее','Кино, театр, концерты','Подписки (стриминг, сервисы)','Спорт и хобби','Путешествия / отпуск','Подарки и праздники','Аптека / лекарства','Врачи и анализы','Ветеринар / питомцы','Спортзал / фитнес'];
 const INC_CATS=['Зарплата — Евгений','Зарплата — Аннушка','Доп. доход / фриланс','Подарок / перевод','Прочий доход'];
-const MANDATORY_CATS=new Set(['Аренда / ипотека','Коммунальные услуги','Интернет и мобильная связь','Кредиты и займы','Страховки','Продукты питания','Аптека / лекарства','Бензин / проездной / такси','Обслуживание и ремонт авто']);
+const MANDATORY_CATS=new Set(['Аренда / ипотека','Кредиты и займы','Подписки (стриминг, сервисы)','Интернет и мобильная связь','Коммунальные услуги']);
 const CAT_COLORS=['#c47fa0','#8b6fbf','#5f9ecb','#e0956a','#6bae8f','#c9677e','#7b9fd4','#d4a06a','#8bbf8e','#bf8b7e','#a08bbf','#6baeaa','#c4a07f','#8b8fbf','#c4bf7f','#7fafbf','#bf7fa0','#9fbf7f','#bf9f7f','#8fbfbf','#bfaf8f','#af8fbf','#bf8faf'];
 const MONTHS_RU=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
 const STORAGE_KEY='couple_app_v6';
@@ -473,12 +470,15 @@ function buildMonthSelectors(){
     if(prev&&(months[prev]||years[prev.replace('year_','')])){mSel.value=prev;}
     else mSel.value=ck;
   }
-  // budget selector: months only
+  // budget selector: years + months
   const bSel=document.getElementById('budget-month-sel');
   if(bSel){
     const prev=bSel.value;
-    bSel.innerHTML=mKeys.map(k=>{const p=k.split('-');return`<option value="${k}">${MONTHS_RU[parseInt(p[1])-1]} ${p[0]}</option>`;}).join('');
-    if(prev&&months[prev])bSel.value=prev;
+    let bHtml='';
+    yKeys.forEach(y=>{bHtml+=`<option value="year_${y}">${y} год (весь год)</option>`;});
+    mKeys.forEach(k=>{const p=k.split('-');bHtml+=`<option value="${k}">${MONTHS_RU[parseInt(p[1])-1]} ${p[0]}</option>`;});
+    bSel.innerHTML=bHtml;
+    if(prev&&(months[prev]||yKeys.includes(prev.replace('year_',''))))bSel.value=prev;
     else bSel.value=ck;
   }
 }
@@ -501,9 +501,13 @@ function getPrevMonthKey(k){
 
 // sync/state
 function setSyncState(s,t,sub){
-  document.getElementById('sync-dot').className='sync-dot '+(s||'idle');
+  const dot=document.getElementById('sync-dot');
+  const spin=document.getElementById('sync-spin');
+  const syncing=s==='wait';
+  if(dot){dot.className='sync-dot '+(s||'idle');dot.style.display=syncing?'none':'';}
+  if(spin){spin.classList.toggle('spinning',syncing);}
   document.getElementById('sync-title').textContent=t;
-  document.getElementById('sync-sub').textContent=sub;
+  document.getElementById('sync-sub').textContent=sub||'';
   if(s==='ok'||s==='err'){if(typeof window._ptrStop==='function')window._ptrStop();}
 }
 
@@ -742,6 +746,10 @@ function renderEntries(){
   bel.style.color=bal>=0?'var(--green)':'var(--red)';
   document.getElementById('s-cnt').textContent=monthEntries.length;
 
+  // sync-row only visible on "all" tab
+  const sr=document.getElementById('sync-row');
+  if(sr)sr.style.display=eTab==='all'?'':'none';
+
   // breakdown block
   const bb=document.getElementById('breakdown-block');
   if(eTab==='expense'&&tE>0){
@@ -902,10 +910,18 @@ function attachEntrySwipe(){
 function renderBudget(){
   buildMonthSelectors();
   const selEl=document.getElementById('budget-month-sel');
-  const selMonth=selEl?selEl.value:nowKey();
-  const prevMonth=getPrevMonthKey(selMonth);
-  const filtered=entries.filter(e=>e.date&&e.date.startsWith(selMonth));
-  const prevFiltered=entries.filter(e=>e.date&&e.date.startsWith(prevMonth));
+  const selRaw=selEl?selEl.value:nowKey();
+  const isYearSel=selRaw&&selRaw.startsWith('year_');
+  const yearStr=isYearSel?selRaw.replace('year_',''):'';
+  const selMonth=isYearSel?yearStr+'-01':selRaw; // for prevMonth calc, use Jan of year
+  const actualKey=isYearSel?yearStr:selRaw;
+  const prevMonth=isYearSel?(String(Number(yearStr)-1)):getPrevMonthKey(selRaw);
+  const filtered=isYearSel
+    ?entries.filter(e=>e.date&&e.date.startsWith(yearStr))
+    :entries.filter(e=>e.date&&e.date.startsWith(selRaw));
+  const prevFiltered=isYearSel
+    ?entries.filter(e=>e.date&&e.date.startsWith(prevMonth))
+    :entries.filter(e=>e.date&&e.date.startsWith(getPrevMonthKey(selRaw)));
 
   let incE=0,incA=0,expE=0,expA=0;
   filtered.filter(e=>e.type==='income').forEach(e=>{if(e.who==='Евгений')incE+=e.amount;else incA+=e.amount;});
@@ -1003,11 +1019,20 @@ function renderAnalytics(selMonth,prevMonth,filtered,prevFiltered,expTotal,catTo
   const discPct=100-mandatoryPct;
 
   // avg per day
-  const [y,m]=selMonth.split('-').map(Number);
-  const daysInMonth=new Date(y,m,0).getDate();
-  const today=new Date();
-  const isCurrentMonth=selMonth===nowKey();
-  const daysElapsed=isCurrentMonth?Math.max(1,today.getDate()):daysInMonth;
+  const isYearSelMode=selMonth&&selMonth.startsWith('year_');
+  let daysInMonth,daysElapsed,isCurrentMonth;
+  if(isYearSelMode){
+    const yr=Number(selMonth.replace('year_',''));
+    const isThisYear=yr===new Date().getFullYear();
+    const today2=new Date();
+    daysInMonth=isThisYear?Math.floor((today2-new Date(yr,0,1))/86400000)+1:365+(new Date(yr,1,29).getMonth()===1?1:0);
+    daysElapsed=daysInMonth;isCurrentMonth=isThisYear;
+  } else {
+    const [y,m]=selMonth.split('-').map(Number);
+    daysInMonth=new Date(y,m,0).getDate();
+    const today=new Date();isCurrentMonth=selMonth===nowKey();
+    daysElapsed=isCurrentMonth?Math.max(1,today.getDate()):daysInMonth;
+  }
   const avgPerDay=daysElapsed>0?Math.round(expTotal/daysElapsed):0;
   const forecast=Math.round(avgPerDay*daysInMonth);
   const forecastBalance=incTotal-forecast;
@@ -1051,6 +1076,8 @@ function renderAnalytics(selMonth,prevMonth,filtered,prevFiltered,expTotal,catTo
   </div>`;
 
   // --- Аналитика год к году ---
+  const isYearMode=selMonth&&selMonth.startsWith('year_');
+  if(isYearMode){return;} // для годовой аналитики YoY не показываем
   const [yCur,mCur]=selMonth.split('-').map(Number);
   const sameMonthLastYear=`${yCur-1}-${String(mCur).padStart(2,'0')}`;
   const lyAll=entries.filter(e=>e.date&&e.date.startsWith(sameMonthLastYear));
@@ -1102,7 +1129,8 @@ function renderInsights(selMonth,prevMonth,filtered,prevFiltered,expTotal,catTot
 }
 
 function openBudgetCategory(cat,month){
-  const selMonth=month||document.getElementById('budget-month-sel').value||nowKey();
+  const raw=month||document.getElementById('budget-month-sel').value||nowKey();
+  const selMonth=raw.startsWith('year_')?raw.replace('year_',''):raw;
   const list=entries.filter(e=>e.type==='expense'&&e.cat===cat&&(!selMonth||(e.date||'').startsWith(selMonth))).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   document.getElementById('budget-cat-title').textContent=cat;
   document.getElementById('budget-cat-list').innerHTML=list.length?list.map(e=>`<div class="row-item">
@@ -1136,10 +1164,17 @@ function setAnlUser(u){
 }
 function renderBudgetAnalytics(){
   const selEl=document.getElementById('budget-month-sel');
-  const selMonth=selEl?selEl.value:nowKey();
-  const prevMonth=getPrevMonthKey(selMonth);
-  const base=entries.filter(e=>e.date&&e.date.startsWith(selMonth));
-  const prevBase=entries.filter(e=>e.date&&e.date.startsWith(prevMonth));
+  const selRaw=selEl?selEl.value:nowKey();
+  const isYearSel=selRaw&&selRaw.startsWith('year_');
+  const yearStr=isYearSel?selRaw.replace('year_',''):'';
+  const selMonth=selRaw;
+  const prevMonth=isYearSel?String(Number(yearStr)-1):getPrevMonthKey(selRaw);
+  const base=isYearSel
+    ?entries.filter(e=>e.date&&e.date.startsWith(yearStr))
+    :entries.filter(e=>e.date&&e.date.startsWith(selRaw));
+  const prevBase=isYearSel
+    ?entries.filter(e=>e.date&&e.date.startsWith(prevMonth))
+    :entries.filter(e=>e.date&&e.date.startsWith(prevMonth));
   const filtered=anlUser==='all'?base:base.filter(e=>e.who===anlUser);
   const prevFiltered=anlUser==='all'?prevBase:prevBase.filter(e=>e.who===anlUser);
   const catTotals={};let expTotal=0;
@@ -1546,20 +1581,13 @@ document.addEventListener('click',function(e){
   if(bg&&e.target===bg)bg.classList.remove('on');
 });
 
-// pull-to-refresh — стрелка + карточка-лоадер
+// pull-to-refresh — стрелка, spinner в sync-row
 (function(){
   const body=document.querySelector('#s-money .body');
   const arrow=document.getElementById('ptr-arrow');
-  const card=document.getElementById('ptr-loader-card');
-  const spin=document.getElementById('ptr-loader-spin');
   let startY=0,pulling=false,refreshing=false;
   const THRESHOLD=65;
-  function reset(){
-    arrow.classList.remove('visible','flip');
-    card.classList.remove('on');
-    spin.classList.remove('spinning');
-    pulling=false;refreshing=false;
-  }
+  function reset(){arrow.classList.remove('visible','flip');pulling=false;refreshing=false;}
   window._ptrStop=function(){reset();};
   body.addEventListener('touchstart',e=>{
     if(body.scrollTop<=0&&!refreshing){startY=e.touches[0].clientY;pulling=true;}
@@ -1576,8 +1604,6 @@ document.addEventListener('click',function(e){
     if(dy>=THRESHOLD){
       refreshing=true;pulling=false;
       arrow.classList.remove('visible','flip');
-      card.classList.add('on');
-      spin.classList.add('spinning');
       syncFromSheets();
       setTimeout(reset,30000);
     }else{reset();}
