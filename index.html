@@ -810,7 +810,8 @@ function renderEntries(){
   const bel=document.getElementById('s-bal');
   bel.textContent=(bal>=0?'+':'')+bal.toLocaleString('ru')+' ₽';
   bel.style.color=bal>=0?'var(--green)':'var(--red)';
-  document.getElementById('s-cnt').textContent=monthEntries.length;
+  // s-cnt заменён на s-today — обновляем дневной бюджет
+  updateTodayCard();
 
   // sync-row only visible on "all" tab
   const sr=document.getElementById('sync-row');
