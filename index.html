@@ -151,6 +151,17 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .anl-user-filter{display:none}
 .anl-compare-filter{display:none}
 .anl-user-btn,.anl-compare-btn{display:none}
+
+/* day budget modal */
+.day-stat-row{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line)}
+.day-stat-row:last-child{border-bottom:none}
+.day-stat-lbl{font-size:13px;color:var(--text3);font-family:var(--mono)}
+.day-stat-val{font-size:13px;font-weight:500;font-family:var(--mono);color:var(--text)}
+.day-status-ok{color:#2a9d78}
+.day-status-warn{color:#b07030}
+.day-status-danger{color:#d94f6e}
+.day-main-num{font-size:34px;font-weight:500;letter-spacing:-.03em;margin:8px 0 4px;line-height:1}
+.day-section{background:rgba(255,255,255,.5);border-radius:12px;padding:10px 12px;border:1px solid rgba(240,217,225,.6);margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -183,7 +194,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="stat" style="cursor:pointer" onclick="openStatDetail('income')"><div class="stat-lbl">доходы</div><div class="stat-val" id="s-inc" style="color:var(--green)">0 ₽</div></div>
         <div class="stat" style="cursor:pointer" onclick="openStatDetail('expense')"><div class="stat-lbl">расходы</div><div class="stat-val" id="s-exp" style="color:var(--red)">0 ₽</div></div>
         <div class="stat"><div class="stat-lbl">баланс</div><div class="stat-val" id="s-bal">0 ₽</div></div>
-        <div class="stat"><div class="stat-lbl">записей</div><div class="stat-val" id="s-cnt">0</div></div>
+        <div class="stat" style="cursor:pointer" onclick="openDayBudget()"><div class="stat-lbl">сегодня</div><div class="stat-val" id="s-today" style="font-size:16px">— ₽</div></div>
       </div>
       <div id="breakdown-block" style="display:none;margin-bottom:8px"></div>
       <div class="sync-row" id="sync-row">
@@ -430,6 +441,23 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
   </div>
 
+  <!-- MODAL: дневной бюджет -->
+  <div class="mbg" id="m-day-budget">
+    <div class="modal" style="max-height:96%">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div class="modal-title" style="margin-bottom:0">Дневной бюджет</div>
+        <button onclick="closeM('day-budget')" style="background:none;border:none;font-size:20px;color:var(--text3);cursor:pointer;padding:0;line-height:1">×</button>
+      </div>
+      <!-- переключатель пользователя -->
+      <div style="display:flex;gap:6px;margin-bottom:14px" id="db-user-filter">
+        <button class="anl-user-btn on" id="db-u-all" onclick="setDbUser('all')">Общее</button>
+        <button class="anl-user-btn" id="db-u-e" onclick="setDbUser('Евгений')">Евгений</button>
+        <button class="anl-user-btn" id="db-u-a" onclick="setDbUser('Аннушка')">Аннушка</button>
+      </div>
+      <div id="day-budget-content"></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -559,7 +587,7 @@ async function sendToSheets(entry){
     entry.synced=false;
     setSyncState('err','Ошибка отправки','Проверьте подключение');
   }
-  saveData();renderEntries();
+  saveData();renderEntries();updateTodayCard();
 }
 
 async function postActionToSheets(payload){
@@ -631,7 +659,7 @@ function processSheetData(data){
       return !!(e.cat||e.amount||e.who||e.date);
     });
     if(data.budget&&data.budget.cats)budget.cats=Object.assign({},budget.cats||{},data.budget.cats);
-    saveData();buildMonthSelectors();renderEntries();renderBudget();
+    saveData();buildMonthSelectors();renderEntries();renderBudget();updateTodayCard();
     setSyncState('ok','Синхронизировано','');
     return;
   }
@@ -1322,23 +1350,23 @@ function renderGoalDetail(){
   el.innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div class="modal-title" style="margin-bottom:0">${g.name}</div>
-      <button onclick="openEditGoal(${idx});closeM('goal-detail')" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;font-family:var(--font)">Изменить</button>
+      <button onclick="openEditGoal(${idx});closeM('goal-detail')" style="background:none;border:none;color:var(--accent);font-size:15px;cursor:pointer;font-family:var(--font)">Изменить</button>
     </div>
     <div class="stats" style="margin-bottom:10px">
-      <div class="stat"><div class="stat-lbl">Накоплено</div><div class="stat-val" style="font-size:17px">${saved.toLocaleString('ru')} ₽</div></div>
-      <div class="stat"><div class="stat-lbl">Осталось</div><div class="stat-val" style="font-size:17px;color:var(--red)">${rem.toLocaleString('ru')} ₽</div></div>
-      <div class="stat"><div class="stat-lbl">Прогресс</div><div class="stat-val" style="font-size:17px;color:var(--accent)">${pct}%</div></div>
-      <div class="stat"><div class="stat-lbl">Осталось мес.</div><div class="stat-val" style="font-size:16px">${mStr}</div></div>
+      <div class="stat"><div class="stat-lbl">Накоплено</div><div class="stat-val" style="font-size:20px">${saved.toLocaleString('ru')} ₽</div></div>
+      <div class="stat"><div class="stat-lbl">Осталось</div><div class="stat-val" style="font-size:20px;color:var(--red)">${rem.toLocaleString('ru')} ₽</div></div>
+      <div class="stat"><div class="stat-lbl">Прогресс</div><div class="stat-val" style="font-size:20px;color:var(--accent)">${pct}%</div></div>
+      <div class="stat"><div class="stat-lbl">Осталось мес.</div><div class="stat-val" style="font-size:20px">${mStr}</div></div>
     </div>
     <div class="goal-progress-bar"><div class="goal-progress-fill" style="width:${pct}%"></div></div>
-    <div style="font-size:12px;color:var(--text3);font-family:var(--mono);text-align:right;margin-bottom:12px">${saved.toLocaleString('ru')} / ${g.target.toLocaleString('ru')} ₽</div>
+    <div style="font-size:13px;color:var(--text3);font-family:var(--mono);text-align:right;margin-bottom:12px">${saved.toLocaleString('ru')} / ${g.target.toLocaleString('ru')} ₽</div>
     ${(g.contributions||[]).length?`
     <div class="section-lbl">Вклады</div>
     <div class="card-flush" style="margin-bottom:8px">
       ${[...(g.contributions||[])].sort((a,b)=>b.date.localeCompare(a.date)).map(c=>`
         <div class="row-item">
-          <div style="flex:1"><div style="font-size:13px;color:var(--text)">${formatDateLabel(c.date)}</div></div>
-          <div style="font-size:13px;font-weight:500;font-family:var(--mono);color:var(--green)">+${(c.amount||0).toLocaleString('ru')} ₽</div>
+          <div style="flex:1"><div style="font-size:15px;color:var(--text)">${formatDateLabel(c.date)}</div></div>
+          <div style="font-size:15px;font-weight:500;font-family:var(--mono);color:var(--green)">+${(c.amount||0).toLocaleString('ru')} ₽</div>
         </div>`).join('')}
     </div>`:''}
   `;
@@ -1374,16 +1402,206 @@ function renderGoals(){
       const monthsLeft=g.monthly>0?Math.ceil(rem/g.monthly):null;
       return`<div class="goal-card" onclick="openGoalDetail(${i})">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-          <span style="font-size:14px;font-weight:500;color:var(--text)">${g.name}</span>
-          <span style="font-size:13px;font-family:var(--mono);color:var(--accent)">${pct}%</span>
+          <span style="font-size:15px;font-weight:500;color:var(--text)">${g.name}</span>
+          <span style="font-size:15px;font-family:var(--mono);color:var(--accent)">${pct}%</span>
         </div>
         <div class="goal-progress-bar"><div class="goal-progress-fill" style="width:${pct}%"></div></div>
         <div style="display:flex;justify-content:space-between;margin-top:4px">
-          <span style="font-size:12px;color:var(--text3);font-family:var(--mono)">${saved.toLocaleString('ru')} / ${g.target.toLocaleString('ru')} ₽</span>
-          ${monthsLeft!==null?`<span style="font-size:12px;color:var(--text3);font-family:var(--mono)">${monthsLeft} мес.</span>`:''}
+          <span style="font-size:13px;color:var(--text3);font-family:var(--mono)">${saved.toLocaleString('ru')} / ${g.target.toLocaleString('ru')} ₽</span>
+          ${monthsLeft!==null?`<span style="font-size:13px;color:var(--text3);font-family:var(--mono)">${monthsLeft} мес.</span>`:''}
         </div>
       </div>`;
     }).join('');
+}
+
+
+// ===== ДНЕВНОЙ БЮДЖЕТ =====
+let dbUser='all';
+function setDbUser(u){
+  dbUser=u;
+  ['all','Евгений','Аннушка'].forEach(v=>{
+    const id='db-u-'+(v==='all'?'all':v==='Евгений'?'e':'a');
+    const btn=document.getElementById(id);
+    if(btn)btn.classList.toggle('on',v===u);
+  });
+  renderDayBudget();
+}
+
+function openDayBudget(){
+  dbUser='all';
+  ['db-u-all','db-u-e','db-u-a'].forEach((id,i)=>{
+    const btn=document.getElementById(id);
+    if(btn)btn.classList.toggle('on',i===0);
+  });
+  renderDayBudget();
+  openM('day-budget');
+}
+
+function getDayBudgetData(who){
+  const today=new Date();
+  const monthKey=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
+  const daysInMonth=new Date(today.getFullYear(),today.getMonth()+1,0).getDate();
+  const dayOfMonth=today.getDate();
+  const daysLeft=daysInMonth-dayOfMonth+1;
+  const todayStr=today.toISOString().split('T')[0];
+
+  // Фильтр записей по месяцу и пользователю
+  const monthEntries=entries.filter(e=>e.date&&e.date.startsWith(monthKey)&&(who==='all'||e.who===who));
+
+  // Доход
+  const incomeTotal=monthEntries.filter(e=>e.type==='income').reduce((a,e)=>a+e.amount,0);
+
+  // Обязательные и переменные расходы факт
+  const mandatoryFact=monthEntries.filter(e=>e.type==='expense'&&MANDATORY_CATS.has(e.cat)).reduce((a,e)=>a+e.amount,0);
+  const varFact=monthEntries.filter(e=>e.type==='expense'&&!MANDATORY_CATS.has(e.cat)).reduce((a,e)=>a+e.amount,0);
+
+  // Планы из budget.cats (суммируем переменные категории)
+  const varPlan=EXP_CATS.filter(c=>!MANDATORY_CATS.has(c)).reduce((a,c)=>a+(budget.cats[c]||0),0);
+  const mandPlan=EXP_CATS.filter(c=>MANDATORY_CATS.has(c)).reduce((a,c)=>a+(budget.cats[c]||0),0);
+
+  // Остаток переменных
+  const varLeft=varPlan-varFact;
+  const dayLimit=daysLeft>0?Math.max(varLeft/daysLeft,0):0;
+
+  // Сегодня потрачено (переменные)
+  const todaySpent=monthEntries.filter(e=>e.type==='expense'&&!MANDATORY_CATS.has(e.cat)&&e.date===todayStr).reduce((a,e)=>a+e.amount,0);
+
+  // Скорость трат
+  const pace=dayOfMonth>0?varFact/dayOfMonth:0;
+  const norm=daysInMonth>0?varPlan/daysInMonth:0;
+  const forecast=Math.round(pace*daysInMonth);
+  const forecastOverrun=forecast-varPlan;
+
+  // Процент выполнения
+  const pct=varPlan>0?Math.round(varFact/varPlan*100):0;
+
+  // Статус
+  let status,statusColor;
+  if(pct<=100){status='Отлично';statusColor='var(--green)';}
+  else if(pct<=110){status='Приемлемо';statusColor='var(--amber)';}
+  else if(pct<=120){status='Халатно';statusColor='#e07030';}
+  else{status='Неблагоприятно';statusColor='var(--red)';}
+
+  // Главный цвет (для числа)
+  let mainColor=statusColor;
+  if(varPlan>0&&dayLimit===0)mainColor='var(--red)';
+
+  // Инсайт: переменная категория с наибольшим превышением лимита
+  let insight='';
+  let maxOver=0,maxCat='';
+  EXP_CATS.filter(c=>!MANDATORY_CATS.has(c)).forEach(c=>{
+    const fact=monthEntries.filter(e=>e.type==='expense'&&e.cat===c).reduce((a,e)=>a+e.amount,0);
+    const plan=budget.cats[c]||0;
+    if(plan>0&&fact>plan){
+      const over=Math.round((fact-plan)/plan*100);
+      if(over>10&&over>maxOver){maxOver=over;maxCat=c;}
+    }
+  });
+  if(maxCat)insight=`↑ ${maxCat} превысил лимит на ${maxOver}%`;
+
+  return{
+    dayLimit,todaySpent,varFact,varPlan,varLeft,mandatoryFact,mandPlan,
+    incomeTotal,pct,status,statusColor,mainColor,forecast,forecastOverrun,
+    pace:Math.round(pace),norm:Math.round(norm),faster:pace>norm,
+    hasPlan:varPlan>0,insight,daysLeft,daysInMonth,dayOfMonth
+  };
+}
+
+function updateTodayCard(){
+  const d=getDayBudgetData('all');
+  const el=document.getElementById('s-today');
+  if(!el)return;
+  if(!d.hasPlan){el.textContent='—';return;}
+  el.textContent=Math.round(d.dayLimit).toLocaleString('ru')+' ₽';
+  el.style.color=d.dayLimit>0?'var(--green)':'var(--red)';
+}
+
+function renderDayBudget(){
+  const d=getDayBudgetData(dbUser);
+  const el=document.getElementById('day-budget-content');
+  if(!el)return;
+
+  if(!d.hasPlan){
+    el.innerHTML=`<div style="text-align:center;padding:24px 0;color:var(--text3);font-size:14px">
+      Задай план расходов в разделе<br>
+      <button onclick="closeM('day-budget');switchS('budget')" style="margin-top:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:14px;cursor:pointer;font-family:var(--font)">Открыть Бюджет</button>
+    </div>`;
+    return;
+  }
+
+  const inBudget=d.forecastOverrun<=0;
+  const forecastStr=inBudget
+    ? `<span style="color:var(--green)">Ты в рамках бюджета ✓</span>`
+    : `<span style="color:var(--red)">Выйдешь за бюджет на ${Math.abs(d.forecastOverrun).toLocaleString('ru')} ₽</span>`;
+
+  el.innerHTML=`
+    <!-- Главный блок -->
+    <div class="anl-card" style="text-align:center;margin-bottom:10px">
+      <div style="font-size:12px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em">Сегодня можно потратить</div>
+      <div class="day-main-num" style="color:${d.mainColor}">${Math.round(d.dayLimit).toLocaleString('ru')} ₽</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:8px">Чтобы остаться в бюджете</div>
+      <div style="font-size:13px">${forecastStr}</div>
+    </div>
+
+    <!-- Статус -->
+    <div class="day-section">
+      <div class="day-stat-row">
+        <span class="day-stat-lbl">Статус</span>
+        <span class="day-stat-val" style="color:${d.statusColor}">${d.status}</span>
+      </div>
+      <div class="day-stat-row">
+        <span class="day-stat-lbl">Использовано от плана</span>
+        <span class="day-stat-val" style="color:${d.statusColor}">${d.pct}%</span>
+      </div>
+    </div>
+
+    <!-- Переменные расходы -->
+    <div class="day-section">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);margin-bottom:6px">Переменные расходы</div>
+      <div class="day-stat-row"><span class="day-stat-lbl">План</span><span class="day-stat-val">${d.varPlan.toLocaleString('ru')} ₽</span></div>
+      <div class="day-stat-row"><span class="day-stat-lbl">Потрачено</span><span class="day-stat-val" style="color:${d.varFact>d.varPlan?'var(--red)':'var(--text)'}">${d.varFact.toLocaleString('ru')} ₽</span></div>
+      <div class="day-stat-row"><span class="day-stat-lbl">Остаток</span><span class="day-stat-val" style="color:${d.varLeft<0?'var(--red)':'var(--green)'}">${d.varLeft>=0?'':'-'}${Math.abs(d.varLeft).toLocaleString('ru')} ₽</span></div>
+    </div>
+
+    <!-- Сегодня -->
+    <div class="day-section">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);margin-bottom:6px">Сегодня</div>
+      <div class="day-stat-row"><span class="day-stat-lbl">Потрачено</span><span class="day-stat-val">${d.todaySpent.toLocaleString('ru')} ₽</span></div>
+      <div class="day-stat-row"><span class="day-stat-lbl">Лимит на день</span><span class="day-stat-val" style="color:${d.dayLimit>0?'var(--green)':'var(--red)'}">${Math.round(d.dayLimit).toLocaleString('ru')} ₽</span></div>
+    </div>
+
+    <!-- Скорость -->
+    <div class="day-section">
+      <div class="day-stat-row"><span class="day-stat-lbl">Темп трат</span><span class="day-stat-val">${d.pace.toLocaleString('ru')} ₽/день</span></div>
+      <div class="day-stat-row"><span class="day-stat-lbl">Норма</span><span class="day-stat-val">${d.norm.toLocaleString('ru')} ₽/день</span></div>
+      <div class="day-stat-row"><span class="day-stat-lbl">Оценка</span><span class="day-stat-val" style="color:${d.faster?'var(--red)':'var(--green)'}">${d.faster?'Тратишь быстрее нормы':'Ты в норме'}</span></div>
+    </div>
+
+    <!-- Прогноз -->
+    <div class="day-section">
+      <div class="day-stat-row">
+        <span class="day-stat-lbl">Прогноз к концу месяца</span>
+        <span class="day-stat-val" style="color:${d.forecastOverrun>0?'var(--red)':'var(--green)'}">
+          ${d.forecastOverrun>0?'Перерасход +'+d.forecastOverrun.toLocaleString('ru'):'Экономия '+Math.abs(d.forecastOverrun).toLocaleString('ru')} ₽
+        </span>
+      </div>
+    </div>
+
+    <!-- Структура -->
+    <div class="day-section">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);margin-bottom:6px">Структура расходов</div>
+      <div class="day-stat-row"><span class="day-stat-lbl">Обязательные</span><span class="day-stat-val">${d.mandatoryFact.toLocaleString('ru')} ₽</span></div>
+      <div class="day-stat-row"><span class="day-stat-lbl">Переменные</span><span class="day-stat-val">${d.varFact.toLocaleString('ru')} ₽</span></div>
+      ${d.incomeTotal>0?`<div class="day-stat-row"><span class="day-stat-lbl">Переменные от дохода</span><span class="day-stat-val">${Math.round(d.varFact/d.incomeTotal*100)}%</span></div>`:''}
+    </div>
+
+    <!-- Инсайт -->
+    ${d.insight?`<div style="font-size:13px;color:var(--text2);background:rgba(255,246,249,.9);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:var(--mono)">${d.insight}</div>`:''}
+
+    <div style="font-size:11px;color:var(--text3);font-family:var(--mono);text-align:center;margin-top:8px">
+      ${new Date().toLocaleDateString('ru',{day:'numeric',month:'long'})} · ${dbUser==='all'?'Общее':dbUser}
+    </div>
+  `;
 }
 
 // tasks
@@ -1664,7 +1882,7 @@ document.getElementById('e-date').value=new Date().toISOString().split('T')[0];
 setET('expense');
 updateSortUi();
 buildMonthSelectors();
-renderEntries();
+renderEntries();updateTodayCard();
 renderTasks();
 renderTrips();
 renderWishes();
