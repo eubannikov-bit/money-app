@@ -10,8 +10,7 @@
 <link rel="manifest" href="/money-app/manifest.json">
 <link rel="apple-touch-icon" href="/money-app/icon.png">
 <title>Евгений и Аннушка</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap">
+<!-- системный шрифт Apple -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -19,7 +18,9 @@
   --text:#1a1018;--text2:#7f6d73;--text3:#c09aa7;
   --line:#f0d9e1;--line2:#e5c4d0;
   --accent:#d78ea8;--green:#2a9d78;--red:#d94f6e;--amber:#b07030;
-  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+  --font:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;
+  --mono:'SF Mono',SFMono-Regular,Menlo,monospace;
+  --f-title:17px;--f-body:15px;--f-sub:13px;--f-micro:11px;
   --safe-top:env(safe-area-inset-top);--safe-bot:env(safe-area-inset-bottom);
 }
 html,body{height:100%;overflow:hidden;background:var(--bg2)}
@@ -34,13 +35,13 @@ body{font-family:var(--font);display:flex;justify-content:center;align-items:str
 .scr.on{display:flex;opacity:1;transform:none}
 .body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 80px}
 .hdr{padding:calc(var(--safe-top) + 14px) 16px 8px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
-.htitle{font-size:24px;font-weight:500;color:var(--text);letter-spacing:-.02em}
+.htitle{font-size:22px;font-weight:600;color:var(--text);letter-spacing:-.03em}
 .btn-text{background:none;border:1px solid var(--line2);border-radius:8px;padding:5px 12px;font-size:15px;cursor:pointer;color:var(--text2);font-family:var(--font)}
 .card{background:rgba(255,246,249,.9);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:8px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .card-flush{background:rgba(255,246,249,.9);border:1px solid var(--line);border-radius:18px;overflow:hidden;margin-bottom:8px}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .stat{background:rgba(255,246,249,.9);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-.stat-lbl{font-size:15px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;font-family:var(--mono)}
+.stat-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;font-family:var(--mono)}
 .stat-val{font-size:20px;font-weight:500;color:var(--text);letter-spacing:-.02em}
 .toolbar{display:flex;align-items:center;justify-content:space-between;padding:0 16px 10px;gap:8px;flex-shrink:0}
 .tabs-row{display:flex;gap:4px;flex:1}
@@ -60,8 +61,8 @@ body{font-family:var(--font);display:flex;justify-content:center;align-items:str
 .mbg.on{display:flex}
 .modal{background:rgba(255,248,250,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:24px 24px 0 0;padding:20px 20px calc(var(--safe-bot) + 20px);width:100%;max-height:92%;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid rgba(235,204,215,.7);box-shadow:0 -10px 34px rgba(215,142,168,.14);transform:translateY(16px);transition:transform .32s cubic-bezier(.4,0,.2,1)}
 .mbg.on .modal{transform:none}
-.modal-title{font-size:15px;font-weight:500;color:var(--text);margin-bottom:16px;letter-spacing:-.01em}
-.flabel{font-size:15px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;font-family:var(--mono)}
+.modal-title{font-size:17px;font-weight:600;color:var(--text);margin-bottom:16px;letter-spacing:-.02em}
+.flabel{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;font-family:var(--mono)}
 .frow{margin-bottom:10px}
 input[type=text],input[type=number],input[type=date],input[type=url],select,textarea{width:100%;font-family:var(--font);font-size:15px;background:rgba(255,247,250,.9);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:9px 12px;outline:none;-webkit-appearance:none}
 input:focus,select:focus,textarea:focus{border-color:var(--line2)}
@@ -85,9 +86,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .sync-dot.err svg line{stroke:var(--red)}
 .sync-row{transition:max-height .35s cubic-bezier(.4,0,.2,1),opacity .25s,margin .35s;overflow:hidden;max-height:80px;opacity:1}
 .sync-row.hidden{max-height:0;opacity:0;margin-bottom:0;padding-top:0;padding-bottom:0;border:none}
-.date-sep{font-size:15px;color:#cb8fa3;font-family:var(--mono);letter-spacing:.04em;padding:8px 14px 4px;background:rgba(255,241,245,.82)}
-.empty{text-align:center;padding:28px 0;color:var(--text3);font-size:15px;font-family:var(--mono)}
-.section-lbl{font-size:15px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;padding:4px 0 8px;font-family:var(--mono)}
+.date-sep{font-size:11px;color:#cb8fa3;font-family:var(--mono);letter-spacing:.04em;padding:8px 14px 4px;background:rgba(255,241,245,.82)}
+.empty{text-align:center;padding:28px 0;color:var(--text3);font-size:13px;font-family:var(--mono)}
+.section-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;padding:4px 0 8px;font-family:var(--mono)}
 .swipe-wrap{position:relative;overflow:hidden;background:#fff6f9}
 .swipe-actions{position:absolute;top:0;right:0;bottom:0;display:flex;z-index:1}
 .swipe-btn{width:70px;border:none;color:#fff;font-family:var(--font);font-size:15px;cursor:pointer}
@@ -109,7 +110,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 @keyframes ptr-spin{to{transform:rotate(360deg)}}
 .pull-indicator{display:none}
 .chart-stage{position:relative;width:220px;height:220px;margin:0 auto}
-.pie-tooltip{display:none;position:absolute;background:rgba(255,248,250,.98);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;font-family:var(--mono);color:var(--text);box-shadow:0 4px 16px rgba(215,142,168,.18);text-align:center;pointer-events:none;z-index:10;left:50%;transform:translateX(-50%);top:calc(50% - 40px);min-width:140px;max-width:200px}
+.pie-tooltip{display:none;position:absolute;background:rgba(255,248,250,.98);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:11px;font-family:var(--mono);color:var(--text);box-shadow:0 4px 16px rgba(215,142,168,.18);text-align:center;pointer-events:none;z-index:10;left:50%;transform:translateX(-50%);top:calc(50% - 40px);min-width:140px;max-width:200px}
 .pie-tooltip.on{display:block}
 .sort-sheet{display:flex;flex-direction:column;gap:8px}
 .sort-opt{width:100%;text-align:left;background:rgba(255,247,250,.9);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-family:var(--font);font-size:15px;color:var(--text);cursor:pointer}
@@ -117,12 +118,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 /* analytics premium cards */
 .analytics-block{margin-bottom:8px}
 .anl-card{background:linear-gradient(135deg,rgba(255,246,249,.95) 0%,rgba(255,235,244,.95) 100%);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:8px;box-shadow:0 4px 18px rgba(215,142,168,.1)}
-.anl-title{font-size:15px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono);margin-bottom:12px}
+.anl-title{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono);margin-bottom:12px}
 .anl-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .anl-item{background:rgba(255,255,255,.5);border-radius:12px;padding:10px 12px;border:1px solid rgba(240,217,225,.6)}
-.anl-item .lbl{font-size:15px;color:var(--text3);font-family:var(--mono);letter-spacing:.03em;line-height:1.3}
+.anl-item .lbl{font-size:11px;color:var(--text3);font-family:var(--mono);letter-spacing:.03em;line-height:1.3}
 .anl-item .val{font-size:18px;font-weight:500;color:var(--text);margin-top:3px;letter-spacing:-.02em}
-.anl-item .sub{font-size:15px;color:var(--text3);font-family:var(--mono);margin-top:1px}
+.anl-item .sub{font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:1px}
 .anl-item.pos .val{color:var(--green)}
 .anl-item.neg .val{color:var(--red)}
 .anl-item.wide{grid-column:1/-1}
@@ -155,12 +156,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 /* day budget modal */
 .day-stat-row{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line)}
 .day-stat-row:last-child{border-bottom:none}
-.day-stat-lbl{font-size:13px;color:var(--text3);font-family:var(--mono);letter-spacing:.02em}
+.day-stat-lbl{font-size:11px;color:var(--text3);font-family:var(--mono);letter-spacing:.02em}
 .day-stat-val{font-size:15px;font-weight:500;font-family:var(--mono);color:var(--text)}
 .day-status-ok{color:#2a9d78}
 .day-status-warn{color:#b07030}
 .day-status-danger{color:#d94f6e}
-.day-main-num{font-size:34px;font-weight:500;letter-spacing:-.03em;margin:8px 0 4px;line-height:1}
+.day-main-num{font-size:32px;font-weight:600;letter-spacing:-.03em;margin:8px 0 4px;line-height:1}
 .day-section{background:rgba(255,255,255,.5);border-radius:12px;padding:10px 12px;border:1px solid rgba(240,217,225,.6);margin-bottom:8px}
 </style>
 </head>
@@ -194,7 +195,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="stat" style="cursor:pointer" onclick="openStatDetail('income')"><div class="stat-lbl">доходы</div><div class="stat-val" id="s-inc" style="color:var(--green)">0 ₽</div></div>
         <div class="stat" style="cursor:pointer" onclick="openStatDetail('expense')"><div class="stat-lbl">расходы</div><div class="stat-val" id="s-exp" style="color:var(--red)">0 ₽</div></div>
         <div class="stat"><div class="stat-lbl">баланс</div><div class="stat-val" id="s-bal">0 ₽</div></div>
-        <div class="stat" style="cursor:pointer" onclick="openDayBudget()"><div class="stat-lbl">сегодня</div><div class="stat-val" id="s-today" style="font-size:16px">— ₽</div></div>
+        <div class="stat" style="cursor:pointer" onclick="openDayBudget()"><div class="stat-lbl">сегодня</div><div class="stat-val" id="s-today">— ₽</div></div>
       </div>
       <div id="breakdown-block" style="display:none;margin-bottom:8px"></div>
       <div class="sync-row" id="sync-row">
@@ -211,8 +212,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           </div>
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sync-title">Синхронизация...</div>
-          <div style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-top:1px" id="sync-sub"></div>
+          <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sync-title">Синхронизация...</div>
+          <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:1px" id="sync-sub"></div>
         </div>
       </div>
       <div class="card-flush"><div id="entries-list"><div class="empty">нет записей</div></div></div>
@@ -1055,7 +1056,7 @@ function drawPieChart(catTotals,total){
         const i=els[0].index;const v=data[i];const p=total?Math.round(v/total*100):0;
         tt.innerHTML='<div style="font-size:10px;color:var(--text3);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px">'+labels[i]+'</div>'
           +'<div style="font-size:15px;font-weight:500;color:var(--text)">'+v.toLocaleString('ru')+' ₽</div>'
-          +'<div style="font-size:12px;color:var(--accent);margin-top:2px">'+p+'%</div>';
+          +'<div style="font-size:11px;color:var(--accent);margin-top:2px">'+p+'%</div>';
         tt.classList.add('on');
       }
     }
@@ -1537,7 +1538,7 @@ function renderDayBudget(){
   if(!d.hasPlan){
     el.innerHTML=`<div style="text-align:center;padding:24px 0;color:var(--text3);font-size:15px">
       Задай план расходов в разделе<br>
-      <button onclick="closeM('day-budget');switchS('budget')" style="margin-top:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:14px;cursor:pointer;font-family:var(--font)">Открыть Бюджет</button>
+      <button onclick="closeM('day-budget');switchS('budget')" style="margin-top:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:15px;cursor:pointer;font-family:var(--font)">Открыть Бюджет</button>
     </div>`;
     return;
   }
@@ -1844,7 +1845,7 @@ function showStatDetailFor(who){
       <div style="width:8px;height:8px;border-radius:50%;background:${colors[i]};flex-shrink:0"></div>
       <span style="font-size:13px;color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l}</span>
       <span style="font-size:13px;font-family:var(--mono);color:var(--text);flex-shrink:0">${data[i].toLocaleString('ru')} ₽</span>
-      <span style="font-size:12px;color:var(--text3);font-family:var(--mono);flex-shrink:0;min-width:32px;text-align:right">${p}%</span>
+      <span style="font-size:11px;color:var(--text3);font-family:var(--mono);flex-shrink:0;min-width:32px;text-align:right">${p}%</span>
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0"><path d="M4 2l4 4-4 4" stroke="var(--text3)" stroke-width="1.2" stroke-linecap="round"/></svg>
     </div>`;
   }).join('');
