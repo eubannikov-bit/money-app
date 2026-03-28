@@ -469,6 +469,11 @@ const MANDATORY_CATS=new Set(['Аренда / ипотека','Кредиты и
 const CAT_COLORS=['#c47fa0','#8b6fbf','#5f9ecb','#e0956a','#6bae8f','#c9677e','#7b9fd4','#d4a06a','#8bbf8e','#bf8b7e','#a08bbf','#6baeaa','#c4a07f','#8b8fbf','#c4bf7f','#7fafbf','#bf7fa0','#9fbf7f','#bf9f7f','#8fbfbf','#bfaf8f','#af8fbf','#bf8faf'];
 const MONTHS_RU=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
 const STORAGE_KEY='couple_app_v6';
+function localDateStr(d){
+  const dt=d||new Date();
+  return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+}
+
 let entrySeq=0;
 
 function loadData(){try{const d=localStorage.getItem(STORAGE_KEY);return d?JSON.parse(d):null;}catch(e){return null;}}
@@ -698,7 +703,7 @@ function resetEntryForm(){
   editingEntryIdx=-1;
   document.getElementById('entry-modal-title').textContent='Новая запись';
   document.getElementById('btn-del-entry').style.display='none';
-  document.getElementById('e-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('e-date').value=localDateStr();
   setET('expense');
   document.getElementById('e-amt').value='';
   document.getElementById('e-cmt').value='';
@@ -1377,7 +1382,7 @@ function renderGoalDetail(){
 function openAddContribution(){
   closeM('goal-detail');
   document.getElementById('contrib-amt').value='';
-  document.getElementById('contrib-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('contrib-date').value=localDateStr();
   openM('add-contribution');
 }
 
@@ -1454,7 +1459,7 @@ function getDayBudgetData(who){
   const daysInMonth=new Date(today.getFullYear(),today.getMonth()+1,0).getDate();
   const dayOfMonth=today.getDate();
   const daysLeft=daysInMonth-dayOfMonth+1;
-  const todayStr=today.toISOString().split('T')[0];
+  const todayStr=localDateStr(today);
 
   // Фильтр записей по месяцу и пользователю
   const monthEntries=entries.filter(e=>e.date&&e.date.startsWith(monthKey)&&(who==='all'||e.who===who));
@@ -1893,7 +1898,7 @@ document.addEventListener('click',function(e){
 })();
 
 // init
-document.getElementById('e-date').value=new Date().toISOString().split('T')[0];
+document.getElementById('e-date').value=localDateStr();
 setET('expense');
 updateSortUi();
 buildMonthSelectors();
