@@ -778,7 +778,7 @@ async function addEntry(){
   const comment=document.getElementById('e-cmt').value.trim();
   const who=document.getElementById('e-who').value;
   if(!date||!amount||!cat)return;
-  const entry={id:'loc_'+Date.now()+'_'+(++entrySeq),type:eType,date,cat,amount,comment,who,synced:false};
+  const entry={id:'loc_'+Date.now()+'_'+(++entrySeq),type:eType,date,cat,amount,comment,who,synced:false,_ts:Date.now()};
   let oldEntry=null;
   if(editingEntryIdx>=0){
     oldEntry=Object.assign({},entries[editingEntryIdx]);
@@ -846,10 +846,12 @@ function renderEntries(){
 
   let filtered=monthEntries.map((e,i)=>({...e,_i:entries.indexOf(e)})).filter(e=>eTab==='all'||e.type===eTab);
   filtered.sort((a,b)=>{
-    if(sortMode==='date_desc'){const dc=(b.date||'').localeCompare(a.date||'');return dc!==0?dc:(a._i-b._i);}// _i: меньший индекс = добавлен позже (unshift)
-    if(sortMode==='date_asc'){const dc=(a.date||'').localeCompare(b.date||'');return dc!==0?dc:(a._i-b._i);}
-    if(sortMode==='amount_desc')return(Number(b.amount)||0)-(Number(a.amount)||0)||(b.date||'').localeCompare(a.date||'');
-    if(sortMode==='amount_asc')return(Number(a.amount)||0)-(Number(b.amount)||0)||(b.date||'').localeCompare(a.date||'');
+    // Вторичный ключ: _ts (timestamp добавления) если есть, иначе _i (позиция, меньше = позже через unshift)
+    const secondary=(a._ts&&b._ts)?(b._ts-a._ts):(a._i-b._i);
+    if(sortMode==='date_desc'){const dc=(b.date||'').localeCompare(a.date||'');return dc!==0?dc:secondary;}
+    if(sortMode==='date_asc'){const dc=(a.date||'').localeCompare(b.date||'');return dc!==0?dc:secondary;}
+    if(sortMode==='amount_desc')return(Number(b.amount)||0)-(Number(a.amount)||0)||(b.date||'').localeCompare(a.date||'')||secondary;
+    if(sortMode==='amount_asc')return(Number(a.amount)||0)-(Number(b.amount)||0)||(b.date||'').localeCompare(a.date||'')||secondary;
     return 0;
   });
 
