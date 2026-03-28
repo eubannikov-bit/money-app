@@ -79,7 +79,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .bud-row:last-child{border-bottom:none}
 .wish-img-box{width:54px;height:54px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .link-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:var(--bg3);border-radius:20px;font-size:15px;color:var(--text2);text-decoration:none;border:1px solid var(--line2);font-family:var(--mono)}
-.sync-row{display:flex;align-items:center;gap:8px;padding:9px 12px;background:rgba(255,246,249,.9);border:1px solid var(--line);border-radius:12px;margin-bottom:8px}
+.sync-row{display:flex;align-items:center;gap:0;padding:9px 14px;background:rgba(255,246,249,.9);border:1px solid var(--line);border-radius:12px;margin-bottom:8px}
 .sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .3s}
 .sync-dot.ok{background:var(--accent)}.sync-dot.wait{background:var(--amber)}.sync-dot.err{background:var(--red)}.sync-dot.idle{background:var(--line2)}
 .date-sep{font-size:15px;color:#cb8fa3;font-family:var(--mono);letter-spacing:.04em;padding:8px 14px 4px;background:rgba(255,241,245,.82)}
@@ -92,7 +92,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .swipe-btn.delete{background:#d94f6e}
 .swipe-content{position:relative;z-index:2;background:#fff6f9;transition:transform .26s cubic-bezier(.4,0,.2,1)}
 .swipe-wrap.swiped .swipe-content{transform:translateX(-140px)}
-.ptr-wrap{position:absolute;top:calc(var(--safe-top) + 80px);left:50%;transform:translateX(-50%);z-index:9;pointer-events:none;display:flex;flex-direction:column;align-items:center;width:auto}
+.ptr-wrap{position:absolute;top:calc(var(--safe-top) + 120px);left:50%;transform:translateX(-50%);z-index:9;pointer-events:none;display:flex;flex-direction:column;align-items:center;width:auto}
 .ptr-arrow{width:28px;height:28px;display:flex;align-items:center;justify-content:center;opacity:0;transform:translateY(-12px);transition:opacity .18s,transform .18s}
 .ptr-arrow svg{transition:transform .22s cubic-bezier(.4,0,.2,1)}
 .ptr-arrow.visible{opacity:1;transform:translateY(0)}
@@ -143,7 +143,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .goal-detail-view{display:none}
 .goal-detail-view.on{display:block}
 
-.anl-user-filter{display:flex;gap:6px;margin-bottom:12px}
+.anl-user-filter{display:flex;gap:6px;margin-bottom:8px}
+.anl-compare-filter{display:flex;gap:6px;margin-bottom:12px}
+.anl-compare-btn{flex:1;padding:5px 8px;border-radius:8px;font-size:11px;cursor:pointer;border:1px solid var(--line2);background:rgba(255,247,250,.9);color:var(--text3);font-family:var(--mono);text-align:center;transition:all .12s;letter-spacing:.02em}
+.anl-compare-btn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
 .anl-user-btn{flex:1;padding:6px 8px;border-radius:8px;font-size:12px;cursor:pointer;border:1px solid var(--line2);background:rgba(255,247,250,.9);color:var(--text3);font-family:var(--font);text-align:center;transition:all .12s}
 .anl-user-btn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
 </style>
@@ -182,9 +185,14 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
       <div id="breakdown-block" style="display:none;margin-bottom:8px"></div>
       <div class="sync-row" id="sync-row">
-        <div class="sync-dot ok" id="sync-dot"></div>
-        <div class="sync-spin" id="sync-spin"></div>
-        <div style="flex:1"><div style="font-size:15px;font-weight:500;color:var(--text)" id="sync-title">Подключено к Google Sheets</div><div style="font-size:13px;color:var(--text3);font-family:var(--mono);margin-top:1px" id="sync-sub">Записи отправляются автоматически</div></div>
+        <div style="width:24px;height:24px;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-right:10px">
+          <div class="sync-dot ok" id="sync-dot"></div>
+          <div class="sync-spin" id="sync-spin"></div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sync-title">Подключено к Google Sheets</div>
+          <div style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-top:1px" id="sync-sub">Записи отправляются автоматически</div>
+        </div>
       </div>
       <div class="card-flush"><div id="entries-list"><div class="empty">нет записей</div></div></div>
     </div>
@@ -222,6 +230,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <button class="anl-user-btn on" id="anl-u-all" onclick="setAnlUser('all')">Общее</button>
           <button class="anl-user-btn" id="anl-u-e" onclick="setAnlUser('Евгений')">Евгений</button>
           <button class="anl-user-btn" id="anl-u-a" onclick="setAnlUser('Аннушка')">Аннушка</button>
+        </div>
+        <div class="anl-compare-filter" id="anl-compare-filter">
+          <button class="anl-compare-btn on" id="anl-c-month" onclick="setAnlCompare('month')">К прошлому месяцу</button>
+          <button class="anl-compare-btn" id="anl-c-year" onclick="setAnlCompare('year')">Год к году</button>
         </div>
       </div>
       <div class="analytics-block" id="analytics-block"></div>
@@ -516,7 +528,7 @@ async function sendToSheets(entry){
   try{
     await fetch(SHEETS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(entry)});
     entry.synced=true;
-    setSyncState('ok','Подключено к Google Sheets','Запись добавлена');
+    setSyncState('ok','Запись добавлена','');
   }catch(e){
     entry.synced=false;
     setSyncState('err','Ошибка отправки','Проверьте подключение');
@@ -697,7 +709,7 @@ async function deleteEntry(){
   document.getElementById('btn-del-entry').style.display='none';
   closeM('add-entry');saveData();renderEntries();
   await postActionToSheets({action:'delete',id:entry.id,entry});
-  setSyncState('ok','Запись удалена','');
+  setSyncState('ok','Удалено','');
 }
 async function addEntry(){
   const date=document.getElementById('e-date').value;
@@ -1059,46 +1071,37 @@ function renderAnalytics(selMonth,prevMonth,filtered,prevFiltered,expTotal,catTo
     </div>`;
   }
 
-  el.innerHTML=`<div class="anl-card">
-    <div class="anl-title">аналитика месяца</div>
-    <div class="anl-grid">
-      ${anl('расходы к прошлому мес.',fmt(expChg)!==null?fmt(expChg):'—',prevExpTotal?prevExpTotal.toLocaleString('ru')+' ₽ в прошлом':null,expChg!==null?(expChg>0?'neg':'pos'):'')}
-      ${anl('доходы к прошлому мес.',fmt(incChg)!==null?fmt(incChg):'—',prevIncTotal?prevIncTotal.toLocaleString('ru')+' ₽ в прошлом':null,incChg!==null?(incChg>0?'pos':'neg'):'')}
-      ${anl('баланс к прошлому мес.',fmt(balChg)!==null?fmt(balChg):'—',null,balChg!==null?(balChg>0?'pos':'neg'):'')}
-      ${anl('обязательные расходы',mandatoryPct+'%','от всех расходов','')}
-      ${anl('необязательные расходы',discPct+'%','от всех расходов','')}
-      ${anl('средний расход в день',avgPerDay.toLocaleString('ru')+' ₽',daysElapsed+' дн. данных','')}
-      ${anl('прогноз расходов',forecast.toLocaleString('ru')+' ₽','до конца месяца',forecast>expTotal?'neg':'')}
-      ${anl('прогноз баланса',( forecastBalance>=0?'+':'')+forecastBalance.toLocaleString('ru')+' ₽','к концу месяца',forecastBalance>=0?'pos':'neg')}
-    </div>
-    ${maxGrowCat?`<div style="margin-top:8px;font-size:13px;color:var(--red)">↑ Рост: ${maxGrowCat} (+${maxGrowPct}%)</div>`:''}
-    ${maxDropCat&&maxDropCat!==maxGrowCat?`<div style="margin-top:4px;font-size:13px;color:var(--green)">↓ Снижение: ${maxDropCat} (${maxDropPct}%)</div>`:''}
-  </div>`;
-
-  // --- Аналитика год к году ---
+  // ---- Выбор режима сравнения ----
   const isYearMode=selMonth&&selMonth.startsWith('year_');
-  if(isYearMode){return;} // для годовой аналитики YoY не показываем
-  const [yCur,mCur]=selMonth.split('-').map(Number);
-  const sameMonthLastYear=`${yCur-1}-${String(mCur).padStart(2,'0')}`;
-  const lyAll=entries.filter(e=>e.date&&e.date.startsWith(sameMonthLastYear));
-  const lyFiltered=anlUser==='all'?lyAll:lyAll.filter(e=>e.who===anlUser);
-  if(lyFiltered.length>0){
-    const lyExp=lyFiltered.filter(e=>e.type==='expense').reduce((a,e)=>a+e.amount,0);
-    const lyInc=lyFiltered.filter(e=>e.type==='income').reduce((a,e)=>a+e.amount,0);
-    const lyBal=lyInc-lyExp;
-    const lyMand=lyFiltered.filter(e=>e.type==='expense'&&MANDATORY_CATS.has(e.cat)).reduce((a,e)=>a+e.amount,0);
-    const lyDisc=lyExp-lyMand;
-    const [lyY,lyM]=sameMonthLastYear.split('-').map(Number);
-    const lyDays=new Date(lyY,lyM,0).getDate();
-    const lyAvg=lyDays>0?Math.round(lyExp/lyDays):0;
+  if(isYearMode||anlCompare==='month'){
+    // Показываем карточку "к прошлому месяцу"
+    el.innerHTML=`<div class="anl-card">
+      <div class="anl-title">аналитика${isYearMode?' года':' месяца'}</div>
+      <div class="anl-grid">
+        ${anl('расходы к прошл. периоду',fmt(expChg)!==null?fmt(expChg):'—',prevExpTotal?prevExpTotal.toLocaleString('ru')+' ₽ ранее':null,expChg!==null?(expChg>0?'neg':'pos'):'')}
+        ${anl('доходы к прошл. периоду',fmt(incChg)!==null?fmt(incChg):'—',prevIncTotal?prevIncTotal.toLocaleString('ru')+' ₽ ранее':null,incChg!==null?(incChg>0?'pos':'neg'):'')}
+        ${anl('баланс к прошл. периоду',fmt(balChg)!==null?fmt(balChg):'—',null,balChg!==null?(balChg>0?'pos':'neg'):'')}
+        ${anl('обязательные расходы',mandatoryPct+'%','от всех расходов','')}
+        ${anl('необязательные расходы',discPct+'%','от всех расходов','')}
+        ${anl('средний расход в день',avgPerDay.toLocaleString('ru')+' ₽',daysElapsed+' дн. данных','')}
+        ${isCurrentMonth?anl('прогноз расходов',forecast.toLocaleString('ru')+' ₽','до конца месяца',forecast>expTotal?'neg':''):''}
+        ${isCurrentMonth?anl('прогноз баланса',(forecastBalance>=0?'+':'')+forecastBalance.toLocaleString('ru')+' ₽','к концу месяца',forecastBalance>=0?'pos':'neg'):''}
+      </div>
+      ${maxGrowCat?`<div style="margin-top:8px;font-size:13px;color:var(--red)">↑ Рост: ${maxGrowCat} (+${maxGrowPct}%)</div>`:''}
+      ${maxDropCat&&maxDropCat!==maxGrowCat?`<div style="margin-top:4px;font-size:13px;color:var(--green)">↓ Снижение: ${maxDropCat} (${maxDropPct}%)</div>`:''}
+    </div>`;
+    if(isYearMode){return;}
+  }
 
-    const curMand=filtered.filter(e=>e.type==='expense'&&MANDATORY_CATS.has(e.cat)).reduce((a,e)=>a+e.amount,0);
-    const curDisc=expTotal-curMand;
-    const curBal=incTotal-expTotal;
+  if(anlCompare==='year'){
+    // ---- Аналитика год к году ----
+    const [yCur,mCur]=selMonth.split('-').map(Number);
+    const sameMonthLastYear=`${yCur-1}-${String(mCur).padStart(2,'0')}`;
+    const lyAll=entries.filter(e=>e.date&&e.date.startsWith(sameMonthLastYear));
+    const lyFiltered=anlUser==='all'?lyAll:lyAll.filter(e=>e.who===anlUser);
 
     function yoyPct(cur,prev){if(!prev)return null;return Math.round((cur-prev)/prev*100);}
     function yoyFmt(v){if(v===null)return'—';return(v>=0?'+':'')+v+'%';}
-
     function anlY(lbl,cur,ly,cls){
       const chg=yoyPct(cur,ly);
       return`<div class="anl-item${cls?' '+cls:''}">
@@ -1108,16 +1111,31 @@ function renderAnalytics(selMonth,prevMonth,filtered,prevFiltered,expTotal,catTo
       </div>`;
     }
 
-    const userLabel=anlUser==='all'?'все':anlUser;
-    el.innerHTML+=`<div class="anl-card" style="margin-top:8px">
-      <div class="anl-title">Год к году — ${MONTHS_RU[mCur-1]}${anlUser!=='all'?' · '+userLabel:''}</div>
+    if(!lyFiltered.length){
+      el.innerHTML=`<div class="anl-card"><div class="anl-title">Год к году</div><div class="empty" style="padding:8px 0">Нет данных за ${MONTHS_RU[mCur-1]} ${yCur-1}</div></div>`;
+      return;
+    }
+    const lyExp=lyFiltered.filter(e=>e.type==='expense').reduce((a,e)=>a+e.amount,0);
+    const lyInc=lyFiltered.filter(e=>e.type==='income').reduce((a,e)=>a+e.amount,0);
+    const lyBal=lyInc-lyExp;
+    const lyMand=lyFiltered.filter(e=>e.type==='expense'&&MANDATORY_CATS.has(e.cat)).reduce((a,e)=>a+e.amount,0);
+    const lyDisc=lyExp-lyMand;
+    const [lyY,lyM]=sameMonthLastYear.split('-').map(Number);
+    const lyDays=new Date(lyY,lyM,0).getDate();
+    const lyAvg=lyDays>0?Math.round(lyExp/lyDays):0;
+    const curMand=filtered.filter(e=>e.type==='expense'&&MANDATORY_CATS.has(e.cat)).reduce((a,e)=>a+e.amount,0);
+    const curDisc=expTotal-curMand;
+    const curBal=incTotal-expTotal;
+    const userLabel=anlUser==='all'?'':' · '+anlUser;
+    el.innerHTML=`<div class="anl-card">
+      <div class="anl-title">Год к году — ${MONTHS_RU[mCur-1]}${userLabel}</div>
       <div class="anl-grid">
-        ${anlY('Расходы к прош. году',expTotal,lyExp,yoyPct(expTotal,lyExp)!==null?(yoyPct(expTotal,lyExp)>0?'neg':'pos'):'')}
-        ${anlY('Доходы к прош. году',incTotal,lyInc,yoyPct(incTotal,lyInc)!==null?(yoyPct(incTotal,lyInc)>0?'pos':'neg'):'')}
-        ${anlY('Баланс к прош. году',curBal,lyBal,yoyPct(curBal,lyBal)!==null?(yoyPct(curBal,lyBal)>0?'pos':'neg'):'')}
-        ${anlY('Обяз. расходы к году',curMand,lyMand,yoyPct(curMand,lyMand)!==null?(yoyPct(curMand,lyMand)>0?'neg':'pos'):'')}
-        ${anlY('Необяз. к году',curDisc,lyDisc,yoyPct(curDisc,lyDisc)!==null?(yoyPct(curDisc,lyDisc)>0?'neg':'pos'):'')}
-        ${anlY('Ср. расход/день к году',avgPerDay,lyAvg,yoyPct(avgPerDay,lyAvg)!==null?(yoyPct(avgPerDay,lyAvg)>0?'neg':'pos'):'')}
+        ${anlY('Расходы',expTotal,lyExp,yoyPct(expTotal,lyExp)!==null?(yoyPct(expTotal,lyExp)>0?'neg':'pos'):'')}
+        ${anlY('Доходы',incTotal,lyInc,yoyPct(incTotal,lyInc)!==null?(yoyPct(incTotal,lyInc)>0?'pos':'neg'):'')}
+        ${anlY('Баланс',curBal,lyBal,yoyPct(curBal,lyBal)!==null?(yoyPct(curBal,lyBal)>0?'pos':'neg'):'')}
+        ${anlY('Обязательные',curMand,lyMand,yoyPct(curMand,lyMand)!==null?(yoyPct(curMand,lyMand)>0?'neg':'pos'):'')}
+        ${anlY('Необязательные',curDisc,lyDisc,yoyPct(curDisc,lyDisc)!==null?(yoyPct(curDisc,lyDisc)>0?'neg':'pos'):'')}
+        ${anlY('Ср. расход/день',avgPerDay,lyAvg,yoyPct(avgPerDay,lyAvg)!==null?(yoyPct(avgPerDay,lyAvg)>0?'neg':'pos'):'')}
       </div>
     </div>`;
   }
@@ -1154,6 +1172,15 @@ function saveBudget(){
 
 
 let anlUser='all'; // 'all' | 'Евгений' | 'Аннушка'
+let anlCompare='month'; // 'month' | 'year'
+function setAnlCompare(mode){
+  anlCompare=mode;
+  const cm=document.getElementById('anl-c-month');
+  const cy=document.getElementById('anl-c-year');
+  if(cm)cm.classList.toggle('on',mode==='month');
+  if(cy)cy.classList.toggle('on',mode==='year');
+  renderBudgetAnalytics();
+}
 function setAnlUser(u){
   anlUser=u;
   ['all','Евгений','Аннушка'].forEach(v=>{
