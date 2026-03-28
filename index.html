@@ -25,8 +25,8 @@
 html,body{height:100%;overflow:hidden;background:var(--bg2)}
 body{font-family:var(--font);display:flex;justify-content:center;align-items:stretch;background:linear-gradient(180deg,#fff8fb 0%,#fff1f5 55%,#ffeef4 100%)}
 .wrap{width:100%;max-width:430px;background:transparent;display:flex;flex-direction:column;height:100%;position:relative;overflow:hidden}
-.nav{display:flex;padding:12px 4px calc(var(--safe-bot) + 26px);gap:0;background:rgba(255,245,248,.94);border-top:1px solid var(--line);flex-shrink:0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
-.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;border-radius:8px;cursor:pointer;transition:background .12s}
+.nav{display:flex;padding:6px 4px calc(var(--safe-bot) + 16px);gap:0;background:rgba(255,245,248,.94);border-top:1px solid var(--line);flex-shrink:0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:4px 4px;border-radius:6px;cursor:pointer;transition:background .12s}
 .ni.on .nic,.ni.on .nil{color:var(--accent)}
 .nic{color:var(--text3);display:flex;align-items:center;justify-content:center;width:26px;height:26px}
 .nil{display:none}
@@ -92,7 +92,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .swipe-btn.delete{background:#d94f6e}
 .swipe-content{position:relative;z-index:2;background:#fff6f9;transition:transform .26s cubic-bezier(.4,0,.2,1)}
 .swipe-wrap.swiped .swipe-content{transform:translateX(-140px)}
-.ptr-wrap{position:absolute;top:calc(var(--safe-top) + 120px);left:50%;transform:translateX(-50%);z-index:9;pointer-events:none;display:flex;flex-direction:column;align-items:center;width:auto}
+.ptr-wrap{position:absolute;top:calc(var(--safe-top) + 100px);left:50%;transform:translateX(-50%);z-index:9;pointer-events:none;display:flex;flex-direction:column;align-items:center;width:auto}
 .ptr-arrow{width:28px;height:28px;display:flex;align-items:center;justify-content:center;opacity:0;transform:translateY(-12px);transition:opacity .18s,transform .18s}
 .ptr-arrow svg{transition:transform .22s cubic-bezier(.4,0,.2,1)}
 .ptr-arrow.visible{opacity:1;transform:translateY(0)}
@@ -131,7 +131,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .breakdown-row{display:flex;align-items:center;gap:8px;padding:6px 0}
 .hdr-right{display:flex;align-items:center;gap:8px}
 .month-sel-small{font-size:15px;padding:4px 28px 4px 10px;border-radius:8px;border:1px solid var(--line2);background:rgba(255,247,250,.9);color:var(--text);font-family:var(--font);-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3l3 4 3-4' fill='none' stroke='%23c09aa7' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
-.fab{position:fixed;right:20px;bottom:calc(var(--safe-bot) + 108px);z-index:25;width:54px;height:54px;border-radius:50%;background:rgba(215,142,168,.88);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;line-height:1;font-family:var(--font);box-shadow:0 6px 20px rgba(215,142,168,.42),0 2px 8px rgba(215,142,168,.22);-webkit-tap-highlight-color:transparent}
+.fab{position:fixed;right:20px;bottom:calc(var(--safe-bot) + 90px);z-index:25;width:54px;height:54px;border-radius:50%;background:rgba(215,142,168,.88);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;line-height:1;font-family:var(--font);box-shadow:0 6px 20px rgba(215,142,168,.42),0 2px 8px rgba(215,142,168,.22);-webkit-tap-highlight-color:transparent}
 .fab:active{transform:scale(.94)}
 .thumb-list{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .thumb-list img{width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
@@ -149,6 +149,14 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .anl-compare-btn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
 .anl-user-btn{flex:1;padding:6px 8px;border-radius:8px;font-size:12px;cursor:pointer;border:1px solid var(--line2);background:rgba(255,247,250,.9);color:var(--text3);font-family:var(--font);text-align:center;transition:all .12s}
 .anl-user-btn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* analytics swipe */
+.anl-swipe-wrap{overflow:hidden;position:relative}
+.anl-swipe-track{display:flex;transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.anl-slide{min-width:100%;flex-shrink:0}
+.anl-dots{display:flex;justify-content:center;gap:6px;margin-top:6px;margin-bottom:2px}
+.anl-dot{width:5px;height:5px;border-radius:50%;background:var(--line2);transition:background .2s}
+.anl-dot.on{background:var(--accent)}
 </style>
 </head>
 <body>
@@ -190,8 +198,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <div class="sync-spin" id="sync-spin"></div>
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sync-title">Подключено к Google Sheets</div>
-          <div style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-top:1px" id="sync-sub">Записи отправляются автоматически</div>
+          <div style="font-size:13px;color:var(--text3);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sync-title">Подключено к Google Sheets</div>
+          <div style="font-size:11px;color:var(--text3);opacity:.75;font-family:var(--mono);margin-top:1px" id="sync-sub">Записи отправляются автоматически</div>
         </div>
       </div>
       <div class="card-flush"><div id="entries-list"><div class="empty">нет записей</div></div></div>
@@ -231,12 +239,15 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <button class="anl-user-btn" id="anl-u-e" onclick="setAnlUser('Евгений')">Евгений</button>
           <button class="anl-user-btn" id="anl-u-a" onclick="setAnlUser('Аннушка')">Аннушка</button>
         </div>
-        <div class="anl-compare-filter" id="anl-compare-filter">
-          <button class="anl-compare-btn on" id="anl-c-month" onclick="setAnlCompare('month')">К прошлому месяцу</button>
-          <button class="anl-compare-btn" id="anl-c-year" onclick="setAnlCompare('year')">Год к году</button>
-        </div>
+
       </div>
-      <div class="analytics-block" id="analytics-block"></div>
+      <div class="anl-swipe-wrap" id="anl-swipe-wrap">
+        <div class="anl-swipe-track" id="anl-swipe-track">
+          <div class="anl-slide analytics-block" id="analytics-block"></div>
+          <div class="anl-slide analytics-block" id="analytics-block-yoy"></div>
+        </div>
+        <div class="anl-dots"><div class="anl-dot on" id="anl-dot-0"></div><div class="anl-dot" id="anl-dot-1"></div></div>
+      </div>
       <div class="insights-block" id="insights-block"></div>
     </div>
   </div>
@@ -1071,74 +1082,23 @@ function renderAnalytics(selMonth,prevMonth,filtered,prevFiltered,expTotal,catTo
     </div>`;
   }
 
-  // ---- Выбор режима сравнения ----
+  // Показываем карточку к прошлому месяцу в слайде 0
   const isYearMode=selMonth&&selMonth.startsWith('year_');
-  if(isYearMode||anlCompare==='month'){
-    // Показываем карточку "к прошлому месяцу"
-    el.innerHTML=`<div class="anl-card">
-      <div class="anl-title">аналитика${isYearMode?' года':' месяца'}</div>
-      <div class="anl-grid">
-        ${anl('расходы к прошл. периоду',fmt(expChg)!==null?fmt(expChg):'—',prevExpTotal?prevExpTotal.toLocaleString('ru')+' ₽ ранее':null,expChg!==null?(expChg>0?'neg':'pos'):'')}
-        ${anl('доходы к прошл. периоду',fmt(incChg)!==null?fmt(incChg):'—',prevIncTotal?prevIncTotal.toLocaleString('ru')+' ₽ ранее':null,incChg!==null?(incChg>0?'pos':'neg'):'')}
-        ${anl('баланс к прошл. периоду',fmt(balChg)!==null?fmt(balChg):'—',null,balChg!==null?(balChg>0?'pos':'neg'):'')}
-        ${anl('обязательные расходы',mandatoryPct+'%','от всех расходов','')}
-        ${anl('необязательные расходы',discPct+'%','от всех расходов','')}
-        ${anl('средний расход в день',avgPerDay.toLocaleString('ru')+' ₽',daysElapsed+' дн. данных','')}
-        ${isCurrentMonth?anl('прогноз расходов',forecast.toLocaleString('ru')+' ₽','до конца месяца',forecast>expTotal?'neg':''):''}
-        ${isCurrentMonth?anl('прогноз баланса',(forecastBalance>=0?'+':'')+forecastBalance.toLocaleString('ru')+' ₽','к концу месяца',forecastBalance>=0?'pos':'neg'):''}
-      </div>
-      ${maxGrowCat?`<div style="margin-top:8px;font-size:13px;color:var(--red)">↑ Рост: ${maxGrowCat} (+${maxGrowPct}%)</div>`:''}
-      ${maxDropCat&&maxDropCat!==maxGrowCat?`<div style="margin-top:4px;font-size:13px;color:var(--green)">↓ Снижение: ${maxDropCat} (${maxDropPct}%)</div>`:''}
-    </div>`;
-    if(isYearMode){return;}
-  }
-
-  if(anlCompare==='year'){
-    // ---- Аналитика год к году ----
-    const [yCur,mCur]=selMonth.split('-').map(Number);
-    const sameMonthLastYear=`${yCur-1}-${String(mCur).padStart(2,'0')}`;
-    const lyAll=entries.filter(e=>e.date&&e.date.startsWith(sameMonthLastYear));
-    const lyFiltered=anlUser==='all'?lyAll:lyAll.filter(e=>e.who===anlUser);
-
-    function yoyPct(cur,prev){if(!prev)return null;return Math.round((cur-prev)/prev*100);}
-    function yoyFmt(v){if(v===null)return'—';return(v>=0?'+':'')+v+'%';}
-    function anlY(lbl,cur,ly,cls){
-      const chg=yoyPct(cur,ly);
-      return`<div class="anl-item${cls?' '+cls:''}">
-        <div class="lbl">${lbl}</div>
-        <div class="val">${yoyFmt(chg)}</div>
-        <div class="sub">${ly.toLocaleString('ru')} ₽ в ${sameMonthLastYear.replace('-','.')}</div>
-      </div>`;
-    }
-
-    if(!lyFiltered.length){
-      el.innerHTML=`<div class="anl-card"><div class="anl-title">Год к году</div><div class="empty" style="padding:8px 0">Нет данных за ${MONTHS_RU[mCur-1]} ${yCur-1}</div></div>`;
-      return;
-    }
-    const lyExp=lyFiltered.filter(e=>e.type==='expense').reduce((a,e)=>a+e.amount,0);
-    const lyInc=lyFiltered.filter(e=>e.type==='income').reduce((a,e)=>a+e.amount,0);
-    const lyBal=lyInc-lyExp;
-    const lyMand=lyFiltered.filter(e=>e.type==='expense'&&MANDATORY_CATS.has(e.cat)).reduce((a,e)=>a+e.amount,0);
-    const lyDisc=lyExp-lyMand;
-    const [lyY,lyM]=sameMonthLastYear.split('-').map(Number);
-    const lyDays=new Date(lyY,lyM,0).getDate();
-    const lyAvg=lyDays>0?Math.round(lyExp/lyDays):0;
-    const curMand=filtered.filter(e=>e.type==='expense'&&MANDATORY_CATS.has(e.cat)).reduce((a,e)=>a+e.amount,0);
-    const curDisc=expTotal-curMand;
-    const curBal=incTotal-expTotal;
-    const userLabel=anlUser==='all'?'':' · '+anlUser;
-    el.innerHTML=`<div class="anl-card">
-      <div class="anl-title">Год к году — ${MONTHS_RU[mCur-1]}${userLabel}</div>
-      <div class="anl-grid">
-        ${anlY('Расходы',expTotal,lyExp,yoyPct(expTotal,lyExp)!==null?(yoyPct(expTotal,lyExp)>0?'neg':'pos'):'')}
-        ${anlY('Доходы',incTotal,lyInc,yoyPct(incTotal,lyInc)!==null?(yoyPct(incTotal,lyInc)>0?'pos':'neg'):'')}
-        ${anlY('Баланс',curBal,lyBal,yoyPct(curBal,lyBal)!==null?(yoyPct(curBal,lyBal)>0?'pos':'neg'):'')}
-        ${anlY('Обязательные',curMand,lyMand,yoyPct(curMand,lyMand)!==null?(yoyPct(curMand,lyMand)>0?'neg':'pos'):'')}
-        ${anlY('Необязательные',curDisc,lyDisc,yoyPct(curDisc,lyDisc)!==null?(yoyPct(curDisc,lyDisc)>0?'neg':'pos'):'')}
-        ${anlY('Ср. расход/день',avgPerDay,lyAvg,yoyPct(avgPerDay,lyAvg)!==null?(yoyPct(avgPerDay,lyAvg)>0?'neg':'pos'):'')}
-      </div>
-    </div>`;
-  }
+  el.innerHTML=`<div class="anl-card">
+    <div class="anl-title">аналитика${isYearMode?' года':' месяца'}</div>
+    <div class="anl-grid">
+      ${anl('расходы к прошл. периоду',fmt(expChg)!==null?fmt(expChg):'—',prevExpTotal?prevExpTotal.toLocaleString('ru')+' ₽ ранее':null,expChg!==null?(expChg>0?'neg':'pos'):'')}
+      ${anl('доходы к прошл. периоду',fmt(incChg)!==null?fmt(incChg):'—',prevIncTotal?prevIncTotal.toLocaleString('ru')+' ₽ ранее':null,incChg!==null?(incChg>0?'pos':'neg'):'')}
+      ${anl('баланс к прошл. периоду',fmt(balChg)!==null?fmt(balChg):'—',null,balChg!==null?(balChg>0?'pos':'neg'):'')}
+      ${anl('обязательные расходы',mandatoryPct+'%','от всех расходов','')}
+      ${anl('необязательные расходы',discPct+'%','от всех расходов','')}
+      ${anl('средний расход в день',avgPerDay.toLocaleString('ru')+' ₽',daysElapsed+' дн. данных','')}
+      ${isCurrentMonth?anl('прогноз расходов',forecast.toLocaleString('ru')+' ₽','до конца месяца',forecast>expTotal?'neg':''):''}
+      ${isCurrentMonth?anl('прогноз баланса',(forecastBalance>=0?'+':'')+forecastBalance.toLocaleString('ru')+' ₽','к концу месяца',forecastBalance>=0?'pos':'neg'):''}
+    </div>
+    ${maxGrowCat?`<div style="margin-top:8px;font-size:13px;color:var(--red)">↑ Рост: ${maxGrowCat} (+${maxGrowPct}%)</div>`:''}
+    ${maxDropCat&&maxDropCat!==maxGrowCat?`<div style="margin-top:4px;font-size:13px;color:var(--green)">↓ Снижение: ${maxDropCat} (${maxDropPct}%)</div>`:''}
+  </div>`;
 }
 
 function renderInsights(selMonth,prevMonth,filtered,prevFiltered,expTotal,catTotals){
@@ -1172,15 +1132,6 @@ function saveBudget(){
 
 
 let anlUser='all'; // 'all' | 'Евгений' | 'Аннушка'
-let anlCompare='month'; // 'month' | 'year'
-function setAnlCompare(mode){
-  anlCompare=mode;
-  const cm=document.getElementById('anl-c-month');
-  const cy=document.getElementById('anl-c-year');
-  if(cm)cm.classList.toggle('on',mode==='month');
-  if(cy)cy.classList.toggle('on',mode==='year');
-  renderBudgetAnalytics();
-}
 function setAnlUser(u){
   anlUser=u;
   ['all','Евгений','Аннушка'].forEach(v=>{
@@ -1206,8 +1157,109 @@ function renderBudgetAnalytics(){
   const prevFiltered=anlUser==='all'?prevBase:prevBase.filter(e=>e.who===anlUser);
   const catTotals={};let expTotal=0;
   filtered.filter(e=>e.type==='expense').forEach(e=>{catTotals[e.cat]=(catTotals[e.cat]||0)+e.amount;expTotal+=e.amount;});
+  // Рендерим оба слайда
   renderAnalytics(selMonth,prevMonth,filtered,prevFiltered,expTotal,catTotals);
   renderInsights(selMonth,prevMonth,filtered,prevFiltered,expTotal,catTotals);
+  // YoY слайд
+  renderAnalyticsYoY(selMonth,filtered,expTotal);
+  // Инициализируем свайп
+  initAnlSwipe();
+}
+
+function renderAnalyticsYoY(selMonth,filtered,expTotal){
+  const el=document.getElementById('analytics-block-yoy');
+  if(!el)return;
+  if(selMonth&&selMonth.startsWith('year_')){el.innerHTML='';return;}
+  const [yCur,mCur]=selMonth.split('-').map(Number);
+  const sameMonthLastYear=`${yCur-1}-${String(mCur).padStart(2,'0')}`;
+  const lyAll=entries.filter(e=>e.date&&e.date.startsWith(sameMonthLastYear));
+  const lyFiltered=anlUser==='all'?lyAll:lyAll.filter(e=>e.who===anlUser);
+  const incTotal=filtered.filter(e=>e.type==='income').reduce((a,e)=>a+e.amount,0);
+
+  if(!lyFiltered.length){
+    el.innerHTML=`<div class="anl-card"><div class="anl-title">Год к году</div><div class="empty" style="padding:8px 0">Нет данных за ${MONTHS_RU[mCur-1]} ${yCur-1}</div></div>`;
+    return;
+  }
+  const lyExp=lyFiltered.filter(e=>e.type==='expense').reduce((a,e)=>a+e.amount,0);
+  const lyInc=lyFiltered.filter(e=>e.type==='income').reduce((a,e)=>a+e.amount,0);
+  const lyBal=lyInc-lyExp;
+  const lyMand=lyFiltered.filter(e=>e.type==='expense'&&MANDATORY_CATS.has(e.cat)).reduce((a,e)=>a+e.amount,0);
+  const lyDisc=lyExp-lyMand;
+  const [lyY,lyM]=sameMonthLastYear.split('-').map(Number);
+  const lyDays=new Date(lyY,lyM,0).getDate();
+  const lyAvg=lyDays>0?Math.round(lyExp/lyDays):0;
+  const curMand=filtered.filter(e=>e.type==='expense'&&MANDATORY_CATS.has(e.cat)).reduce((a,e)=>a+e.amount,0);
+  const curDisc=expTotal-curMand;
+  const curBal=incTotal-expTotal;
+  const [y2,m2]=selMonth.split('-').map(Number);
+  const daysInMonth=new Date(y2,m2,0).getDate();
+  const today=new Date();const isCurrentMonth=selMonth===nowKey();
+  const daysElapsed=isCurrentMonth?Math.max(1,today.getDate()):daysInMonth;
+  const avgPerDay=daysElapsed>0?Math.round(expTotal/daysElapsed):0;
+
+  function yoyPct(cur,prev){if(!prev)return null;return Math.round((cur-prev)/prev*100);}
+  function yoyFmt(v){if(v===null)return'—';return(v>=0?'+':'')+v+'%';}
+  function anlY(lbl,cur,ly,cls){
+    const chg=yoyPct(cur,ly);
+    return`<div class="anl-item${cls?' '+cls:''}">
+      <div class="lbl">${lbl}</div>
+      <div class="val">${yoyFmt(chg)}</div>
+      <div class="sub">${ly.toLocaleString('ru')} ₽ в ${sameMonthLastYear.replace('-','.')}</div>
+    </div>`;
+  }
+  const userLabel=anlUser==='all'?'':' · '+anlUser;
+  el.innerHTML=`<div class="anl-card">
+    <div class="anl-title">Год к году — ${MONTHS_RU[mCur-1]}${userLabel}</div>
+    <div class="anl-grid">
+      ${anlY('Расходы',expTotal,lyExp,yoyPct(expTotal,lyExp)!==null?(yoyPct(expTotal,lyExp)>0?'neg':'pos'):'')}
+      ${anlY('Доходы',incTotal,lyInc,yoyPct(incTotal,lyInc)!==null?(yoyPct(incTotal,lyInc)>0?'pos':'neg'):'')}
+      ${anlY('Баланс',curBal,lyBal,yoyPct(curBal,lyBal)!==null?(yoyPct(curBal,lyBal)>0?'pos':'neg'):'')}
+      ${anlY('Обязательные',curMand,lyMand,yoyPct(curMand,lyMand)!==null?(yoyPct(curMand,lyMand)>0?'neg':'pos'):'')}
+      ${anlY('Необязательные',curDisc,lyDisc,yoyPct(curDisc,lyDisc)!==null?(yoyPct(curDisc,lyDisc)>0?'neg':'pos'):'')}
+      ${anlY('Ср. расход/день',avgPerDay,lyAvg,yoyPct(avgPerDay,lyAvg)!==null?(yoyPct(avgPerDay,lyAvg)>0?'neg':'pos'):'')}
+    </div>
+  </div>`;
+}
+
+let _anlSlide=0;
+function initAnlSwipe(){
+  const wrap=document.getElementById('anl-swipe-wrap');
+  const track=document.getElementById('anl-swipe-track');
+  if(!wrap||!track)return;
+  // Установить текущий слайд
+  setAnlSlide(_anlSlide,false);
+  // Удалить старые слушатели через замену
+  const newWrap=wrap.cloneNode(true);
+  wrap.parentNode.replaceChild(newWrap,wrap);
+  let touchStartX=0,touchStartY=0,swiping=false;
+  newWrap.addEventListener('touchstart',e=>{
+    touchStartX=e.touches[0].clientX;touchStartY=e.touches[0].clientY;swiping=false;
+  },{passive:true});
+  newWrap.addEventListener('touchmove',e=>{
+    const dx=e.touches[0].clientX-touchStartX;
+    const dy=e.touches[0].clientY-touchStartY;
+    if(!swiping&&Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>10){swiping=true;}
+  },{passive:true});
+  newWrap.addEventListener('touchend',e=>{
+    if(!swiping)return;
+    const dx=e.changedTouches[0].clientX-touchStartX;
+    if(dx<-40&&_anlSlide<1){setAnlSlide(1);}
+    else if(dx>40&&_anlSlide>0){setAnlSlide(0);}
+  });
+}
+
+function setAnlSlide(idx,animate=true){
+  _anlSlide=idx;
+  const track=document.querySelector('#anl-swipe-wrap .anl-swipe-track');
+  if(track){
+    if(!animate)track.style.transition='none';
+    track.style.transform=`translateX(${-idx*100}%)`;
+    if(!animate)requestAnimationFrame(()=>{track.style.transition='';});
+  }
+  [0,1].forEach(i=>{
+    const d=document.getElementById('anl-dot-'+i);
+    if(d)d.classList.toggle('on',i===idx);
+  });
 }
 
 // ============ ФИНАНСОВЫЕ ЦЕЛИ ============
