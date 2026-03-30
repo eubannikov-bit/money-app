@@ -380,7 +380,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <div class="modal-title" id="sd-cat-title" style="margin-bottom:0;flex:1"></div>
         </div>
         <div id="sd-cat-list"></div>
-        <div class="brow"><button class="btn-save" onclick="sdBackToMain()">Назад</button></div>
+        <div class="brow"><button class="btn-save" onclick="closeTopModal()">Назад</button></div>
       </div>
     </div>
   </div>
@@ -696,11 +696,35 @@ function switchS(n){
   if(n==='travel')renderTrips();
   if(n==='wish')renderWishes();
 }
+// Навигационный стек модалок
+const _modalStack=[];
 function openM(n){
   if(n==='add-entry'&&editingEntryIdx<0)resetEntryForm();
-  document.getElementById('m-'+n).classList.add('on');
+  _modalStack.push(n);
+  const el=document.getElementById('m-'+n);
+  if(el)el.classList.add('on');
 }
-function closeM(n){document.getElementById('m-'+n).classList.remove('on');}
+function closeM(n){
+  const el=document.getElementById('m-'+n);
+  if(el)el.classList.remove('on');
+  const idx=_modalStack.lastIndexOf(n);
+  if(idx>=0)_modalStack.splice(idx,1);
+}
+// Закрыть верхний уровень стека — шаг назад
+function closeTopModal(){
+  if(_modalStack.length===0)return false;
+  const top=_modalStack[_modalStack.length-1];
+  // Внутри stat-detail: если открыт sd-cat-view — вернуться к списку категорий
+  if(top==='stat-detail'){
+    const catView=document.getElementById('sd-cat-view');
+    if(catView&&catView.style.display!=='none'){
+      sdBackToMain();
+      return true;
+    }
+  }
+  closeM(top);
+  return true;
+}
 
 function fabAction(){
   if(currentScreen==='money'){editingEntryIdx=-1;resetEntryForm();openM('add-entry');}
@@ -1394,7 +1418,7 @@ function renderGoalDetail(){
 }
 
 function openAddContribution(){
-  closeM('goal-detail');
+  // Не закрываем goal-detail — просто открываем поверх (стек запомнит)
   document.getElementById('contrib-amt').value='';
   document.getElementById('contrib-date').value=localDateStr();
   openM('add-contribution');
@@ -1407,8 +1431,8 @@ function saveContribution(){
   if(!goals[activeGoalIdx].contributions)goals[activeGoalIdx].contributions=[];
   goals[activeGoalIdx].contributions.push({amount:amt,date});
   closeM('add-contribution');saveGoals();
-  renderGoals(); // мгновенное обновление карточек
-  openGoalDetail(activeGoalIdx); // обновить детализацию
+  renderGoals();
+  renderGoalDetail(); // обновить goal-detail (она ещё открыта под contribution)
 }
 
 function renderGoals(){
@@ -1879,7 +1903,7 @@ function showStatDetailFor(who){
 // modal close on bg click
 document.addEventListener('click',function(e){
   const bg=e.target.closest('.mbg');
-  if(bg&&e.target===bg)bg.classList.remove('on');
+  if(bg&&e.target===bg)closeTopModal();
 });
 
 // свайп вниз для закрытия любой модалки
@@ -1922,10 +1946,11 @@ document.addEventListener('click',function(e){
       modal.style.transition='transform .28s cubic-bezier(.4,0,.2,1)';
       modal.style.transform='translate3d(0,100%,0)';
       setTimeout(()=>{
-        if(bg)bg.classList.remove('on');
+        // Используем closeTopModal для правильной навигации
         modal.style.transform='';
         modal.style.transition='';
         if(bg)bg.style.background='';
+        closeTopModal();
         modal=null;
       },260);
     } else {
