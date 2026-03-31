@@ -167,10 +167,35 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .day-section{background:rgba(255,255,255,.5);border-radius:12px;padding:10px 12px;border:1px solid rgba(240,217,225,.6);margin-bottom:8px}
 
 .body{scroll-behavior:auto} /* авто быстрее чем smooth на iOS */
+
+/* onboarding */
+.onboard-screen{position:fixed;inset:0;background:linear-gradient(180deg,#fff8fb 0%,#ffeef4 100%);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 32px;font-family:var(--font)}
+.onboard-screen.hidden{display:none}
+.onboard-title{font-size:22px;font-weight:600;color:var(--text);letter-spacing:-.03em;margin-bottom:40px;text-align:center}
+.onboard-row{display:flex;gap:16px;width:100%}
+.onboard-btn{flex:1;padding:20px 12px;border-radius:18px;border:1.5px solid var(--line2);background:rgba(255,246,249,.95);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--font);transition:border-color .15s,background .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.onboard-btn:active{background:var(--bg3);border-color:var(--accent)}
+.onboard-btn-emoji{font-size:40px;line-height:1}
+.onboard-btn-name{font-size:15px;font-weight:600;color:var(--text)}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <!-- Экран выбора пользователя -->
+  <div class="onboard-screen" id="onboard-screen">
+    <div class="onboard-title">Привет, кто ты?</div>
+    <div class="onboard-row">
+      <button class="onboard-btn" onclick="chooseUser('Евгений')">
+        <span class="onboard-btn-emoji">🐗</span>
+        <span class="onboard-btn-name">Евгений</span>
+      </button>
+      <button class="onboard-btn" onclick="chooseUser('Аннушка')">
+        <span class="onboard-btn-emoji">🐘</span>
+        <span class="onboard-btn-name">Аннушка</span>
+      </button>
+    </div>
+  </div>
+
   <div class="ptr-wrap" id="ptr-wrap">
     <div class="ptr-arrow" id="ptr-arrow"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M3 9l5 5 5-5" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
   </div>
@@ -263,6 +288,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
       <div class="analytics-block" id="analytics-block"></div>
       <div class="insights-block" id="insights-block"></div>
+      <div id="budget-day-block"></div>
       <div id="goals-block"></div>
     </div>
   </div>
@@ -367,9 +393,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <div class="modal-title" id="stat-detail-title" style="margin-bottom:0">Детализация</div>
         </div>
         <div id="stat-detail-user-sel" style="display:flex;gap:6px;margin-bottom:14px">
-          <button id="sd-btn-e" class="tab on" style="flex:1;padding:8px;border-radius:10px;font-size:13px" onclick="showStatDetailFor('Евгений')">Евгений</button>
+          <button id="sd-btn-all" class="tab on" style="flex:1;padding:8px;border-radius:10px;font-size:13px" onclick="showStatDetailFor('все')">Общие</button>
+          <button id="sd-btn-e" class="tab" style="flex:1;padding:8px;border-radius:10px;font-size:13px" onclick="showStatDetailFor('Евгений')">Евгений</button>
           <button id="sd-btn-a" class="tab" style="flex:1;padding:8px;border-radius:10px;font-size:13px" onclick="showStatDetailFor('Аннушка')">Аннушка</button>
-          <button id="sd-btn-all" class="tab" style="flex:1;padding:8px;border-radius:10px;font-size:13px" onclick="showStatDetailFor('все')">Общие</button>
         </div>
         <div class="chart-stage" style="margin-bottom:4px"><canvas id="stat-detail-chart" width="220" height="220"></canvas></div>
         <div id="stat-detail-legend" style="margin-top:10px"></div>
@@ -437,17 +463,16 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
       <!-- Встроенная форма вклада -->
       <div id="gd-contrib-view" style="display:none">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
-          <button onclick="hideContribForm()" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:13px;font-family:var(--font);padding:0;display:flex;align-items:center;gap:4px">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg> Назад
-          </button>
-          <div class="modal-title" style="margin-bottom:0">Добавить вклад</div>
+        <div class="modal-title">Добавить вклад</div>
+        <div class="ttype" style="margin-bottom:12px">
+          <button class="ttype-btn on-inc" id="contrib-type-add" onclick="setContribType('add')">+ Пополнить</button>
+          <button class="ttype-btn" id="contrib-type-withdraw" onclick="setContribType('withdraw')">− Изъять</button>
         </div>
         <div class="frow"><label class="flabel">Сумма, ₽</label><input type="number" id="contrib-amt" placeholder="0" inputmode="decimal"></div>
         <div class="frow"><label class="flabel">Дата</label><input type="date" id="contrib-date"></div>
         <div class="brow">
           <button class="btn-cancel" onclick="hideContribForm()">Отмена</button>
-          <button class="btn-save" onclick="saveContribution()">Добавить</button>
+          <button class="btn-save" id="contrib-save-btn" onclick="saveContribution()">Добавить</button>
         </div>
       </div>
     </div>
@@ -480,6 +505,38 @@ const MANDATORY_CATS=new Set(['Аренда / ипотека','Кредиты и
 const CAT_COLORS=['#c47fa0','#8b6fbf','#5f9ecb','#e0956a','#6bae8f','#c9677e','#7b9fd4','#d4a06a','#8bbf8e','#bf8b7e','#a08bbf','#6baeaa','#c4a07f','#8b8fbf','#c4bf7f','#7fafbf','#bf7fa0','#9fbf7f','#bf9f7f','#8fbfbf','#bfaf8f','#af8fbf','#bf8faf'];
 const MONTHS_RU=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
 const STORAGE_KEY='couple_app_v6';
+const WHO_KEY='couple_who_v1';
+
+// Кто открывает приложение (Евгений / Аннушка)
+let whoAmI=localStorage.getItem(WHO_KEY)||'';
+
+function chooseUser(name){
+  whoAmI=name;
+  localStorage.setItem(WHO_KEY,name);
+  // Скрыть онбординг
+  document.getElementById('onboard-screen').classList.add('hidden');
+  // Применить имя в форме добавления операции
+  applyWhoAmI();
+  // Перерендерить цели с фильтром
+  renderGoals();
+}
+
+function applyWhoAmI(){
+  if(!whoAmI)return;
+  // Дефолтный пользователь в форме операции
+  const whoSel=document.getElementById('e-who');
+  if(whoSel)whoSel.value=whoAmI;
+}
+
+function initWhoAmI(){
+  const screen=document.getElementById('onboard-screen');
+  if(whoAmI){
+    // Уже выбрали — скрыть экран
+    if(screen)screen.classList.add('hidden');
+    applyWhoAmI();
+  }
+  // Иначе экран онбординга остаётся видимым
+}
 function localDateStr(d){
   const dt=d||new Date();
   return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
@@ -496,6 +553,8 @@ let trips=saved?.trips||[{id:'loc_1_1',name:'Тбилиси',status:'planned',da
 let wishes=saved?.wishes||[{id:'loc_1_3',name:'AirPods Pro',who:'me',link:'https://apple.com',note:'Белые, 2-е поколение',price:19990,reserved:false},{id:'loc_1_4',name:'Книга «Мастер и Маргарита»',who:'them',link:'',note:'Подарочное издание',price:2500,reserved:false}];
 let budget=saved?.budget||{cats:{}};
 EXP_CATS.forEach(c=>{if(!budget.cats[c])budget.cats[c]=0;});
+// Плановые доходы хранятся в budget.cats под ключами INC_CATS
+INC_CATS.forEach(c=>{if(!budget.cats[c])budget.cats[c]=0;});
 
 function normalizeExistingIds(){
   entries.forEach((e,i)=>{if(!e.id)e.id='loc_'+Date.now()+'_'+(++entrySeq)+'_'+i;});
@@ -638,7 +697,8 @@ function syncFromSheets(){
     _cleanupSync();
     setSyncState('err','Скрипт недоступен','проверьте URL и разрешения Apps Script');
   };
-  script.src=SHEETS_URL+'?callback='+cb+'&t='+Date.now();
+  const _mn=new Date().getMonth()+1;
+  script.src=SHEETS_URL+'?callback='+cb+'&t='+Date.now()+'&m='+_mn;
   document.head.appendChild(script);
 }
 
@@ -762,7 +822,7 @@ function resetEntryForm(){
   setET('expense');
   document.getElementById('e-amt').value='';
   document.getElementById('e-cmt').value='';
-  document.getElementById('e-who').value='Евгений';
+  document.getElementById('e-who').value=whoAmI||'Евгений';
 }
 function setET(t){
   eType=t;
@@ -1037,10 +1097,29 @@ function attachEntrySwipe(){
 }
 
 // budget
+// Запросить план для конкретного месяца из Sheets
+function fetchBudgetForMonth(monthKey){
+  if(!monthKey||monthKey.startsWith('year_'))return;
+  const mn=parseInt(monthKey.split('-')[1],10);
+  const cb='_bmCb'+Date.now();
+  const script=document.createElement('script');
+  script.src=SHEETS_URL+'?callback='+cb+'&t='+Date.now()+'&m='+mn+'&budgetOnly=1';
+  window[cb]=function(data){
+    delete window[cb];document.head.removeChild(script);
+    if(data&&data.budget&&data.budget.cats){
+      budget.cats=Object.assign({},budget.cats,data.budget.cats);
+      saveData();renderBudget();
+    }
+  };
+  document.head.appendChild(script);
+}
+
 function renderBudget(){
   buildMonthSelectors();
   const selEl=document.getElementById('budget-month-sel');
   const selRaw=selEl?selEl.value:nowKey();
+  // Подтянуть план для выбранного месяца из Sheets (асинхронно)
+  if(selRaw&&!selRaw.startsWith('year_'))fetchBudgetForMonth(selRaw);
   const isYearSel=selRaw&&selRaw.startsWith('year_');
   const yearStr=isYearSel?selRaw.replace('year_',''):'';
   const selMonth=isYearSel?yearStr+'-01':selRaw; // for prevMonth calc, use Jan of year
@@ -1056,8 +1135,14 @@ function renderBudget(){
   let incE=0,incA=0,expE=0,expA=0;
   filtered.filter(e=>e.type==='income').forEach(e=>{if(e.who==='Евгений')incE+=e.amount;else incA+=e.amount;});
   filtered.filter(e=>e.type==='expense').forEach(e=>{if(e.who==='Евгений')expE+=e.amount;else expA+=e.amount;});
-  document.getElementById('b-sal1').textContent=incE.toLocaleString('ru')+' ₽';
-  document.getElementById('b-sal2').textContent=incA.toLocaleString('ru')+' ₽';
+  // Плановые доходы из budget.cats
+  const incPlanE=INC_CATS.filter(c=>c.includes('Евгений')).reduce((a,c)=>a+(budget.cats[c]||0),0);
+  const incPlanA=INC_CATS.filter(c=>c.includes('Аннушка')).reduce((a,c)=>a+(budget.cats[c]||0),0);
+  const incPlanOther=INC_CATS.filter(c=>!c.includes('Евгений')&&!c.includes('Аннушка')).reduce((a,c)=>a+(budget.cats[c]||0),0);
+  const b1=document.getElementById('b-sal1');
+  const b2=document.getElementById('b-sal2');
+  if(b1)b1.innerHTML=incE.toLocaleString('ru')+' ₽'+(incPlanE>0?`<span style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-left:6px">/ ${incPlanE.toLocaleString('ru')} ₽</span>`:'');
+  if(b2)b2.innerHTML=incA.toLocaleString('ru')+' ₽'+(incPlanA>0?`<span style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-left:6px">/ ${incPlanA.toLocaleString('ru')} ₽</span>`:'');
   const be1=document.getElementById('b-exp1');if(be1)be1.textContent=expE.toLocaleString('ru')+' ₽';
   const be2=document.getElementById('b-exp2');if(be2)be2.textContent=expA.toLocaleString('ru')+' ₽';
   // init avatars in expense block
@@ -1096,6 +1181,7 @@ function renderBudget(){
     </div>`;
   }).join(''):'<div class="empty" style="padding:12px 0">нет расходов за месяц</div>';
 
+  renderBudgetDayCard(selRaw, anlUser);
   renderGoals();
   renderBudgetAnalytics();
 }
@@ -1278,11 +1364,31 @@ function openBudgetCategory(cat,month){
 }
 
 function openBudgetModal(){
-  document.getElementById('p-cats-form').innerHTML='<div style="font-size:15px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);margin:10px 0 6px">лимиты по категориям, ₽</div>'+EXP_CATS.map(c=>`<div class="frow"><label class="flabel">${c}</label><input type="number" id="pc-${encodeURIComponent(c)}" value="${budget.cats[c]||0}" placeholder="0" inputmode="decimal"></div>`).join('');
+  const incSection='<div style="font-size:15px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);margin:14px 0 6px">план доходов, ₽</div>'+INC_CATS.map(c=>`<div class="frow"><label class="flabel">${c}</label><input type="number" id="pc-${encodeURIComponent(c)}" value="${budget.cats[c]||0}" placeholder="0" inputmode="decimal"></div>`).join('');
+  const expSection='<div style="font-size:15px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);margin:10px 0 6px">лимиты расходов, ₽</div>'+EXP_CATS.map(c=>`<div class="frow"><label class="flabel">${c}</label><input type="number" id="pc-${encodeURIComponent(c)}" value="${budget.cats[c]||0}" placeholder="0" inputmode="decimal"></div>`).join('');
+  document.getElementById('p-cats-form').innerHTML=incSection+expSection;
   openM('edit-budget');
 }
 function saveBudget(){
-  EXP_CATS.forEach(c=>{const inp=document.getElementById('pc-'+encodeURIComponent(c));if(inp)budget.cats[c]=parseFloat(inp.value)||0;});
+  const selEl=document.getElementById('budget-month-sel');
+  const selRaw=selEl?selEl.value:nowKey();
+  const isYear=selRaw&&selRaw.startsWith('year_');
+  const monthNum=isYear?null:parseInt((selRaw||nowKey()).split('-')[1],10);
+  EXP_CATS.forEach(c=>{
+    const inp=document.getElementById('pc-'+encodeURIComponent(c));
+    if(!inp)return;
+    const val=parseFloat(inp.value)||0;
+    if(budget.cats[c]!==val&&monthNum){
+      postActionToSheets({action:'update_budget',cat:c,amount:val,month:monthNum});
+    }
+    budget.cats[c]=val;
+  });
+  INC_CATS.forEach(c=>{
+    const inp=document.getElementById('pc-'+encodeURIComponent(c));
+    if(!inp)return;
+    const val=parseFloat(inp.value)||0;
+    budget.cats[c]=val; // доходы пока только локально
+  });
   closeM('edit-budget');saveData();renderBudget();
 }
 
@@ -1446,9 +1552,18 @@ function renderGoalDetail(){
   `;
 }
 
+
+let _contribType='add'; // 'add' | 'withdraw'
+function setContribType(t){
+  _contribType=t;
+  document.getElementById('contrib-type-add').className='ttype-btn'+(t==='add'?' on-inc':'');
+  document.getElementById('contrib-type-withdraw').className='ttype-btn'+(t==='withdraw'?' on-exp':'');
+  document.getElementById('contrib-save-btn').textContent=t==='add'?'Добавить':'Изъять';
+}
 function showContribForm(){
   document.getElementById('contrib-amt').value='';
   document.getElementById('contrib-date').value=localDateStr();
+  setContribType('add'); // по умолчанию пополнение
   document.getElementById('gd-main-view').style.display='none';
   document.getElementById('gd-contrib-view').style.display='';
 }
@@ -1459,21 +1574,96 @@ function hideContribForm(){
 function openAddContribution(){showContribForm();}
 
 function saveContribution(){
-  const amt=parseFloat(document.getElementById('contrib-amt').value)||0;
+  const rawAmt=parseFloat(document.getElementById('contrib-amt').value)||0;
   const date=document.getElementById('contrib-date').value;
-  if(!amt||!date||activeGoalIdx<0)return;
+  if(!rawAmt||!date||activeGoalIdx<0)return;
+  // Изъятие — отрицательная сумма
+  const amt=_contribType==='withdraw'?-rawAmt:rawAmt;
   if(!goals[activeGoalIdx].contributions)goals[activeGoalIdx].contributions=[];
   goals[activeGoalIdx].contributions.push({amount:amt,date});
   postActionToSheets({action:'update_goal',goal:goals[activeGoalIdx]});
   saveGoals();renderGoals();
-  hideContribForm();  // вернуться к детализации
-  renderGoalDetail(); // обновить данные цели
+  hideContribForm();
+  renderGoalDetail();
+}
+
+// Карточка «Сегодня» в бюджете — работает с выбранным месяцем
+function renderBudgetDayCard(selRaw, anlUser){
+  const el=document.getElementById('budget-day-block');
+  if(!el)return;
+  const today=new Date();
+  const currentMonthStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
+  const isCurrentMonth=!selRaw||selRaw===currentMonthStr;
+  const isYear=selRaw&&selRaw.startsWith('year_');
+  if(isYear){el.innerHTML='';return;}
+
+  // Используем getDayBudgetData только для текущего месяца
+  // Для других месяцев — показываем итоговую статистику
+  if(isCurrentMonth){
+    // Текущий месяц — полная карточка «Сегодня»
+    const d=getDayBudgetData(anlUser==='all'?'all':anlUser);
+    if(!d.hasPlan){el.innerHTML='';return;}
+    const inBudget=d.forecastOverrun<=0;
+    el.innerHTML=`<div class="anl-card" style="cursor:pointer;margin-bottom:8px" onclick="openDayBudget()">
+      <div class="anl-title" style="margin-bottom:8px">Сегодня · ${new Date().toLocaleDateString('ru',{day:'numeric',month:'long'})}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div>
+          <div style="font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em">Можно потратить</div>
+          <div style="font-size:26px;font-weight:600;color:${d.availableToday>0?d.mainColor:'var(--red)'};letter-spacing:-.03em;line-height:1.1">${Math.round(d.availableToday).toLocaleString('ru')} ₽</div>
+        </div>
+        <div style="text-align:right">
+          <div class="anl-title" style="margin-bottom:2px;color:${d.statusColor}">${d.status}</div>
+          <div style="font-size:13px;color:var(--text3);font-family:var(--mono)">${d.pct}% от плана</div>
+        </div>
+      </div>
+      <div class="day-section" style="margin-bottom:0">
+        <div class="day-stat-row"><span class="day-stat-lbl">Темп трат</span><span class="day-stat-val" style="color:${d.faster?'var(--red)':'var(--green)'}">${d.pace.toLocaleString('ru')} ₽/день · норма ${d.norm.toLocaleString('ru')}</span></div>
+        <div class="day-stat-row"><span class="day-stat-lbl">Прогноз</span><span class="day-stat-val" style="color:${d.forecastOverrun>0?'var(--red)':'var(--green)'}">
+          ${d.forecastOverrun>0?'Перерасход +'+d.forecastOverrun.toLocaleString('ru'):'Экономия '+Math.abs(d.forecastOverrun).toLocaleString('ru')} ₽
+        </span></div>
+        ${d.insight?`<div class="day-stat-row"><span class="day-stat-lbl">Инсайт</span><span class="day-stat-val" style="color:var(--red);font-size:13px">${d.insight}</span></div>`:''}
+      </div>
+    </div>`;
+  } else {
+    // Прошлый месяц — итоговая статистика
+    const base=entries.filter(e=>e.date&&e.date.startsWith(selRaw)&&(anlUser==='all'||e.who===anlUser));
+    const varFact=base.filter(e=>e.type==='expense'&&!MANDATORY_CATS.has(e.cat)).reduce((a,e)=>a+e.amount,0);
+    const varPlan=EXP_CATS.filter(c=>!MANDATORY_CATS.has(c)).reduce((a,c)=>a+(budget.cats[c]||0),0);
+    if(!varPlan){el.innerHTML='';return;}
+    const pct=Math.round(varFact/varPlan*100);
+    let statusColor=pct<=100?'var(--green)':pct<=110?'var(--amber)':pct<=120?'#e07030':'var(--red)';
+    let status=pct<=100?'Отлично':pct<=110?'Приемлемо':pct<=120?'Халатно':'Неблагоприятно';
+    const [y,m]=selRaw.split('-').map(Number);
+    const daysInM=new Date(y,m,0).getDate();
+    const avgDay=daysInM>0?Math.round(varFact/daysInM):0;
+    el.innerHTML=`<div class="anl-card" style="margin-bottom:8px">
+      <div class="anl-title" style="margin-bottom:8px">Итог месяца</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div>
+          <div style="font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em">Переменные расходы</div>
+          <div style="font-size:26px;font-weight:600;color:${varFact>varPlan?'var(--red)':'var(--text)'};letter-spacing:-.03em;line-height:1.1">${varFact.toLocaleString('ru')} ₽</div>
+        </div>
+        <div style="text-align:right">
+          <div class="anl-title" style="margin-bottom:2px;color:${statusColor}">${status}</div>
+          <div style="font-size:13px;color:var(--text3);font-family:var(--mono)">${pct}% · план ${varPlan.toLocaleString('ru')} ₽</div>
+        </div>
+      </div>
+      <div class="day-section" style="margin-bottom:0">
+        <div class="day-stat-row"><span class="day-stat-lbl">Средний расход/день</span><span class="day-stat-val">${avgDay.toLocaleString('ru')} ₽</span></div>
+      </div>
+    </div>`;
+  }
 }
 
 function renderGoals(){
   const el=document.getElementById('goals-block');
   if(!el)return;
-  if(!goals.length){
+  // Фильтр: показываем общие цели + свои личные
+  const visible=goals.filter(g=>g.who==='common'||!whoAmI||g.who===whoAmI);
+  if(!visible.length){
+    if(goals.length&&!whoAmI){
+      el.innerHTML='';return; // есть цели но не выбран пользователь
+    }
     el.innerHTML=`<div class="anl-card" style="margin-top:8px">
       <div class="anl-title">Цели</div>
       <div style="font-size:15px;color:var(--text3);text-align:center;padding:8px 0">Пока все цели достигнуты</div>
@@ -1482,13 +1672,14 @@ function renderGoals(){
   }
   el.innerHTML=`<div class="anl-card" style="margin-top:8px">
     <div class="anl-title">Цели</div>
-    ${goals.map((g,i)=>{
+    ${visible.map((g,i)=>{
+      const i_orig=goals.indexOf(g);
       const saved=goalSaved(g);
       const pct=g.target>0?Math.min(Math.round(saved/g.target*100),100):0;
       const rem=Math.max(g.target-saved,0);
       const monthsLeft=g.monthly>0?Math.ceil(rem/g.monthly):null;
       const whoLabel=g.who&&g.who!=='common'?` · ${g.who}`:'';
-      return`<div style="padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer" onclick="openGoalDetail(${i})">
+      return`<div style="padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer" onclick="openGoalDetail(${i_orig})">
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
           <span style="font-size:15px;font-weight:500;color:var(--text)">${g.name}<span style="font-size:13px;font-weight:400;color:var(--text3)">${whoLabel}</span></span>
           <span style="font-size:15px;font-family:var(--mono);color:var(--accent);flex-shrink:0;margin-left:8px">${pct}%</span>
@@ -1848,11 +2039,11 @@ let statDetailChart=null;
 function openStatDetail(type){
   statDetailType=type;
   document.getElementById('stat-detail-title').textContent=type==='expense'?'Расходы':'Доходы';
-  document.getElementById('sd-btn-e').classList.add('on');
+  document.getElementById('sd-btn-all').classList.add('on');
+  document.getElementById('sd-btn-e').classList.remove('on');
   document.getElementById('sd-btn-a').classList.remove('on');
-  document.getElementById('sd-btn-all').classList.remove('on');
   sdBackToMain();
-  showStatDetailFor('Евгений');
+  showStatDetailFor('все');
   openM('stat-detail');
 }
 let _sdWho='Евгений';
@@ -2037,6 +2228,7 @@ updateSortUi();
 buildMonthSelectors();
 renderEntries();updateTodayCard();
 renderTasks();
+initWhoAmI();
 renderTrips();
 renderWishes();
 // goals rendered via renderBudget
