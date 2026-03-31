@@ -288,7 +288,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
       <div class="analytics-block" id="analytics-block"></div>
       <div class="insights-block" id="insights-block"></div>
-      <div id="budget-day-block"></div>
       <div id="goals-block"></div>
     </div>
   </div>
@@ -697,8 +696,7 @@ function syncFromSheets(){
     _cleanupSync();
     setSyncState('err','Скрипт недоступен','проверьте URL и разрешения Apps Script');
   };
-  const _mn=new Date().getMonth()+1;
-  script.src=SHEETS_URL+'?callback='+cb+'&t='+Date.now()+'&m='+_mn;
+  script.src=SHEETS_URL+'?callback='+cb+'&t='+Date.now();
   document.head.appendChild(script);
 }
 
@@ -1097,29 +1095,10 @@ function attachEntrySwipe(){
 }
 
 // budget
-// Запросить план для конкретного месяца из Sheets
-function fetchBudgetForMonth(monthKey){
-  if(!monthKey||monthKey.startsWith('year_'))return;
-  const mn=parseInt(monthKey.split('-')[1],10);
-  const cb='_bmCb'+Date.now();
-  const script=document.createElement('script');
-  script.src=SHEETS_URL+'?callback='+cb+'&t='+Date.now()+'&m='+mn+'&budgetOnly=1';
-  window[cb]=function(data){
-    delete window[cb];document.head.removeChild(script);
-    if(data&&data.budget&&data.budget.cats){
-      budget.cats=Object.assign({},budget.cats,data.budget.cats);
-      saveData();renderBudget();
-    }
-  };
-  document.head.appendChild(script);
-}
-
 function renderBudget(){
   buildMonthSelectors();
   const selEl=document.getElementById('budget-month-sel');
   const selRaw=selEl?selEl.value:nowKey();
-  // Подтянуть план для выбранного месяца из Sheets (асинхронно)
-  if(selRaw&&!selRaw.startsWith('year_'))fetchBudgetForMonth(selRaw);
   const isYearSel=selRaw&&selRaw.startsWith('year_');
   const yearStr=isYearSel?selRaw.replace('year_',''):'';
   const selMonth=isYearSel?yearStr+'-01':selRaw; // for prevMonth calc, use Jan of year
@@ -1181,7 +1160,6 @@ function renderBudget(){
     </div>`;
   }).join(''):'<div class="empty" style="padding:12px 0">нет расходов за месяц</div>';
 
-  renderBudgetDayCard(selRaw, anlUser);
   renderGoals();
   renderBudgetAnalytics();
 }
@@ -1370,25 +1348,8 @@ function openBudgetModal(){
   openM('edit-budget');
 }
 function saveBudget(){
-  const selEl=document.getElementById('budget-month-sel');
-  const selRaw=selEl?selEl.value:nowKey();
-  const isYear=selRaw&&selRaw.startsWith('year_');
-  const monthNum=isYear?null:parseInt((selRaw||nowKey()).split('-')[1],10);
-  EXP_CATS.forEach(c=>{
-    const inp=document.getElementById('pc-'+encodeURIComponent(c));
-    if(!inp)return;
-    const val=parseFloat(inp.value)||0;
-    if(budget.cats[c]!==val&&monthNum){
-      postActionToSheets({action:'update_budget',cat:c,amount:val,month:monthNum});
-    }
-    budget.cats[c]=val;
-  });
-  INC_CATS.forEach(c=>{
-    const inp=document.getElementById('pc-'+encodeURIComponent(c));
-    if(!inp)return;
-    const val=parseFloat(inp.value)||0;
-    budget.cats[c]=val; // доходы пока только локально
-  });
+  EXP_CATS.forEach(c=>{const inp=document.getElementById('pc-'+encodeURIComponent(c));if(inp)budget.cats[c]=parseFloat(inp.value)||0;});
+  INC_CATS.forEach(c=>{const inp=document.getElementById('pc-'+encodeURIComponent(c));if(inp)budget.cats[c]=parseFloat(inp.value)||0;});
   closeM('edit-budget');saveData();renderBudget();
 }
 
@@ -1585,74 +1546,6 @@ function saveContribution(){
   saveGoals();renderGoals();
   hideContribForm();
   renderGoalDetail();
-}
-
-// Карточка «Сегодня» в бюджете — работает с выбранным месяцем
-function renderBudgetDayCard(selRaw, anlUser){
-  const el=document.getElementById('budget-day-block');
-  if(!el)return;
-  const today=new Date();
-  const currentMonthStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
-  const isCurrentMonth=!selRaw||selRaw===currentMonthStr;
-  const isYear=selRaw&&selRaw.startsWith('year_');
-  if(isYear){el.innerHTML='';return;}
-
-  // Используем getDayBudgetData только для текущего месяца
-  // Для других месяцев — показываем итоговую статистику
-  if(isCurrentMonth){
-    // Текущий месяц — полная карточка «Сегодня»
-    const d=getDayBudgetData(anlUser==='all'?'all':anlUser);
-    if(!d.hasPlan){el.innerHTML='';return;}
-    const inBudget=d.forecastOverrun<=0;
-    el.innerHTML=`<div class="anl-card" style="cursor:pointer;margin-bottom:8px" onclick="openDayBudget()">
-      <div class="anl-title" style="margin-bottom:8px">Сегодня · ${new Date().toLocaleDateString('ru',{day:'numeric',month:'long'})}</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div>
-          <div style="font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em">Можно потратить</div>
-          <div style="font-size:26px;font-weight:600;color:${d.availableToday>0?d.mainColor:'var(--red)'};letter-spacing:-.03em;line-height:1.1">${Math.round(d.availableToday).toLocaleString('ru')} ₽</div>
-        </div>
-        <div style="text-align:right">
-          <div class="anl-title" style="margin-bottom:2px;color:${d.statusColor}">${d.status}</div>
-          <div style="font-size:13px;color:var(--text3);font-family:var(--mono)">${d.pct}% от плана</div>
-        </div>
-      </div>
-      <div class="day-section" style="margin-bottom:0">
-        <div class="day-stat-row"><span class="day-stat-lbl">Темп трат</span><span class="day-stat-val" style="color:${d.faster?'var(--red)':'var(--green)'}">${d.pace.toLocaleString('ru')} ₽/день · норма ${d.norm.toLocaleString('ru')}</span></div>
-        <div class="day-stat-row"><span class="day-stat-lbl">Прогноз</span><span class="day-stat-val" style="color:${d.forecastOverrun>0?'var(--red)':'var(--green)'}">
-          ${d.forecastOverrun>0?'Перерасход +'+d.forecastOverrun.toLocaleString('ru'):'Экономия '+Math.abs(d.forecastOverrun).toLocaleString('ru')} ₽
-        </span></div>
-        ${d.insight?`<div class="day-stat-row"><span class="day-stat-lbl">Инсайт</span><span class="day-stat-val" style="color:var(--red);font-size:13px">${d.insight}</span></div>`:''}
-      </div>
-    </div>`;
-  } else {
-    // Прошлый месяц — итоговая статистика
-    const base=entries.filter(e=>e.date&&e.date.startsWith(selRaw)&&(anlUser==='all'||e.who===anlUser));
-    const varFact=base.filter(e=>e.type==='expense'&&!MANDATORY_CATS.has(e.cat)).reduce((a,e)=>a+e.amount,0);
-    const varPlan=EXP_CATS.filter(c=>!MANDATORY_CATS.has(c)).reduce((a,c)=>a+(budget.cats[c]||0),0);
-    if(!varPlan){el.innerHTML='';return;}
-    const pct=Math.round(varFact/varPlan*100);
-    let statusColor=pct<=100?'var(--green)':pct<=110?'var(--amber)':pct<=120?'#e07030':'var(--red)';
-    let status=pct<=100?'Отлично':pct<=110?'Приемлемо':pct<=120?'Халатно':'Неблагоприятно';
-    const [y,m]=selRaw.split('-').map(Number);
-    const daysInM=new Date(y,m,0).getDate();
-    const avgDay=daysInM>0?Math.round(varFact/daysInM):0;
-    el.innerHTML=`<div class="anl-card" style="margin-bottom:8px">
-      <div class="anl-title" style="margin-bottom:8px">Итог месяца</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div>
-          <div style="font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em">Переменные расходы</div>
-          <div style="font-size:26px;font-weight:600;color:${varFact>varPlan?'var(--red)':'var(--text)'};letter-spacing:-.03em;line-height:1.1">${varFact.toLocaleString('ru')} ₽</div>
-        </div>
-        <div style="text-align:right">
-          <div class="anl-title" style="margin-bottom:2px;color:${statusColor}">${status}</div>
-          <div style="font-size:13px;color:var(--text3);font-family:var(--mono)">${pct}% · план ${varPlan.toLocaleString('ru')} ₽</div>
-        </div>
-      </div>
-      <div class="day-section" style="margin-bottom:0">
-        <div class="day-stat-row"><span class="day-stat-lbl">Средний расход/день</span><span class="day-stat-val">${avgDay.toLocaleString('ru')} ₽</span></div>
-      </div>
-    </div>`;
-  }
 }
 
 function renderGoals(){
