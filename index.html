@@ -169,31 +169,39 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .body{scroll-behavior:auto} /* авто быстрее чем smooth на iOS */
 
 /* onboarding */
-.onboard-screen{position:fixed;inset:0;background:linear-gradient(180deg,#fff8fb 0%,#ffeef4 100%);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 32px;font-family:var(--font)}
+.onboard-screen{position:fixed;inset:0;background:linear-gradient(180deg,#fff8fb 0%,#fff1f5 55%,#ffeef4 100%);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;font-family:var(--font)}
 .onboard-screen.hidden{display:none}
-.onboard-title{font-size:22px;font-weight:600;color:var(--text);letter-spacing:-.03em;margin-bottom:40px;text-align:center}
-.onboard-row{display:flex;gap:16px;width:100%}
-.onboard-btn{flex:1;padding:20px 12px;border-radius:18px;border:1.5px solid var(--line2);background:rgba(255,246,249,.95);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--font);transition:border-color .15s,background .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-.onboard-btn:active{background:var(--bg3);border-color:var(--accent)}
-.onboard-btn-emoji{font-size:40px;line-height:1}
-.onboard-btn-name{font-size:15px;font-weight:600;color:var(--text)}
+.onboard-title{font-size:26px;font-weight:600;color:var(--text);letter-spacing:-.03em;margin-bottom:8px;text-align:center}
+.onboard-sub{font-size:15px;color:var(--text3);text-align:center;margin-bottom:48px;line-height:1.4}
+.onboard-btn{width:100%;padding:18px;border-radius:16px;border:1.5px solid var(--line2);background:rgba(255,246,249,.95);cursor:pointer;display:flex;align-items:center;gap:16px;margin-bottom:12px;font-family:var(--font);transition:border-color .15s,background .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.onboard-btn:active{background:var(--bg3)}
+.onboard-btn-emoji{font-size:36px;line-height:1}
+.onboard-btn-text{text-align:left}
+.onboard-btn-name{font-size:17px;font-weight:600;color:var(--text);display:block}
+.onboard-btn-hint{font-size:13px;color:var(--text3);display:block;margin-top:2px}
 </style>
 </head>
 <body>
 <div class="wrap">
   <!-- Экран выбора пользователя -->
   <div class="onboard-screen" id="onboard-screen">
-    <div class="onboard-title">Привет, кто ты?</div>
-    <div class="onboard-row">
-      <button class="onboard-btn" onclick="chooseUser('Евгений')">
-        <span class="onboard-btn-emoji">🐗</span>
+    <div style="font-size:48px;margin-bottom:20px">👋</div>
+    <div class="onboard-title">Привет!</div>
+    <div class="onboard-sub">Кто ты? Это нужно один раз,<br>чтобы приложение знало чьи это цели.</div>
+    <button class="onboard-btn" onclick="chooseUser('Евгений')">
+      <span class="onboard-btn-emoji">🐗</span>
+      <span class="onboard-btn-text">
         <span class="onboard-btn-name">Евгений</span>
-      </button>
-      <button class="onboard-btn" onclick="chooseUser('Аннушка')">
-        <span class="onboard-btn-emoji">🐘</span>
+        <span class="onboard-btn-hint">Твои личные цели будут видны только тебе</span>
+      </span>
+    </button>
+    <button class="onboard-btn" onclick="chooseUser('Аннушка')">
+      <span class="onboard-btn-emoji">🐘</span>
+      <span class="onboard-btn-text">
         <span class="onboard-btn-name">Аннушка</span>
-      </button>
-    </div>
+        <span class="onboard-btn-hint">Твои личные цели будут видны только тебе</span>
+      </span>
+    </button>
   </div>
 
   <div class="ptr-wrap" id="ptr-wrap">
@@ -392,9 +400,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <div class="modal-title" id="stat-detail-title" style="margin-bottom:0">Детализация</div>
         </div>
         <div id="stat-detail-user-sel" style="display:flex;gap:6px;margin-bottom:14px">
-          <button id="sd-btn-all" class="tab on" style="flex:1;padding:8px;border-radius:10px;font-size:13px" onclick="showStatDetailFor('все')">Общие</button>
-          <button id="sd-btn-e" class="tab" style="flex:1;padding:8px;border-radius:10px;font-size:13px" onclick="showStatDetailFor('Евгений')">Евгений</button>
+          <button id="sd-btn-e" class="tab on" style="flex:1;padding:8px;border-radius:10px;font-size:13px" onclick="showStatDetailFor('Евгений')">Евгений</button>
           <button id="sd-btn-a" class="tab" style="flex:1;padding:8px;border-radius:10px;font-size:13px" onclick="showStatDetailFor('Аннушка')">Аннушка</button>
+          <button id="sd-btn-all" class="tab" style="flex:1;padding:8px;border-radius:10px;font-size:13px" onclick="showStatDetailFor('все')">Общие</button>
         </div>
         <div class="chart-stage" style="margin-bottom:4px"><canvas id="stat-detail-chart" width="220" height="220"></canvas></div>
         <div id="stat-detail-legend" style="margin-top:10px"></div>
@@ -552,8 +560,6 @@ let trips=saved?.trips||[{id:'loc_1_1',name:'Тбилиси',status:'planned',da
 let wishes=saved?.wishes||[{id:'loc_1_3',name:'AirPods Pro',who:'me',link:'https://apple.com',note:'Белые, 2-е поколение',price:19990,reserved:false},{id:'loc_1_4',name:'Книга «Мастер и Маргарита»',who:'them',link:'',note:'Подарочное издание',price:2500,reserved:false}];
 let budget=saved?.budget||{cats:{}};
 EXP_CATS.forEach(c=>{if(!budget.cats[c])budget.cats[c]=0;});
-// Плановые доходы хранятся в budget.cats под ключами INC_CATS
-INC_CATS.forEach(c=>{if(!budget.cats[c])budget.cats[c]=0;});
 
 function normalizeExistingIds(){
   entries.forEach((e,i)=>{if(!e.id)e.id='loc_'+Date.now()+'_'+(++entrySeq)+'_'+i;});
@@ -1114,14 +1120,8 @@ function renderBudget(){
   let incE=0,incA=0,expE=0,expA=0;
   filtered.filter(e=>e.type==='income').forEach(e=>{if(e.who==='Евгений')incE+=e.amount;else incA+=e.amount;});
   filtered.filter(e=>e.type==='expense').forEach(e=>{if(e.who==='Евгений')expE+=e.amount;else expA+=e.amount;});
-  // Плановые доходы из budget.cats
-  const incPlanE=INC_CATS.filter(c=>c.includes('Евгений')).reduce((a,c)=>a+(budget.cats[c]||0),0);
-  const incPlanA=INC_CATS.filter(c=>c.includes('Аннушка')).reduce((a,c)=>a+(budget.cats[c]||0),0);
-  const incPlanOther=INC_CATS.filter(c=>!c.includes('Евгений')&&!c.includes('Аннушка')).reduce((a,c)=>a+(budget.cats[c]||0),0);
-  const b1=document.getElementById('b-sal1');
-  const b2=document.getElementById('b-sal2');
-  if(b1)b1.innerHTML=incE.toLocaleString('ru')+' ₽'+(incPlanE>0?`<span style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-left:6px">/ ${incPlanE.toLocaleString('ru')} ₽</span>`:'');
-  if(b2)b2.innerHTML=incA.toLocaleString('ru')+' ₽'+(incPlanA>0?`<span style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-left:6px">/ ${incPlanA.toLocaleString('ru')} ₽</span>`:'');
+  document.getElementById('b-sal1').textContent=incE.toLocaleString('ru')+' ₽';
+  document.getElementById('b-sal2').textContent=incA.toLocaleString('ru')+' ₽';
   const be1=document.getElementById('b-exp1');if(be1)be1.textContent=expE.toLocaleString('ru')+' ₽';
   const be2=document.getElementById('b-exp2');if(be2)be2.textContent=expA.toLocaleString('ru')+' ₽';
   // init avatars in expense block
@@ -1342,14 +1342,11 @@ function openBudgetCategory(cat,month){
 }
 
 function openBudgetModal(){
-  const incSection='<div style="font-size:15px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);margin:14px 0 6px">план доходов, ₽</div>'+INC_CATS.map(c=>`<div class="frow"><label class="flabel">${c}</label><input type="number" id="pc-${encodeURIComponent(c)}" value="${budget.cats[c]||0}" placeholder="0" inputmode="decimal"></div>`).join('');
-  const expSection='<div style="font-size:15px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);margin:10px 0 6px">лимиты расходов, ₽</div>'+EXP_CATS.map(c=>`<div class="frow"><label class="flabel">${c}</label><input type="number" id="pc-${encodeURIComponent(c)}" value="${budget.cats[c]||0}" placeholder="0" inputmode="decimal"></div>`).join('');
-  document.getElementById('p-cats-form').innerHTML=incSection+expSection;
+  document.getElementById('p-cats-form').innerHTML='<div style="font-size:15px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);margin:10px 0 6px">лимиты по категориям, ₽</div>'+EXP_CATS.map(c=>`<div class="frow"><label class="flabel">${c}</label><input type="number" id="pc-${encodeURIComponent(c)}" value="${budget.cats[c]||0}" placeholder="0" inputmode="decimal"></div>`).join('');
   openM('edit-budget');
 }
 function saveBudget(){
   EXP_CATS.forEach(c=>{const inp=document.getElementById('pc-'+encodeURIComponent(c));if(inp)budget.cats[c]=parseFloat(inp.value)||0;});
-  INC_CATS.forEach(c=>{const inp=document.getElementById('pc-'+encodeURIComponent(c));if(inp)budget.cats[c]=parseFloat(inp.value)||0;});
   closeM('edit-budget');saveData();renderBudget();
 }
 
@@ -1932,11 +1929,11 @@ let statDetailChart=null;
 function openStatDetail(type){
   statDetailType=type;
   document.getElementById('stat-detail-title').textContent=type==='expense'?'Расходы':'Доходы';
-  document.getElementById('sd-btn-all').classList.add('on');
-  document.getElementById('sd-btn-e').classList.remove('on');
+  document.getElementById('sd-btn-e').classList.add('on');
   document.getElementById('sd-btn-a').classList.remove('on');
+  document.getElementById('sd-btn-all').classList.remove('on');
   sdBackToMain();
-  showStatDetailFor('все');
+  showStatDetailFor('Евгений');
   openM('stat-detail');
 }
 let _sdWho='Евгений';
