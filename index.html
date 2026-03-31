@@ -422,26 +422,33 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
   </div>
 
-  <!-- MODAL: вклад в цель -->
-  <div class="mbg" id="m-add-contribution">
-    <div class="modal">
-      <div class="modal-title">Добавить вклад</div>
-      <div class="frow"><label class="flabel">Сумма, ₽</label><input type="number" id="contrib-amt" placeholder="0" inputmode="decimal"></div>
-      <div class="frow"><label class="flabel">Дата</label><input type="date" id="contrib-date"></div>
-      <div class="brow">
-        <button class="btn-cancel" onclick="closeM('add-contribution')">Отмена</button>
-        <button class="btn-save" onclick="saveContribution()">Добавить</button>
-      </div>
-    </div>
-  </div>
+
 
   <!-- MODAL: детализация цели -->
   <div class="mbg" id="m-goal-detail">
     <div class="modal">
-      <div id="goal-detail-content"></div>
-      <div class="brow">
-        <button class="btn-cancel" onclick="closeM('goal-detail')">Закрыть</button>
-        <button class="btn-save" onclick="openAddContribution()">Добавить вклад</button>
+      <!-- Основной вид: детализация цели -->
+      <div id="gd-main-view">
+        <div id="goal-detail-content"></div>
+        <div class="brow">
+          <button class="btn-cancel" onclick="closeM('goal-detail')">Закрыть</button>
+          <button class="btn-save" onclick="showContribForm()">Добавить вклад</button>
+        </div>
+      </div>
+      <!-- Встроенная форма вклада -->
+      <div id="gd-contrib-view" style="display:none">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+          <button onclick="hideContribForm()" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:13px;font-family:var(--font);padding:0;display:flex;align-items:center;gap:4px">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg> Назад
+          </button>
+          <div class="modal-title" style="margin-bottom:0">Добавить вклад</div>
+        </div>
+        <div class="frow"><label class="flabel">Сумма, ₽</label><input type="number" id="contrib-amt" placeholder="0" inputmode="decimal"></div>
+        <div class="frow"><label class="flabel">Дата</label><input type="date" id="contrib-date"></div>
+        <div class="brow">
+          <button class="btn-cancel" onclick="hideContribForm()">Отмена</button>
+          <button class="btn-save" onclick="saveContribution()">Добавить</button>
+        </div>
       </div>
     </div>
   </div>
@@ -718,7 +725,15 @@ function closeM(n){
 function closeTopModal(){
   if(_modalStack.length===0)return false;
   const top=_modalStack[_modalStack.length-1];
-  // Внутри stat-detail: если открыт sd-cat-view — вернуться к списку категорий
+  // Внутри goal-detail: если открыта форма вклада — вернуться к цели
+  if(top==='goal-detail'){
+    const cv=document.getElementById('gd-contrib-view');
+    if(cv&&cv.style.display!=='none'){
+      hideContribForm();
+      return true;
+    }
+  }
+  // Внутри stat-detail: если открыт sd-cat-view — вернуться к списку
   if(top==='stat-detail'){
     const catView=document.getElementById('sd-cat-view');
     if(catView&&catView.style.display!=='none'){
@@ -1384,6 +1399,11 @@ function goalSaved(g){
 function openGoalDetail(idx){
   activeGoalIdx=idx;
   renderGoalDetail();
+  // Сбрасываем на главный вид
+  const mv=document.getElementById('gd-main-view');
+  const cv=document.getElementById('gd-contrib-view');
+  if(mv)mv.style.display='';
+  if(cv)cv.style.display='none';
   openM('goal-detail');
 }
 
@@ -1426,12 +1446,17 @@ function renderGoalDetail(){
   `;
 }
 
-function openAddContribution(){
-  // Не закрываем goal-detail — просто открываем поверх (стек запомнит)
+function showContribForm(){
   document.getElementById('contrib-amt').value='';
   document.getElementById('contrib-date').value=localDateStr();
-  openM('add-contribution');
+  document.getElementById('gd-main-view').style.display='none';
+  document.getElementById('gd-contrib-view').style.display='';
 }
+function hideContribForm(){
+  document.getElementById('gd-contrib-view').style.display='none';
+  document.getElementById('gd-main-view').style.display='';
+}
+function openAddContribution(){showContribForm();}
 
 function saveContribution(){
   const amt=parseFloat(document.getElementById('contrib-amt').value)||0;
@@ -1440,9 +1465,9 @@ function saveContribution(){
   if(!goals[activeGoalIdx].contributions)goals[activeGoalIdx].contributions=[];
   goals[activeGoalIdx].contributions.push({amount:amt,date});
   postActionToSheets({action:'update_goal',goal:goals[activeGoalIdx]});
-  closeM('add-contribution');saveGoals();
-  renderGoals();
-  renderGoalDetail();
+  saveGoals();renderGoals();
+  hideContribForm();  // вернуться к детализации
+  renderGoalDetail(); // обновить данные цели
 }
 
 function renderGoals(){
