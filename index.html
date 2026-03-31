@@ -656,7 +656,7 @@ function normalizeSheetDate(raw){
 function processSheetData(data){
   if(data&&data.error)throw new Error(String(data.error));
   if(data&&data.entries&&data.entries.length>0){
-    // Сохраняем _ts из локальных записей чтобы не потерять порядок добавления
+    // Сохраняем _ts из локальных записей
     const localTsMap={};
     entries.forEach(e=>{if(e.id&&e._ts)localTsMap[e.id]=e._ts;});
     entries=(data.entries||[]).map(function(e){
@@ -665,7 +665,6 @@ function processSheetData(data){
       if(who==='Партнер 2'||who==='Партнёр 2')who='Аннушка';
       var date=normalizeSheetDate(e.date||e['Дата']||e['date']||'');
       var id=e.id||(e.date&&e.cat?'sh_'+e.date+'_'+e.cat+'_'+(e.amount||0):'sh_'+Date.now()+'_'+(++entrySeq));
-      // Восстанавливаем _ts если был в локальных данных
       var _ts=localTsMap[id]||e._ts||null;
       return Object.assign({},e,{who,date,id,synced:true,_ts});
     }).filter(function(e){
@@ -673,10 +672,15 @@ function processSheetData(data){
       if(String(e.who||'').trim()==='Кто тратил')return false;
       return !!(e.cat||e.amount||e.who||e.date);
     });
-    // Sheets отдаёт записи в хронологическом порядке (старые первые)
-    // Разворачиваем чтобы новые (с наибольшим _i) оказались в начале
     entries.reverse();
     if(data.budget&&data.budget.cats)budget.cats=Object.assign({},budget.cats||{},data.budget.cats);
+    // Синхронизируем цели из Sheets (не затираем локальные если Sheets пусто)
+    if(data.goals&&data.goals.length>0){
+      goals=data.goals.map(function(g){
+        return Object.assign({},g,{contributions:g.contributions||[]});
+      });
+      saveGoals();
+    }
     saveData();buildMonthSelectors();renderEntries();renderBudget();updateTodayCard();
     setSyncState('ok','Синхронизировано','');
     return;
@@ -1352,11 +1356,14 @@ function saveGoal(){
   const target=parseFloat(document.getElementById('gl-target').value)||0;
   const monthly=parseFloat(document.getElementById('gl-monthly').value)||0;
   if(!name||!target)return;
-  const obj={id:Date.now()+'_g',name,who,target,monthly,contributions:[]};
   if(editingGoalIdx>=0){
     Object.assign(goals[editingGoalIdx],{name,who,target,monthly});
+    const g=goals[editingGoalIdx];
+    postActionToSheets({action:'update_goal',goal:g});
   } else {
+    const obj={id:Date.now()+'_g',name,who,target,monthly,contributions:[],createdAt:localDateStr()};
     goals.unshift(obj);
+    postActionToSheets({action:'add_goal',goal:obj});
   }
   editingGoalIdx=-1;
   closeM('add-goal');saveGoals();renderGoals();
@@ -1364,7 +1371,9 @@ function saveGoal(){
 
 function deleteGoal(){
   if(editingGoalIdx<0)return;
+  const g=goals[editingGoalIdx];
   goals.splice(editingGoalIdx,1);editingGoalIdx=-1;
+  postActionToSheets({action:'delete_goal',id:g.id});
   closeM('add-goal');saveGoals();renderGoals();
 }
 
@@ -1430,9 +1439,10 @@ function saveContribution(){
   if(!amt||!date||activeGoalIdx<0)return;
   if(!goals[activeGoalIdx].contributions)goals[activeGoalIdx].contributions=[];
   goals[activeGoalIdx].contributions.push({amount:amt,date});
+  postActionToSheets({action:'update_goal',goal:goals[activeGoalIdx]});
   closeM('add-contribution');saveGoals();
   renderGoals();
-  renderGoalDetail(); // обновить goal-detail (она ещё открыта под contribution)
+  renderGoalDetail();
 }
 
 function renderGoals(){
