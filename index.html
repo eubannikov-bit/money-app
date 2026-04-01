@@ -1161,9 +1161,9 @@ function renderBudget(){
   filtered.filter(e=>e.type==='income').forEach(e=>{if(e.who==='Евгений')incE+=e.amount;else incA+=e.amount;});
   filtered.filter(e=>e.type==='expense').forEach(e=>{if(e.who==='Евгений')expE+=e.amount;else expA+=e.amount;});
   // Плановые доходы из budget.cats
-  const incPlanE=INC_CATS.filter(c=>c.includes('Евгений')).reduce((a,c)=>a+(budget.cats[c]||0),0);
-  const incPlanA=INC_CATS.filter(c=>c.includes('Аннушка')).reduce((a,c)=>a+(budget.cats[c]||0),0);
-  const incPlanOther=INC_CATS.filter(c=>!c.includes('Евгений')&&!c.includes('Аннушка')).reduce((a,c)=>a+(budget.cats[c]||0),0);
+  const incPlanE=INC_CATS.filter(c=>c.includes('Евгений')).reduce((a,c)=>a+(monthBudgetCats[c]||0),0);
+  const incPlanA=INC_CATS.filter(c=>c.includes('Аннушка')).reduce((a,c)=>a+(monthBudgetCats[c]||0),0);
+  const incPlanOther=INC_CATS.filter(c=>!c.includes('Евгений')&&!c.includes('Аннушка')).reduce((a,c)=>a+(monthBudgetCats[c]||0),0);
   const b1=document.getElementById('b-sal1');
   const b2=document.getElementById('b-sal2');
   if(b1)b1.innerHTML=incE.toLocaleString('ru')+' ₽'+(incPlanE>0?`<span style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-left:6px">/ ${incPlanE.toLocaleString('ru')} ₽</span>`:'');
@@ -1238,7 +1238,7 @@ function drawPieChart(catTotals,total){
   if(legend)legend.innerHTML='';
 }
 
-function renderAnalytics(selMonth,prevMonth,filtered,prevFiltered,expTotal,catTotals){
+function renderAnalytics(selMonth,prevMonth,filtered,prevFiltered,expTotal,catTotals,monthBudgetCats){
   const el=document.getElementById('analytics-block');
   if(!el)return;
 
@@ -1659,7 +1659,8 @@ function renderBudgetDayCard(selRaw, anlUser, monthCats){
     // Прошлый месяц — итоговая статистика
     const base=entries.filter(e=>e.date&&e.date.startsWith(selRaw)&&(anlUser==='all'||e.who===anlUser));
     const varFact=base.filter(e=>e.type==='expense'&&!MANDATORY_CATS.has(e.cat)).reduce((a,e)=>a+e.amount,0);
-    const varPlan=EXP_CATS.filter(c=>!MANDATORY_CATS.has(c)).reduce((a,c)=>a+(budget.cats[c]||0),0);
+    const mc=monthCats||getBudgetForMonth(selRaw);
+    const varPlan=EXP_CATS.filter(c=>!MANDATORY_CATS.has(c)).reduce((a,c)=>a+(mc[c]||0),0);
     if(!varPlan){el.innerHTML='';return;}
     const pct=Math.round(varFact/varPlan*100);
     let statusColor=pct<=100?'var(--green)':pct<=110?'var(--amber)':pct<=120?'#e07030':'var(--red)';
