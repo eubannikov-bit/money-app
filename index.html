@@ -537,6 +537,14 @@ function initWhoAmI(){
   }
   // Иначе экран онбординга остаётся видимым
 }
+
+function monthLabel(monthKey){
+  if(!monthKey||monthKey.startsWith('year_'))return '';
+  const MONTHS_RU=['Январь','Февраль','Март','Апрель','Май','Июнь',
+    'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const [y,m]=monthKey.split('-').map(Number);
+  return MONTHS_RU[m-1]+' '+y;
+}
 function localDateStr(d){
   const dt=d||new Date();
   return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
@@ -744,8 +752,6 @@ function processSheetData(data){
     entries.forEach(e=>{if(e.id&&e._ts)localTsMap[e.id]=e._ts;});
     entries=(data.entries||[]).map(function(e){
       var who=e.who||'';
-      if(who==='Партнер 1'||who==='Партнёр 1')who='Евгений';
-      if(who==='Партнер 2'||who==='Партнёр 2')who='Аннушка';
       var date=normalizeSheetDate(e.date||e['Дата']||e['date']||'');
       var id=e.id||(e.date&&e.cat?'sh_'+e.date+'_'+e.cat+'_'+(e.amount||0):'sh_'+Date.now()+'_'+(++entrySeq));
       var _ts=localTsMap[id]||e._ts||null;
@@ -1635,23 +1641,25 @@ function renderBudgetDayCard(selRaw, anlUser, monthCats){
     const d=getDayBudgetData(anlUser==='all'?'all':anlUser);
     if(!d.hasPlan){el.innerHTML='';return;}
     const inBudget=d.forecastOverrun<=0;
-    el.innerHTML=`<div class="anl-card" style="cursor:pointer;margin-bottom:8px" onclick="openDayBudget()">
-      <div class="anl-title" style="margin-bottom:8px">Сегодня · ${new Date().toLocaleDateString('ru',{day:'numeric',month:'long'})}</div>
+    el.innerHTML=`<div class="anl-card" style="margin-bottom:8px">
+      <div class="anl-title" style="margin-bottom:8px">${monthLabel(selRaw)}</div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <div>
-          <div style="font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em">Можно потратить</div>
-          <div style="font-size:26px;font-weight:600;color:${d.availableToday>0?d.mainColor:'var(--red)'};letter-spacing:-.03em;line-height:1.1">${Math.round(d.availableToday).toLocaleString('ru')} ₽</div>
+          <div style="font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em">Переменные расходы</div>
+          <div style="font-size:26px;font-weight:600;color:${d.varFact>d.varPlan?'var(--red)':'var(--text)'};letter-spacing:-.03em;line-height:1.1">${d.varFact.toLocaleString('ru')} ₽</div>
         </div>
         <div style="text-align:right">
           <div class="anl-title" style="margin-bottom:2px;color:${d.statusColor}">${d.status}</div>
-          <div style="font-size:13px;color:var(--text3);font-family:var(--mono)">${d.pct}% от плана</div>
+          <div style="font-size:13px;color:var(--text3);font-family:var(--mono)">${d.pct}% · план ${d.varPlan.toLocaleString('ru')} ₽</div>
         </div>
       </div>
-      <div class="day-section" style="margin-bottom:0">
-        <div class="day-stat-row"><span class="day-stat-lbl">Темп трат</span><span class="day-stat-val" style="color:${d.faster?'var(--red)':'var(--green)'}">${d.pace.toLocaleString('ru')} ₽/день · норма ${d.norm.toLocaleString('ru')}</span></div>
-        <div class="day-stat-row"><span class="day-stat-lbl">Прогноз</span><span class="day-stat-val" style="color:${d.forecastOverrun>0?'var(--red)':'var(--green)'}">
-          ${d.forecastOverrun>0?'Перерасход +'+d.forecastOverrun.toLocaleString('ru'):'Экономия '+Math.abs(d.forecastOverrun).toLocaleString('ru')} ₽
-        </span></div>
+      <div class="day-section" style="margin-bottom:0;cursor:pointer" onclick="openDayBudget()">
+        <div class="day-stat-row"><span class="day-stat-lbl">Можно потратить сегодня</span><span class="day-stat-val" style="color:${d.availableToday>0?'var(--green)':'var(--red)'}">
+          ${Math.round(d.availableToday).toLocaleString('ru')} ₽</span></div>
+        <div class="day-stat-row"><span class="day-stat-lbl">Темп · норма</span><span class="day-stat-val" style="color:${d.faster?'var(--red)':'var(--green)'}">
+          ${d.pace.toLocaleString('ru')} · ${d.norm.toLocaleString('ru')} ₽/день</span></div>
+        <div class="day-stat-row"><span class="day-stat-lbl">Прогноз к концу</span><span class="day-stat-val" style="color:${d.forecastOverrun>0?'var(--red)':'var(--green)'}">
+          ${d.forecastOverrun>0?'Перерасход +'+d.forecastOverrun.toLocaleString('ru'):'Экономия '+Math.abs(d.forecastOverrun).toLocaleString('ru')} ₽</span></div>
         ${d.insight?`<div class="day-stat-row"><span class="day-stat-lbl">Инсайт</span><span class="day-stat-val" style="color:var(--red);font-size:13px">${d.insight}</span></div>`:''}
       </div>
     </div>`;
@@ -1669,7 +1677,7 @@ function renderBudgetDayCard(selRaw, anlUser, monthCats){
     const daysInM=new Date(y,m,0).getDate();
     const avgDay=daysInM>0?Math.round(varFact/daysInM):0;
     el.innerHTML=`<div class="anl-card" style="margin-bottom:8px">
-      <div class="anl-title" style="margin-bottom:8px">Итог месяца</div>
+      <div class="anl-title" style="margin-bottom:8px">${monthLabel(selRaw)}</div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <div>
           <div style="font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em">Переменные расходы</div>
