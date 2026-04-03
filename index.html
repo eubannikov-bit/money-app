@@ -498,7 +498,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 </div>
 
 <script>
-const SHEETS_URL='https://script.google.com/macros/s/AKfycbz5wj1lgHA_lIZ8VOx6XxyrtdEz3RGweVeDAdn6zckSNomM3fCOIC2XzGAKuF2gu-FR/exec';
+const SERVER_URL='https://evgbudget.duckdns.org:4443';
+const SERVER_TOKEN='budget2026';
+const API=SERVER_URL+'/api';
 const EXP_CATS=['Аренда / ипотека','Коммунальные услуги','Интернет и мобильная связь','Кредиты и займы','Страховки','Продукты питания','Рестораны, кафе, доставка','Бытовая химия и хозтовары','Бензин / проездной / такси','Обслуживание и ремонт авто','Парковка / штрафы','Одежда и обувь','Косметика, салоны, уход','Аксессуары / прочее','Кино, театр, концерты','Подписки (стриминг, сервисы)','Спорт и хобби','Путешествия / отпуск','Подарки и праздники','Аптека / лекарства','Врачи и анализы','Ветеринар / питомцы','Спортзал / фитнес'];
 const INC_CATS=['Зарплата — Евгений','Зарплата — Аннушка','Доп. доход / фриланс','Подарок / перевод','Прочий доход'];
 const MANDATORY_CATS=new Set(['Аренда / ипотека','Кредиты и займы','Подписки (стриминг, сервисы)','Интернет и мобильная связь','Коммунальные услуги']);
@@ -680,7 +682,12 @@ function setSyncState(st,t,sub){
 async function sendToSheets(entry){
   setSyncState('wait','отправка...','');
   try{
-    await fetch(SHEETS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(entry)});
+    const r=await fetch(API+'/entries',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-token':SERVER_TOKEN},
+      body:JSON.stringify(entry)
+    });
+    if(!r.ok)throw new Error('HTTP '+r.status);
     entry.synced=true;
     setSyncState('ok','Запись добавлена','');
   }catch(e){
@@ -691,39 +698,98 @@ async function sendToSheets(entry){
 }
 
 async function postActionToSheets(payload){
-  try{await fetch(SHEETS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});return true;}catch(e){return false;}
+  // Маппинг старых action → новые API endpoints
+  try{
+    let url,method='POST',body=JSON.stringify(payload);
+    const h={'Content-Type':'application/json','x-token':SERVER_TOKEN};
+    if(payload.action==='delete'){
+      url=API+'/entries/'+encodeURIComponent(payload.entry?.id||'');
+      method='DELETE';body=null;
+    } else if(payload.action==='update'){
+      url=API+'/entries/'+encodeURIComponent(payload.newEntry?.id||'');
+      method='PUT';body=JSON.stringify(payload.newEntry);
+    } else if(payload.action==='add_goal'||payload.action==='update_goal'){
+      url=API+'/goals';body=JSON.stringify(payload.goal);
+    } else if(payload.action==='delete_goal'){
+      url=API+'/goals/'+encodeURIComponent(payload.id||'');
+      method='DELETE';body=null;
+    } else if(payload.action==='update_budget'){
+      const mk=nowKey();
+      url=API+'/budget/'+mk;method='PATCH';
+      body=JSON.stringify({cat:payload.cat,amount:payload.amount});
+    } else {
+      return true; // неизвестный action — игнорируем
+    }
+    const r=await fetch(url,{method,headers:h,body});
+    return r.ok;
+  }catch(e){return false;}
 }
 
-let _syncTimer=null,_syncScript=null,_syncCbName=null;
-function _cleanupSync(){
-  if(_syncTimer){clearTimeout(_syncTimer);_syncTimer=null;}
-  if(_syncScript&&_syncScript.parentNode){try{_syncScript.parentNode.removeChild(_syncScript);}catch(x){}}
-  _syncScript=null;
-  if(_syncCbName){try{delete window[_syncCbName];}catch(x){}_syncCbName=null;}
-}
-function syncFromSheets(){
-  _cleanupSync();
+function _cleanupSync(){}  // заглушка
+
+// ===== СИНХРОНИЗАЦИЯ ЧЕРЕЗ VPS =====
+let _ws=null,_wsReconnectTimer=null,_wsTryCount=0;
+
+function syncFromSheets(){syncFromServer();}
+
+async function syncFromServer(){
   setSyncState('wait','Загрузка данных...','');
-  const cb='_gsCb'+Date.now()+'_'+(++entrySeq);
-  _syncCbName=cb;
-  const script=document.createElement('script');
-  _syncScript=script;
-  _syncTimer=setTimeout(()=>{
-    _cleanupSync();
-    setSyncState('err','Нет ответа от скрипта','Apps Script не отвечает — проверьте разрешения');
-  },30000);
-  window[cb]=function(data){
-    _cleanupSync();
-    try{processSheetData(data);}
-    catch(err){setSyncState('err','Ошибка данных',err.message||'');}
-  };
-  script.onerror=function(){
-    _cleanupSync();
-    setSyncState('err','Скрипт недоступен','проверьте URL и разрешения Apps Script');
-  };
-  const _mn=new Date().getMonth()+1;
-  script.src=SHEETS_URL+'?callback='+cb+'&t='+Date.now()+'&m='+_mn;
-  document.head.appendChild(script);
+  try{
+    const mn=new Date().getMonth()+1;
+    const year=new Date().getFullYear();
+    const monthKey=year+'-'+String(mn).padStart(2,'0');
+    const r=await fetch(API+'/sync?month='+monthKey,{
+      headers:{'x-token':SERVER_TOKEN}
+    });
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    processServerData(data);
+  }catch(e){
+    setSyncState('err','Ошибка синхронизации','Проверьте подключение');
+  }
+}
+
+function processServerData(data){
+  if(!data)return;
+  if(data.entries&&data.entries.length>0){
+    const localTsMap={};
+    entries.forEach(e=>{if(e.id&&e._ts)localTsMap[e.id]=e._ts;});
+    entries=data.entries.map(e=>({...e,synced:true,_ts:localTsMap[e.id]||e._ts||null}));
+  }
+  if(data.budget&&data.budget.cats&&Object.keys(data.budget.cats).length>0){
+    const mk=data.budget.monthKey||nowKey();
+    setBudgetForMonth(mk,data.budget.cats);
+  }
+  if(data.goals&&data.goals.length>0){goals=data.goals;saveGoals();}
+  saveData();buildMonthSelectors();renderEntries();renderBudget();updateTodayCard();
+  setSyncState('ok','Синхронизировано','');
+  connectWebSocket();
+}
+
+function connectWebSocket(){
+  if(_ws&&(_ws.readyState===WebSocket.OPEN||_ws.readyState===WebSocket.CONNECTING))return;
+  try{
+    const wsUrl=SERVER_URL.replace('https://','wss://').replace('http://','ws://')+'/ws?token='+SERVER_TOKEN;
+    _ws=new WebSocket(wsUrl);
+    _ws.onopen=()=>{_wsTryCount=0;};
+    _ws.onmessage=(e)=>{
+      try{const msg=JSON.parse(e.data);handleServerEvent(msg);}catch(err){}
+    };
+    _ws.onclose=()=>{
+      if(_wsReconnectTimer)clearTimeout(_wsReconnectTimer);
+      _wsReconnectTimer=setTimeout(()=>{_wsTryCount++;if(_wsTryCount<10)connectWebSocket();},5000);
+    };
+    _ws.onerror=()=>{_ws=null;};
+  }catch(e){}
+}
+
+function handleServerEvent(msg){
+  const {event,data}=msg;
+  if(['entry_added','entry_updated','entry_deleted','goal_updated','goal_deleted'].includes(event)){
+    syncFromServer();
+  } else if(event==='budget_updated'&&data?.monthKey&&data?.cats){
+    setBudgetForMonth(data.monthKey,data.cats);renderBudget();
+  }
 }
 
 function normalizeSheetDate(raw){
@@ -746,6 +812,7 @@ function normalizeSheetDate(raw){
 
 function processSheetData(data){
   if(data&&data.error)throw new Error(String(data.error));
+  processServerData(data);return;
   if(data&&data.entries&&data.entries.length>0){
     // Сохраняем _ts из локальных записей
     const localTsMap={};
@@ -1122,25 +1189,19 @@ function attachEntrySwipe(){
   if(el)el.onclick=function(e){if(!e.target.closest('.swipe-wrap'))document.querySelectorAll('.swipe-wrap.swiped').forEach(el=>el.classList.remove('swiped'));};
 }
 
-// budget
-// Запросить план для конкретного месяца из Sheets (если ещё не загружен)
+// Запросить план для конкретного месяца из сервера (если ещё не загружен)
 function fetchBudgetForMonth(monthKey){
   if(!monthKey||monthKey.startsWith('year_'))return;
-  // Если уже есть в monthly — не запрашиваем повторно
   if(budget.monthly[monthKey])return;
-  const mn=parseInt(monthKey.split('-')[1],10);
-  const cb='_bmCb'+Date.now();
-  const script=document.createElement('script');
-  script.src=SHEETS_URL+'?callback='+cb+'&t='+Date.now()+'&m='+mn;
-  window[cb]=function(data){
-    delete window[cb];
-    try{document.head.removeChild(script);}catch(e){}
-    if(data&&data.budget&&data.budget.cats){
-      setBudgetForMonth(monthKey,data.budget.cats);
-      renderBudget(); // перерендерить с новым планом
-    }
-  };
-  document.head.appendChild(script);
+  fetch(API+'/budget/'+monthKey,{headers:{'x-token':SERVER_TOKEN}})
+    .then(r=>r.json())
+    .then(data=>{
+      if(data&&data.cats&&Object.keys(data.cats).length>0){
+        setBudgetForMonth(monthKey,data.cats);
+        renderBudget();
+      }
+    })
+    .catch(()=>{});
 }
 
 function renderBudget(){
@@ -1413,12 +1474,16 @@ function saveBudget(){
   EXP_CATS.forEach(c=>{
     const inp=document.getElementById('pc-'+encodeURIComponent(c));
     if(!inp)return;
-    const val=parseFloat(inp.value)||0;
-    if(newCats[c]!==val&&monthNum){
-      postActionToSheets({action:'update_budget',cat:c,amount:val,month:monthNum});
-    }
-    newCats[c]=val;
+    newCats[c]=parseFloat(inp.value)||0;
   });
+  // Отправить весь план одним запросом
+  if(monthKey){
+    fetch(API+'/budget/'+monthKey,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-token':SERVER_TOKEN},
+      body:JSON.stringify({cats:newCats})
+    }).catch(()=>{});
+  }
   INC_CATS.forEach(c=>{
     const inp=document.getElementById('pc-'+encodeURIComponent(c));
     if(!inp)return;
