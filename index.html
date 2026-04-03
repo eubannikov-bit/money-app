@@ -598,6 +598,7 @@ function nowKey(){const n=new Date();return n.getFullYear()+'-'+String(n.getMont
 let currentMonthKey=nowKey();
 
 function buildMonthSelectors(){
+  // Всегда показываем все месяцы текущего и прошлого года + месяцы из записей
   const months={};
   const years={};
   entries.forEach(e=>{
@@ -606,33 +607,32 @@ function buildMonthSelectors(){
       years[e.date.substring(0,4)]=true;
     }
   });
-  const ck=nowKey();months[ck]=true;
-  const curYear=new Date().getFullYear().toString();
-  years[curYear]=true;
+  const ck=nowKey();
+  const curYear=new Date().getFullYear();
+  // Добавить все месяцы текущего года
+  for(let m=1;m<=12;m++){
+    const mk=curYear+'-'+String(m).padStart(2,'0');
+    months[mk]=true;
+  }
+  // Добавить все месяцы прошлого года
+  for(let m=1;m<=12;m++){
+    const mk=(curYear-1)+'-'+String(m).padStart(2,'0');
+    months[mk]=true;
+  }
+  years[String(curYear)]=true;
+  years[String(curYear-1)]=true;
   const mKeys=Object.keys(months).sort().reverse();
   const yKeys=Object.keys(years).sort().reverse();
-  // money selector: years + months
-  const mSel=document.getElementById('money-month-sel');
-  if(mSel){
-    const prev=mSel.value;
+  const buildOptions=(prev)=>{
     let html='';
     yKeys.forEach(y=>{html+=`<option value="year_${y}">${y} год (весь год)</option>`;});
     mKeys.forEach(k=>{const p=k.split('-');html+=`<option value="${k}">${MONTHS_RU[parseInt(p[1])-1]} ${p[0]}</option>`;});
-    mSel.innerHTML=html;
-    if(prev&&(months[prev]||years[prev.replace('year_','')])){mSel.value=prev;}
-    else mSel.value=ck;
-  }
-  // budget selector: years + months
+    return html;
+  };
+  const mSel=document.getElementById('money-month-sel');
+  if(mSel){const prev=mSel.value;mSel.innerHTML=buildOptions();mSel.value=prev&&mSel.querySelector(`option[value="${prev}"]`)?prev:ck;}
   const bSel=document.getElementById('budget-month-sel');
-  if(bSel){
-    const prev=bSel.value;
-    let bHtml='';
-    yKeys.forEach(y=>{bHtml+=`<option value="year_${y}">${y} год (весь год)</option>`;});
-    mKeys.forEach(k=>{const p=k.split('-');bHtml+=`<option value="${k}">${MONTHS_RU[parseInt(p[1])-1]} ${p[0]}</option>`;});
-    bSel.innerHTML=bHtml;
-    if(prev&&(months[prev]||yKeys.includes(prev.replace('year_',''))))bSel.value=prev;
-    else bSel.value=ck;
-  }
+  if(bSel){const prev=bSel.value;bSel.innerHTML=buildOptions();bSel.value=prev&&bSel.querySelector(`option[value="${prev}"]`)?prev:ck;}
 }
 function setCurrentMonth(key){
   currentMonthKey=key||nowKey();
@@ -911,7 +911,17 @@ function resetEntryForm(){
   editingEntryIdx=-1;
   document.getElementById('entry-modal-title').textContent='Новая запись';
   document.getElementById('btn-del-entry').style.display='none';
-  document.getElementById('e-date').value=localDateStr();
+  // Дата: используем первый день выбранного месяца (или сегодня)
+  const mSel=document.getElementById('money-month-sel');
+  const mVal=mSel?mSel.value:'';
+  let defaultDate=localDateStr();
+  if(mVal&&!mVal.startsWith('year_')){
+    const today=localDateStr();
+    // Если выбранный месяц — текущий, ставим сегодня
+    // Если другой месяц — ставим 1-е число этого месяца
+    defaultDate=today.startsWith(mVal)?today:mVal+'-01';
+  }
+  document.getElementById('e-date').value=defaultDate;
   setET('expense');
   document.getElementById('e-amt').value='';
   document.getElementById('e-cmt').value='';
@@ -1003,10 +1013,36 @@ async function addEntry(){
   }
 }
 
+// Загрузить записи для конкретного месяца с сервера (если ещё не загружены)
+const _loadedMonths=new Set();
+function fetchEntriesForMonth(monthKey){
+  if(!monthKey||monthKey.startsWith('year_'))return;
+  if(_loadedMonths.has(monthKey))return;
+  _loadedMonths.add(monthKey);
+  fetch(API+'/entries?month='+monthKey,{headers:{'x-token':SERVER_TOKEN}})
+    .then(r=>r.json())
+    .then(newEntries=>{
+      if(!newEntries||!newEntries.length)return;
+      // Мержим: обновляем существующие и добавляем новые
+      const existingIds=new Set(entries.map(e=>e.id));
+      let changed=false;
+      newEntries.forEach(e=>{
+        if(!existingIds.has(e.id)){
+          entries.push({...e,synced:true});
+          changed=true;
+        }
+      });
+      if(changed){saveData();renderEntries();renderBudget();}
+    })
+    .catch(()=>{_loadedMonths.delete(monthKey);}); // retry on error
+}
+
 function renderEntries(){
   const selEl=document.getElementById('money-month-sel');
   const selMonth=selEl?selEl.value:'';
   if(selMonth)currentMonthKey=selMonth;
+  // Загрузить записи для выбранного месяца если их нет
+  if(selMonth&&!selMonth.startsWith('year_'))fetchEntriesForMonth(selMonth);
 
   const isYear=selMonth&&selMonth.startsWith('year_');
   const yearStr=isYear?selMonth.replace('year_',''):'';
