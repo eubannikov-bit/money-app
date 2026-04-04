@@ -501,21 +501,17 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 async function registerPush(who) {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    alert('Пуши не поддерживаются. Убедитесь, что приложение открыто с экрана «Домой» (iOS 16.4+).');
-    return;
-  }
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
   try {
-    // ВАЖНО ДЛЯ iOS: Запрашиваем права СРАЗУ по клику, до любых await
-    const perm = await Notification.requestPermission();
-    if (perm !== 'granted') {
-      alert('Уведомления запрещены. Разрешите их в Настройках iOS для этого веб-приложения.');
-      return;
-    }
-
+    // Регистрируем SW
     const reg = await navigator.serviceWorker.register('/money-app/sw.js', { scope: '/money-app/' });
     await navigator.serviceWorker.ready;
 
+    // Запрашиваем разрешение
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') return;
+
+    // Подписываемся
     let sub = await reg.pushManager.getSubscription();
     if (!sub) {
       sub = await reg.pushManager.subscribe({
@@ -524,19 +520,15 @@ async function registerPush(who) {
       });
     }
 
-    const res = await fetch(API + '/push/subscribe', {
+    // Отправляем подписку на сервер
+    await fetch(API + '/push/subscribe', {
       method: 'POST',
       headers: {'Content-Type': 'application/json', 'x-token': SERVER_TOKEN},
       body: JSON.stringify({ who, sub })
     });
-    
-    if(res.ok) {
-      alert('✅ Пуши успешно подключены для: ' + who);
-    } else {
-      alert('❌ Ошибка сохранения подписки на сервере: ' + res.status);
-    }
+    console.log('Push registered for', who);
   } catch(e) {
-    alert('❌ Ошибка при настройке пушей: ' + e.message);
+    console.warn('Push registration failed:', e);
   }
 }
 
@@ -572,10 +564,8 @@ function initWhoAmI(){
     if(screen){screen.classList.add('hidden');screen.style.display='';}
     applyWhoAmI();
     renderGoals();
-    // На iOS вызов без клика пользователя не покажет окно, но если права уже есть, подписка обновится тихо
-    if ('Notification' in window && Notification.permission === 'granted') {
-        registerPush(whoAmI).catch(()=>{});
-    }
+    // Восстанавливаем push подписку при повторном открытии
+    registerPush(whoAmI);
   }
   // Иначе экран онбординга остаётся видимым
 }
@@ -1847,6 +1837,139 @@ function saveContribution(){
   renderGoalDetail();
 }
 
+// Карточка «Сегодня» в бюджете — работает с выбранным месяцем
+function renderBudgetDayCard(selRaw, anlUser, monthCats){
+  const el=document.getElementById('budget-day-block');
+  if(!el)return;
+  const today=new Date();
+  const currentMonthStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
+  const isCurrentMonth=!selRaw||selRaw===currentMonthStr;
+  const isYear=selRaw&&selRaw.startsWith('year_');
+  if(isYear){el.innerHTML='';return;}
+
+  // Используем getDayBudgetData только для текущего месяца
+  // Для других месяцев — показываем итоговую статистику
+  if(isCurrentMonth){
+    // Текущий месяц — полная карточка «Сегодня»
+    const d=getDayBudgetData(anlUser==='all'?'all':anlUser);
+    if(!d.hasPlan){el.innerHTML='';return;}
+    const inBudget=d.forecastOverrun<=0;
+    el.innerHTML=`<div class="anl-card" style="margin-bottom:8px">
+      <div class="anl-title" style="margin-bottom:8px">${monthLabel(selRaw)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div>
+          <div style="font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em">Переменные расходы</div>
+          <div style="font-size:26px;font-weight:600;color:${d.varFact>d.varPlan?'var(--red)':'var(--text)'};letter-spacing:-.03em;line-height:1.1">${d.varFact.toLocaleString('ru')} ₽</div>
+        </div>
+        <div style="text-align:right">
+          <div class="anl-title" style="margin-bottom:2px;color:${d.statusColor}">${d.status}</div>
+          <div style="font-size:13px;color:var(--text3);font-family:var(--mono)">${d.pct}% · план ${d.varPlan.toLocaleString('ru')} ₽</div>
+        </div>
+      </div>
+      <div class="day-section" style="margin-bottom:0;cursor:pointer" onclick="openDayBudget()">
+        <div class="day-stat-row"><span class="day-stat-lbl">Можно потратить сегодня</span><span class="day-stat-val" style="color:${d.availableToday>0?'var(--green)':'var(--red)'}">
+          ${Math.round(d.availableToday).toLocaleString('ru')} ₽</span></div>
+        <div class="day-stat-row"><span class="day-stat-lbl">Темп · норма</span><span class="day-stat-val" style="color:${d.faster?'var(--red)':'var(--green)'}">
+          ${d.pace.toLocaleString('ru')} · ${d.norm.toLocaleString('ru')} ₽/день</span></div>
+        <div class="day-stat-row"><span class="day-stat-lbl">Прогноз к концу</span><span class="day-stat-val" style="color:${d.forecastOverrun>0?'var(--red)':'var(--green)'}">
+          ${d.forecastOverrun>0?'Перерасход +'+d.forecastOverrun.toLocaleString('ru'):'Экономия '+Math.abs(d.forecastOverrun).toLocaleString('ru')} ₽</span></div>
+        ${d.insight?`<div class="day-stat-row"><span class="day-stat-lbl">Инсайт</span><span class="day-stat-val" style="color:var(--red);font-size:13px">${d.insight}</span></div>`:''}
+      </div>
+    </div>`;
+  } else {
+    // Прошлый месяц — итоговая статистика
+    const base=entries.filter(e=>e.date&&e.date.startsWith(selRaw)&&(anlUser==='all'||e.who===anlUser));
+    const varFact=base.filter(e=>e.type==='expense'&&isVcCat(e.cat)).reduce((a,e)=>a+e.amount,0);
+    const mc=monthCats||getBudgetForMonthOrCurrent(selRaw);
+    const varPlan=EXP_CATS.filter(c=>isVcCat(c)).reduce((a,c)=>a+(mc[c]||0),0);
+    if(!varPlan){el.innerHTML='';return;}
+    const pct=Math.round(varFact/varPlan*100);
+    let statusColor=pct<=100?'var(--green)':pct<=110?'var(--amber)':pct<=120?'#e07030':'var(--red)';
+    let status=pct<=100?'Отлично':pct<=110?'Приемлемо':pct<=120?'Халатно':'Неблагоприятно';
+    const [y,m]=selRaw.split('-').map(Number);
+    const daysInM=new Date(y,m,0).getDate();
+    const avgDay=daysInM>0?Math.round(varFact/daysInM):0;
+    el.innerHTML=`<div class="anl-card" style="margin-bottom:8px">
+      <div class="anl-title" style="margin-bottom:8px">${monthLabel(selRaw)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div>
+          <div style="font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em">Переменные расходы</div>
+          <div style="font-size:26px;font-weight:600;color:${varFact>varPlan?'var(--red)':'var(--text)'};letter-spacing:-.03em;line-height:1.1">${varFact.toLocaleString('ru')} ₽</div>
+        </div>
+        <div style="text-align:right">
+          <div class="anl-title" style="margin-bottom:2px;color:${statusColor}">${status}</div>
+          <div style="font-size:13px;color:var(--text3);font-family:var(--mono)">${pct}% · план ${varPlan.toLocaleString('ru')} ₽</div>
+        </div>
+      </div>
+      <div class="day-section" style="margin-bottom:0">
+        <div class="day-stat-row"><span class="day-stat-lbl">Средний расход/день</span><span class="day-stat-val">${avgDay.toLocaleString('ru')} ₽</span></div>
+      </div>
+    </div>`;
+  }
+}
+
+function renderGoals(){
+  const el=document.getElementById('goals-block');
+  if(!el)return;
+  // Фильтр: показываем общие цели + свои личные
+  const visible=goals.filter(g=>g.who==='common'||!whoAmI||g.who===whoAmI);
+  if(!visible.length){
+    if(goals.length&&!whoAmI){
+      el.innerHTML='';return; // есть цели но не выбран пользователь
+    }
+    el.innerHTML=`<div class="anl-card" style="margin-top:8px">
+      <div class="anl-title">Цели</div>
+      <div style="font-size:15px;color:var(--text3);text-align:center;padding:8px 0">Пока все цели достигнуты</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML=`<div class="anl-card" style="margin-top:8px">
+    <div class="anl-title">Цели</div>
+    ${visible.map((g,i)=>{
+      const i_orig=goals.indexOf(g);
+      const saved=goalSaved(g);
+      const pct=g.target>0?Math.min(Math.round(saved/g.target*100),100):0;
+      const rem=Math.max(g.target-saved,0);
+      const monthsLeft=g.monthly>0?Math.ceil(rem/g.monthly):null;
+      const whoLabel=g.who&&g.who!=='common'?` · ${g.who}`:'';
+      return`<div style="padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer" onclick="openGoalDetail(${i_orig})">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+          <span style="font-size:15px;font-weight:500;color:var(--text)">${g.name}<span style="font-size:13px;font-weight:400;color:var(--text3)">${whoLabel}</span></span>
+          <span style="font-size:15px;font-family:var(--mono);color:var(--accent);flex-shrink:0;margin-left:8px">${pct}%</span>
+        </div>
+        <div class="goal-progress-bar" style="margin:4px 0"><div class="goal-progress-fill" style="width:${pct}%"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px">
+          <span style="font-size:13px;color:var(--text3);font-family:var(--mono)">${saved.toLocaleString('ru')} / ${g.target.toLocaleString('ru')} ₽</span>
+          ${monthsLeft!==null?`<span style="font-size:13px;color:var(--text3);font-family:var(--mono)">${monthsLeft} мес.</span>`:''}
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+
+// ===== ДНЕВНОЙ БЮДЖЕТ =====
+let dbUser='all';
+function setDbUser(u){
+  dbUser=u;
+  ['all','Евгений','Аннушка'].forEach(v=>{
+    const id='db-u-'+(v==='all'?'all':v==='Евгений'?'e':'a');
+    const btn=document.getElementById(id);
+    if(btn)btn.classList.toggle('on',v===u);
+  });
+  renderDayBudget();
+}
+
+function openDayBudget(){
+  dbUser='all';
+  ['db-u-all','db-u-e','db-u-a'].forEach((id,i)=>{
+    const btn=document.getElementById(id);
+    if(btn)btn.classList.toggle('on',i===0);
+  });
+  renderDayBudget();
+  openM('day-budget');
+}
+
 function getDayBudgetData(who){
   const today=new Date();
   const monthKey=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
@@ -1855,43 +1978,57 @@ function getDayBudgetData(who){
   const daysLeft=daysInMonth-dayOfMonth+1;
   const todayStr=localDateStr(today);
 
+  // Фильтр записей по месяцу и пользователю
   const monthEntries=entries.filter(e=>e.date&&e.date.startsWith(monthKey)&&(who==='all'||e.who===who));
+
+  // Доход
   const incomeTotal=monthEntries.filter(e=>e.type==='income').reduce((a,e)=>a+e.amount,0);
 
+  // Обязательные и переменные расходы факт
   const mandatoryFact=monthEntries.filter(e=>e.type==='expense'&&isFcCat(e.cat)).reduce((a,e)=>a+e.amount,0);
   const varFact=monthEntries.filter(e=>e.type==='expense'&&isVcCat(e.cat)).reduce((a,e)=>a+e.amount,0);
 
-  // ДИНАМИЧЕСКИЕ КАТЕГОРИИ ПЛАНА
+  // Планы из budget.cats (суммируем переменные категории)
   const _dayMc=getBudgetForMonthOrCurrent(nowKey());
-  const allPlanCats = Array.from(new Set([...EXP_CATS, ...Object.keys(_dayMc)]));
-  const varPlan=allPlanCats.filter(c=>isVcCat(c)).reduce((a,c)=>a+(_dayMc[c]||0),0);
-  const mandPlan=allPlanCats.filter(c=>isFcCat(c)).reduce((a,c)=>a+(_dayMc[c]||0),0);
+  const varPlan=EXP_CATS.filter(c=>isVcCat(c)).reduce((a,c)=>a+(_dayMc[c]||0),0);
+  const mandPlan=EXP_CATS.filter(c=>isFcCat(c)).reduce((a,c)=>a+(_dayMc[c]||0),0);
 
+  // Остаток переменных
   const varLeft=varPlan-varFact;
   const dayLimit=daysLeft>0?Math.max(varLeft/daysLeft,0):0;
+
+  // Сегодня потрачено (только переменные расходы, доходы не учитываем)
   const todaySpent=monthEntries.filter(e=>e.type==='expense'&&isVcCat(e.cat)&&e.date===todayStr).reduce((a,e)=>a+e.amount,0);
+
+  // Сколько ещё можно потратить сегодня = лимит на день минус уже потраченное
   const availableToday=Math.max(dayLimit-todaySpent,0);
 
+  // Скорость трат
   const pace=dayOfMonth>0?varFact/dayOfMonth:0;
   const norm=daysInMonth>0?varPlan/daysInMonth:0;
   const forecast=Math.round(pace*daysInMonth);
   const forecastOverrun=forecast-varPlan;
 
+  // Процент выполнения
   const pct=varPlan>0?Math.round(varFact/varPlan*100):0;
+
+  // Статус
   let status,statusColor;
   if(pct<=100){status='Отлично';statusColor='var(--green)';}
   else if(pct<=110){status='Приемлемо';statusColor='var(--amber)';}
   else if(pct<=120){status='Халатно';statusColor='#e07030';}
   else{status='Неблагоприятно';statusColor='var(--red)';}
 
+  // Главный цвет (для числа)
   let mainColor=statusColor;
   if(varPlan>0&&dayLimit===0)mainColor='var(--red)';
 
+  // Инсайт: переменная категория с наибольшим превышением лимита
   let insight='';
   let maxOver=0,maxCat='';
-  allPlanCats.filter(c=>isVcCat(c)).forEach(c=>{
+  EXP_CATS.filter(c=>isVcCat(c)).forEach(c=>{
     const fact=monthEntries.filter(e=>e.type==='expense'&&e.cat===c).reduce((a,e)=>a+e.amount,0);
-    const plan=_dayMc[c]||0;
+    const plan=budget.cats[c]||0;
     if(plan>0&&fact>plan){
       const over=Math.round((fact-plan)/plan*100);
       if(over>10&&over>maxOver){maxOver=over;maxCat=c;}
@@ -1907,6 +2044,98 @@ function getDayBudgetData(who){
   };
 }
 
+function updateTodayCard(){
+  const d=getDayBudgetData('all');
+  const el=document.getElementById('s-today');
+  if(!el)return;
+  if(!d.hasPlan){el.textContent='—';el.style.color='var(--text)';return;}
+  el.textContent=Math.round(d.availableToday).toLocaleString('ru')+' ₽';
+  el.style.color=d.availableToday>0?'var(--green)':'var(--red)';
+}
+
+function renderDayBudget(){
+  const d=getDayBudgetData(dbUser);
+  const el=document.getElementById('day-budget-content');
+  if(!el)return;
+
+  if(!d.hasPlan){
+    el.innerHTML=`<div style="text-align:center;padding:24px 0;color:var(--text3);font-size:15px">
+      Задай план расходов в разделе<br>
+      <button onclick="closeM('day-budget');switchS('budget')" style="margin-top:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:15px;cursor:pointer;font-family:var(--font)">Открыть Бюджет</button>
+    </div>`;
+    return;
+  }
+
+  const inBudget=d.forecastOverrun<=0;
+  const forecastStr=inBudget
+    ? `<span style="color:var(--green)">Ты в рамках бюджета ✓</span>`
+    : `<span style="color:var(--red)">Выйдешь за бюджет на ${Math.abs(d.forecastOverrun).toLocaleString('ru')} ₽</span>`;
+
+  el.innerHTML=`
+    <div class="anl-card" style="text-align:center;margin-bottom:10px">
+      <div class="anl-title" style="margin-bottom:4px">Сегодня можно потратить</div>
+      <div class="day-main-num" style="color:${d.availableToday>0?d.mainColor:'var(--red)'}">${Math.round(d.availableToday).toLocaleString('ru')} ₽</div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">Чтобы остаться в бюджете</div>
+      <div style="font-size:15px;font-weight:500">${forecastStr}</div>
+    </div>
+
+    <div class="day-section">
+      <div class="day-stat-row">
+        <span class="day-stat-lbl">Статус</span>
+        <span class="day-stat-val" style="color:${d.statusColor}">${d.status}</span>
+      </div>
+      <div class="day-stat-row">
+        <span class="day-stat-lbl">Использовано от плана</span>
+        <span class="day-stat-val" style="color:${d.statusColor}">${d.pct}%</span>
+      </div>
+    </div>
+
+    <div class="day-section">
+      <div class="anl-title" style="margin-bottom:6px">Переменные расходы</div>
+      <div class="day-stat-row"><span class="day-stat-lbl">План</span><span class="day-stat-val">${d.varPlan.toLocaleString('ru')} ₽</span></div>
+      <div class="day-stat-row"><span class="day-stat-lbl">Потрачено</span><span class="day-stat-val" style="color:${d.varFact>d.varPlan?'var(--red)':'var(--text)'}">${d.varFact.toLocaleString('ru')} ₽</span></div>
+      <div class="day-stat-row"><span class="day-stat-lbl">Остаток</span><span class="day-stat-val" style="color:${d.varLeft<0?'var(--red)':'var(--green)'}">${d.varLeft>=0?'':'-'}${Math.abs(d.varLeft).toLocaleString('ru')} ₽</span></div>
+    </div>
+
+    <div class="day-section">
+      <div class="anl-title" style="margin-bottom:6px">Сегодня</div>
+      <div class="day-stat-row"><span class="day-stat-lbl">Лимит на день</span><span class="day-stat-val">${Math.round(d.dayLimit).toLocaleString('ru')} ₽</span></div>
+      <div class="day-stat-row"><span class="day-stat-lbl">Потрачено сегодня</span><span class="day-stat-val">${d.todaySpent.toLocaleString('ru')} ₽</span></div>
+      <div class="day-stat-row"><span class="day-stat-lbl">Ещё можно потратить</span><span class="day-stat-val" style="color:${d.availableToday>0?'var(--green)':'var(--red)'}">${Math.round(d.availableToday).toLocaleString('ru')} ₽</span></div>
+    </div>
+
+    <div class="day-section">
+      <div class="day-stat-row"><span class="day-stat-lbl">Темп трат</span><span class="day-stat-val">${d.pace.toLocaleString('ru')} ₽/день</span></div>
+      <div class="day-stat-row"><span class="day-stat-lbl">Норма</span><span class="day-stat-val">${d.norm.toLocaleString('ru')} ₽/день</span></div>
+      <div class="day-stat-row"><span class="day-stat-lbl">Оценка</span><span class="day-stat-val" style="color:${d.faster?'var(--red)':'var(--green)'}">${d.faster?'Тратишь быстрее нормы':'Ты в норме'}</span></div>
+    </div>
+
+    <div class="day-section">
+      <div class="day-stat-row">
+        <span class="day-stat-lbl">Прогноз к концу месяца</span>
+        <span class="day-stat-val" style="color:${d.forecastOverrun>0?'var(--red)':'var(--green)'}">
+          ${d.forecastOverrun>0?'Перерасход +'+d.forecastOverrun.toLocaleString('ru'):'Экономия '+Math.abs(d.forecastOverrun).toLocaleString('ru')} ₽
+        </span>
+      </div>
+    </div>
+
+    <div class="day-section">
+      <div class="anl-title" style="margin-bottom:6px">Структура расходов</div>
+      <div class="day-stat-row"><span class="day-stat-lbl">Обязательные</span><span class="day-stat-val">${d.mandatoryFact.toLocaleString('ru')} ₽</span></div>
+      <div class="day-stat-row"><span class="day-stat-lbl">Переменные</span><span class="day-stat-val">${d.varFact.toLocaleString('ru')} ₽</span></div>
+      ${d.incomeTotal>0?`<div class="day-stat-row"><span class="day-stat-lbl">Переменные от дохода</span><span class="day-stat-val">${Math.round(d.varFact/d.incomeTotal*100)}%</span></div>`:''}
+    </div>
+
+    ${d.insight?`<div style="font-size:15px;color:var(--text2);background:rgba(255,246,249,.9);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:var(--mono)">${d.insight}</div>`:''}
+
+    <div style="font-size:13px;color:var(--text3);font-family:var(--mono);text-align:center;margin-top:8px">
+      ${new Date().toLocaleDateString('ru',{day:'numeric',month:'long'})} · ${dbUser==='all'?'Общее':dbUser}
+    </div>
+  `;
+}
+
+// tasks
+let tasks=JSON.parse(localStorage.getItem('couple_tasks_v1')||'[]');
 // Загрузить задачи с сервера
 function fetchTasks(){
   fetch(API+'/collections/tasks',{headers:{'x-token':SERVER_TOKEN}})
@@ -2016,9 +2245,7 @@ function sendTaskPush(toWho,taskName){
         title:'Новая задача от '+(whoAmI||'партнёра'),
         body:taskName
       })
-    }).then(res => {
-        if(!res.ok) alert('❌ Сервер не смог отправить пуш: ' + res.status);
-    }).catch(e => alert('❌ Сбой сети при отправке пуша: ' + e.message));
+    }).catch(()=>{});
   }catch(e){}
 }
 
@@ -2101,6 +2328,250 @@ function renderTasks(){
       el.querySelectorAll('.swipe-wrap.swiped').forEach(w=>w.classList.remove('swiped'));
   };
 }
+// trips
+function switchTT(t){tripTab=t;document.querySelectorAll('[id^=trt-]').forEach(b=>b.classList.remove('on'));document.getElementById('trt-'+t).classList.add('on');renderTrips();}
+let editingTripIdx=-1;
+function openEditTrip(idx){
+  const t=trips[idx];editingTripIdx=idx;
+  document.getElementById('trip-modal-title').textContent='Редактировать поездку';
+  document.getElementById('btn-del-trip').style.display='';
+  document.getElementById('tr-name').value=t.name||'';
+  document.getElementById('tr-status').value=t.status||'planned';
+  document.getElementById('tr-dates').value=t.dates||'';
+  document.getElementById('tr-link').value=t.link||'';
+  document.getElementById('tr-note').value=t.note||'';
+  openM('add-trip');
+}
+function deleteTrip(){
+  if(editingTripIdx<0)return;
+  trips.splice(editingTripIdx,1);editingTripIdx=-1;
+  document.getElementById('trip-modal-title').textContent='новое путешествие';
+  document.getElementById('btn-del-trip').style.display='none';
+  closeM('add-trip');saveData();renderTrips();
+}
+function addTrip(){
+  const name=document.getElementById('tr-name').value.trim();
+  if(!name)return;
+  const obj={id:(editingTripIdx>=0?trips[editingTripIdx].id:null)||'loc_t_'+Date.now(),name,status:document.getElementById('tr-status').value,dates:document.getElementById('tr-dates').value.trim(),link:document.getElementById('tr-link').value.trim(),note:document.getElementById('tr-note').value.trim()};
+  if(editingTripIdx>=0)trips[editingTripIdx]=obj;else trips.unshift(obj);
+  editingTripIdx=-1;
+  document.getElementById('trip-modal-title').textContent='новое путешествие';
+  document.getElementById('btn-del-trip').style.display='none';
+  closeM('add-trip');saveData();renderTrips();
+}
+function renderTrips(){
+  const filtered=trips.filter(t=>tripTab==='all'||t.status===tripTab);
+  const el=document.getElementById('trips-list');
+  if(!filtered.length){el.innerHTML='<div class="empty">нет путешествий</div>';return;}
+  el.innerHTML=filtered.map((t)=>{const ri=trips.indexOf(t);return`<div class="card-flush" style="cursor:pointer" onclick="openEditTrip(${ri})"><div style="padding:14px"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><span style="font-size:15px;font-weight:500;color:var(--text)">${t.name}</span><span class="chip-dark" style="margin-left:8px;flex-shrink:0">${t.status==='done'?'были':'планируем'}</span></div>${t.dates?`<div style="font-size:15px;color:var(--text3);font-family:var(--mono);margin-bottom:4px">${t.dates}</div>`:''}${t.note?`<div style="font-size:15px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.note}</div>`:''}${t.link?`<div style="margin-top:6px"><a href="${t.link}" class="link-chip" target="_blank">→ ссылка</a></div>`:''}</div></div>`;}).join('');
+}
+
+// wishes
+function switchWT(t){wishTab=t;document.querySelectorAll('[id^=wt-]').forEach(b=>b.classList.remove('on'));document.getElementById('wt-'+t).classList.add('on');renderWishes();}
+let editingWishIdx=-1;
+function openEditWish(idx){
+  const w=wishes[idx];editingWishIdx=idx;
+  document.getElementById('wish-modal-title').textContent='Редактировать желание';
+  document.getElementById('btn-del-wish').style.display='';
+  document.getElementById('ws-name').value=w.name||'';
+  document.getElementById('ws-who').value=w.who||'me';
+  document.getElementById('ws-link').value=w.link||'';
+  document.getElementById('ws-note').value=w.note||'';
+  document.getElementById('ws-price').value=w.price||'';
+  openM('add-wish');
+}
+function deleteWish(){
+  if(editingWishIdx<0)return;
+  wishes.splice(editingWishIdx,1);editingWishIdx=-1;
+  document.getElementById('wish-modal-title').textContent='новое желание';
+  document.getElementById('btn-del-wish').style.display='none';
+  closeM('add-wish');saveData();renderWishes();
+}
+function addWish(){
+  const name=document.getElementById('ws-name').value.trim();
+  if(!name)return;
+  const obj={id:(editingWishIdx>=0?wishes[editingWishIdx].id:null)||'loc_w_'+Date.now(),name,who:document.getElementById('ws-who').value,link:document.getElementById('ws-link').value.trim(),note:document.getElementById('ws-note').value.trim(),price:parseFloat(document.getElementById('ws-price').value)||0,reserved:editingWishIdx>=0?wishes[editingWishIdx].reserved:false};
+  if(editingWishIdx>=0)wishes[editingWishIdx]=obj;else wishes.unshift(obj);
+  editingWishIdx=-1;
+  document.getElementById('wish-modal-title').textContent='новое желание';
+  document.getElementById('btn-del-wish').style.display='none';
+  closeM('add-wish');saveData();renderWishes();
+}
+function toggleReserved(i,ev){ev.stopPropagation();wishes[i].reserved=!wishes[i].reserved;saveData();renderWishes();}
+function renderWishes(){
+  const filtered=wishes.filter(w=>wishTab==='all'||w.who===wishTab);
+  const el=document.getElementById('wishes-list');
+  if(!filtered.length){el.innerHTML='<div class="empty">список желаний пуст</div>';return;}
+  el.innerHTML=filtered.map(w=>{const ri=wishes.indexOf(w);return`<div class="card-flush" style="${w.reserved?'opacity:.55':''}" onclick="openEditWish(${ri})"><div style="display:flex;gap:12px;padding:12px 14px;align-items:flex-start"><div class="wish-img-box">${w.reserved?'<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><polyline points="3,9 7,13 15,5" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>':'<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 13S3 9.5 3 6a3 3 0 016 0 3 3 0 016 0c0 3.5-5 7-5 7z" stroke="var(--text3)" stroke-width="1.2" stroke-linejoin="round"/></svg>'}</div><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px"><span style="font-size:15px;font-weight:500;color:var(--text);${w.reserved?'text-decoration:line-through':''}">${w.name}</span><span class="chip" style="margin-left:6px;flex-shrink:0">${w.who==='me'?'Евгений':'Аннушка'}</span></div>${w.price?`<div style="font-size:15px;color:var(--text3);font-family:var(--mono);margin-bottom:4px">${w.price.toLocaleString('ru')} ₽</div>`:''}${w.note?`<div style="font-size:15px;color:var(--text2);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${w.note}</div>`:''}<div style="display:flex;gap:6px"><button onclick="toggleReserved(${ri},event)" class="btn-text" style="font-size:15px;padding:4px 10px">${w.reserved?'снять бронь':'забронировать'}</button>${w.link?`<a href="${w.link}" class="link-chip" target="_blank" onclick="event.stopPropagation()">→ ссылка</a>`:''}</div></div></div></div>`;}).join('');
+}
+
+
+
+function getAvatar(who, size){
+  const s=size||24;
+  const emoji=who==='Евгений'?'🐗':'🐘';
+  return `<span style="font-size:${Math.round(s*0.75)}px;line-height:1;display:flex;align-items:center;justify-content:center;width:${s}px;height:${s}px">${emoji}</span>`;
+}
+
+// stat detail modal (income/expense by user)
+let statDetailType='expense';
+let statDetailChart=null;
+function openStatDetail(type){
+  statDetailType=type;
+  document.getElementById('stat-detail-title').textContent=type==='expense'?'Расходы':'Доходы';
+  document.getElementById('sd-btn-all').classList.add('on');
+  document.getElementById('sd-btn-e').classList.remove('on');
+  document.getElementById('sd-btn-a').classList.remove('on');
+  sdBackToMain();
+  showStatDetailFor('все');
+  openM('stat-detail');
+}
+let _sdWho='Евгений';
+function sdBackToMain(){
+  document.getElementById('sd-main-view').style.display='';
+  document.getElementById('sd-cat-view').style.display='none';
+}
+function sdOpenCat(cat,catEntries){
+  document.getElementById('sd-cat-title').textContent=cat;
+  const sorted=[...catEntries].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  document.getElementById('sd-cat-list').innerHTML=sorted.length?sorted.map(e=>{
+    const isEv=e.who==='Евгений';
+    return`<div class="row-item">
+      <div class="av ${isEv?'av-e':'av-a'}">${getAvatar(e.who,22)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;color:var(--text)">${formatDateLabel(e.date)}</div>
+        ${e.comment?`<div style="font-size:11px;color:var(--text3);font-family:var(--mono)">${e.comment}</div>`:''}
+      </div>
+      <div style="font-size:13px;font-weight:500;font-family:var(--mono);color:${e.type==='income'?'var(--green)':'var(--red)'};flex-shrink:0">${e.type==='income'?'+':'−'}${(e.amount||0).toLocaleString('ru')} ₽</div>
+    </div>`;
+  }).join(''):'<div class="empty">нет операций</div>';
+  document.getElementById('sd-main-view').style.display='none';
+  document.getElementById('sd-cat-view').style.display='';
+}
+function showStatDetailFor(who){
+  _sdWho=who;
+  const isAll=who==='все';
+  document.getElementById('sd-btn-e').classList.toggle('on',who==='Евгений');
+  document.getElementById('sd-btn-a').classList.toggle('on',who==='Аннушка');
+  document.getElementById('sd-btn-all').classList.toggle('on',isAll);
+  sdBackToMain();
+  const selEl=document.getElementById('money-month-sel');
+  const selMonth=selEl?selEl.value:'';
+  const filtered=entries.filter(e=>
+    e.type===statDetailType &&
+    (isAll||e.who===who) &&
+    (!selMonth||!e.date||e.date.startsWith(selMonth))
+  );
+  const catMap={};
+  filtered.forEach(e=>{
+    if(!catMap[e.cat])catMap[e.cat]=[];
+    catMap[e.cat].push(e);
+  });
+  const catTotals={};
+  filtered.forEach(e=>{catTotals[e.cat]=(catTotals[e.cat]||0)+(e.amount||0);});
+  const total=filtered.reduce((s,e)=>s+(e.amount||0),0);
+  const CATS=statDetailType==='expense'?EXP_CATS:INC_CATS;
+  const labels=[],data=[],colors=[];
+  CATS.forEach((c,i)=>{if(catTotals[c]>0){labels.push(c);data.push(catTotals[c]);colors.push(CAT_COLORS[i%CAT_COLORS.length]);}});
+  Object.keys(catTotals).forEach(c=>{if(!CATS.includes(c)&&catTotals[c]>0){labels.push(c);data.push(catTotals[c]);colors.push('#bbb');}});
+  if(typeof Chart!=='undefined'){
+    const ctx=document.getElementById('stat-detail-chart').getContext('2d');
+    if(statDetailChart)statDetailChart.destroy();
+    if(data.length){
+      statDetailChart=new Chart(ctx,{
+        type:'doughnut',
+        data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:2,borderColor:'rgba(255,246,249,.9)'}]},
+        options:{responsive:false,cutout:'60%',plugins:{legend:{display:false},tooltip:{enabled:false}},animation:{duration:300}}
+      });
+    }
+  }
+  const leg=document.getElementById('stat-detail-legend');
+  if(!data.length){leg.innerHTML='<div class="empty">нет данных</div>';return;}
+  leg.innerHTML=labels.map((l,i)=>{
+    const p=total?Math.round(data[i]/total*100):0;
+    const catEnts=catMap[l]||[];
+    return`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer;-webkit-tap-highlight-color:transparent" onclick="sdOpenCat('${l.replace(/'/g,"\'")}',JSON.parse(decodeURIComponent('${encodeURIComponent(JSON.stringify(catEnts))}')))" class="bud-row">
+      <div style="width:8px;height:8px;border-radius:50%;background:${colors[i]};flex-shrink:0"></div>
+      <span style="font-size:13px;color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l}</span>
+      <span style="font-size:13px;font-family:var(--mono);color:var(--text);flex-shrink:0">${data[i].toLocaleString('ru')} ₽</span>
+      <span style="font-size:11px;color:var(--text3);font-family:var(--mono);flex-shrink:0;min-width:32px;text-align:right">${p}%</span>
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0"><path d="M4 2l4 4-4 4" stroke="var(--text3)" stroke-width="1.2" stroke-linecap="round"/></svg>
+    </div>`;
+  }).join('');
+  // Итого под списком
+  if(total>0){
+    leg.innerHTML+=`<div style="display:flex;justify-content:space-between;padding:10px 0 2px;font-size:13px;font-weight:500;color:var(--text)">
+      <span>Итого</span>
+      <span style="font-family:var(--mono)">${total.toLocaleString('ru')} ₽</span>
+    </div>`;
+  }
+}
+// modal close on bg click
+document.addEventListener('click',function(e){
+  const bg=e.target.closest('.mbg');
+  if(bg&&e.target===bg)closeTopModal();
+});
+
+// свайп вниз для закрытия любой модалки
+(function(){
+  let startY=0,startX=0,modal=null,origTransform='';
+  const THRESHOLD=80; // px свайпа вниз для закрытия
+
+  document.addEventListener('touchstart',function(e){
+    const m=e.target.closest('.modal');
+    if(!m)return;
+    // не перехватывать если скролл не в самом верху
+    if(m.scrollTop>4)return;
+    startY=e.touches[0].clientY;
+    startX=e.touches[0].clientX;
+    modal=m;
+    origTransform=m.style.transform||'';
+  },{passive:true});
+
+  document.addEventListener('touchmove',function(e){
+    if(!modal)return;
+    if(modal.scrollTop>4){modal=null;return;}
+    const dy=e.touches[0].clientY-startY;
+    const dx=e.touches[0].clientX-startX;
+    // только вертикальный свайп вниз
+    if(dy<0||Math.abs(dx)>Math.abs(dy)){modal=null;return;}
+    // двигаем модалку вслед за пальцем
+    modal.style.transition='none';
+    modal.style.transform=`translate3d(0,${Math.min(dy,220)}px,0)`;
+    // затемняем фон пропорционально
+    const bg=modal.closest('.mbg');
+    if(bg){const op=Math.max(0,0.22*(1-dy/250));bg.style.background=`rgba(165,122,139,${op})`;}
+  },{passive:true});
+
+  document.addEventListener('touchend',function(e){
+    if(!modal)return;
+    const dy=e.changedTouches[0].clientY-startY;
+    const bg=modal.closest('.mbg');
+    if(dy>=THRESHOLD){
+      // закрыть — сдвигаем вниз и скрываем
+      modal.style.transition='transform .28s cubic-bezier(.4,0,.2,1)';
+      modal.style.transform='translate3d(0,100%,0)';
+      setTimeout(()=>{
+        // Используем closeTopModal для правильной навигации
+        modal.style.transform='';
+        modal.style.transition='';
+        if(bg)bg.style.background='';
+        closeTopModal();
+        modal=null;
+      },260);
+    } else {
+      // вернуть на место
+      modal.style.transition='transform .22s cubic-bezier(.4,0,.2,1)';
+      modal.style.transform='translate3d(0,0,0)';
+      if(bg)bg.style.background='';
+      setTimeout(()=>{
+        if(modal){modal.style.transform='';modal.style.transition='';}
+        modal=null;
+      },220);
+    }
+  },{passive:true});
+})();
+
 
 // init
 document.getElementById('e-date').value=localDateStr();
@@ -2118,6 +2589,9 @@ initWhoAmI();
   if(mk&&!mk.startsWith('year_')) fetchEntriesForMonth(mk);
   
   // Фоновая подгрузка последних 3 месяцев.
+  // Это нужно, чтобы разорвать замкнутый круг: если локальный кэш пуст,
+  // приложение подтянет старые операции за прошлые 3 месяца (например, март и февраль),
+  // добавит их в кэш, и нужные месяцы автоматически появятся в выпадающем списке!
   let tempMk = nowKey();
   for(let i=0; i<3; i++){
     tempMk = getPrevMonthKey(tempMk);
@@ -2127,6 +2601,8 @@ initWhoAmI();
 
 renderTrips();
 renderWishes();
+// goals rendered via renderBudget
+
 
 function pieTooltipToggle(evt){
   const tt=document.getElementById('pie-tooltip');
