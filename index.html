@@ -739,7 +739,8 @@ const _drumYears = ['26','27','28','29','30'];
 
 // Бесконечный барабан — 3 копии списка для иллюзии зацикливания
 function _drumFill(col, items, curIdx) {
-  const REPEAT = 3;
+  // 5 копий для надёжного бесконечного скролла в любую сторону
+  const REPEAT = 5;
   let html = '';
   for (let r = 0; r < REPEAT; r++) {
     items.forEach(v => {
@@ -747,21 +748,24 @@ function _drumFill(col, items, curIdx) {
     });
   }
   col.innerHTML = html;
-  // Скролл на центральную копию (без pad — CSS padding берёт на себя)
-  col.scrollTop = (items.length + curIdx) * 44;
+  // Центральная (третья) копия + позиция выбранного элемента
+  // CSS padding:55px добавляет ~1.25 элемента визуально сверху
+  // Нужно компенсировать это смещение чтобы выбранный был в рамке
+  const centerCopy = 2; // 0-based, третья копия
+  col.scrollTop = (centerCopy * items.length + curIdx) * 44;
 }
 
 function _drumLoop(col, items) {
   col.addEventListener('scroll', function() {
     const n = items.length;
     const idx = Math.round(col.scrollTop / 44);
-    // Первая копия (0..n-1) → прыгаем во вторую
-    if (idx < n) {
-      col.scrollTop = (n + idx) * 44;
+    // Если ушли в первую или вторую копию — прыгаем в третью (центр)
+    if (idx < n * 2) {
+      col.scrollTop += n * 2 * 44;
     }
-    // Третья копия (2n..3n-1) → прыгаем во вторую
-    if (idx >= n * 2) {
-      col.scrollTop = (n + idx - n * 2) * 44;
+    // Если ушли в четвёртую или пятую — прыгаем в третью
+    if (idx >= n * 3) {
+      col.scrollTop -= n * 2 * 44;
     }
     updateDrumActive(col, items);
   }, { passive: true });
