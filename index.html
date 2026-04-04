@@ -169,14 +169,31 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .body{scroll-behavior:auto} /* авто быстрее чем smooth на iOS */
 
 /* onboarding */
-.onboard-screen{position:fixed;inset:0;background:linear-gradient(180deg,#fff8fb 0%,#ffeef4 100%);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 32px;font-family:var(--font)}
+.onboard-screen{position:fixed;inset:0;background:linear-gradient(180deg,#fff8fb 0%,#ffeef4 100%);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 32px;font-family:var(--font)}
 .onboard-screen.hidden{display:none}
 .onboard-title{font-size:22px;font-weight:600;color:var(--text);letter-spacing:-.03em;margin-bottom:40px;text-align:center}
 .onboard-row{display:flex;gap:16px;width:100%}
-.onboard-btn{flex:1;padding:20px 12px;border-radius:18px;border:1.5px solid var(--line2);background:rgba(255,246,249,.95);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--font);transition:border-color .15s,background .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.onboard-btn{flex:1;padding:20px 12px;border-radius:18px;border:1.5px solid var(--line2);background:rgba(255,246,249,.95);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--font);transition:border-color .15s,background .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;pointer-events:auto;position:relative;z-index:1001;-webkit-appearance:none;appearance:none}
 .onboard-btn:active{background:var(--bg3);border-color:var(--accent)}
 .onboard-btn-emoji{font-size:40px;line-height:1}
 .onboard-btn-name{font-size:15px;font-weight:600;color:var(--text)}
+
+/* Drum picker */
+.drum-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:none;align-items:flex-end}
+.drum-overlay.open{display:flex}
+.drum-sheet{background:#1c1c1e;width:100%;border-radius:16px 16px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
+.drum-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px;border-bottom:1px solid rgba(255,255,255,.08)}
+.drum-header-title{font-size:13px;color:rgba(255,255,255,.5);font-family:var(--font);text-transform:uppercase;letter-spacing:.06em}
+.drum-done{font-size:17px;color:#4a9eff;font-family:var(--font);background:none;border:none;cursor:pointer;font-weight:600;padding:4px 8px}
+.drum-cols{display:flex;height:220px;overflow:hidden;position:relative}
+.drum-cols::before,.drum-cols::after{content:'';position:absolute;left:0;right:0;height:80px;z-index:2;pointer-events:none}
+.drum-cols::before{top:0;background:linear-gradient(to bottom,#1c1c1e 0%,rgba(28,28,30,0) 100%)}
+.drum-cols::after{bottom:0;background:linear-gradient(to top,#1c1c1e 0%,rgba(28,28,30,0) 100%)}
+.drum-col{flex:1;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.drum-col::-webkit-scrollbar{display:none}
+.drum-item{height:44px;display:flex;align-items:center;justify-content:center;font-size:22px;color:rgba(255,255,255,.35);font-family:var(--font);scroll-snap-align:center;transition:color .15s,font-size .15s}
+.drum-item.active{color:#fff;font-size:24px;font-weight:500}
+.drum-selector{position:absolute;left:8px;right:8px;top:50%;transform:translateY(-50%);height:44px;background:rgba(255,255,255,.1);border-radius:8px;pointer-events:none;z-index:1}
 </style>
 </head>
 <body>
@@ -193,6 +210,21 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <span class="onboard-btn-emoji">🐘</span>
         <span class="onboard-btn-name">Аннушка</span>
       </button>
+    </div>
+  </div>
+
+  <!-- Drum Month Picker -->
+  <div class="drum-overlay" id="drum-overlay" onclick="drumOverlayClick(event)">
+    <div class="drum-sheet" onclick="event.stopPropagation()">
+      <div class="drum-header">
+        <span class="drum-header-title" id="drum-title">Период</span>
+        <button class="drum-done" onclick="drumConfirm()">Готово</button>
+      </div>
+      <div class="drum-cols" id="drum-cols">
+        <div class="drum-selector"></div>
+        <div class="drum-col" id="drum-month-col"></div>
+        <div class="drum-col" id="drum-year-col"></div>
+      </div>
     </div>
   </div>
 
@@ -686,16 +718,96 @@ function buildMonthDropdown(prefix){
   btn.textContent=formatMonthLabel(curVal);
 }
 
-function toggleMonthPicker(prefix){
-  const dd=document.getElementById(prefix+'-month-dropdown');
-  if(!dd)return;
-  const isOpen=dd.style.display!=='none';
-  // Закрыть все
-  ['money','budget'].forEach(p=>{
-    const d=document.getElementById(p+'-month-dropdown');
-    if(d)d.style.display='none';
+// ====== Drum Month Picker ======
+let _drumPrefix = '';
+const _drumMonths = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+const _drumYears = ['26','27','28','29','30'];
+
+function openDrumPicker(prefix) {
+  _drumPrefix = prefix;
+  const sel = document.getElementById(prefix + '-month-sel');
+  const curVal = sel ? sel.value : nowKey();
+  let curYear = '26', curMonth = '04';
+  if (curVal && !curVal.startsWith('year_')) {
+    curYear = curVal.slice(2, 4); // 2026 → 26
+    curMonth = curVal.slice(5, 7); // 04
+  }
+
+  // Заполнить колонки
+  const mCol = document.getElementById('drum-month-col');
+  const yCol = document.getElementById('drum-year-col');
+
+  // Добавляем пустые элементы сверху/снизу для центрирования
+  const pad = 2;
+  mCol.innerHTML = '<div class="drum-item" style="height:' + (pad * 44) + 'px"></div>' +
+    _drumMonths.map(m => `<div class="drum-item" data-val="${m}">${m}</div>`).join('') +
+    '<div class="drum-item" style="height:' + (pad * 44) + 'px"></div>';
+  yCol.innerHTML = '<div class="drum-item" style="height:' + (pad * 44) + 'px"></div>' +
+    _drumYears.map(y => `<div class="drum-item" data-val="${y}">${y}</div>`).join('') +
+    '<div class="drum-item" style="height:' + (pad * 44) + 'px"></div>';
+
+  // Скролл к нужному значению
+  requestAnimationFrame(() => {
+    drumScrollTo(mCol, _drumMonths.indexOf(curMonth));
+    drumScrollTo(yCol, _drumYears.indexOf(curYear));
+    updateDrumActive(mCol);
+    updateDrumActive(yCol);
   });
-  if(!isOpen){buildMonthDropdown(prefix);dd.style.display='block';}
+
+  // Слушаем скролл для обновления активного элемента
+  [mCol, yCol].forEach(col => {
+    col.onscroll = () => { updateDrumActive(col); };
+  });
+
+  document.getElementById('drum-overlay').classList.add('open');
+}
+
+function drumScrollTo(col, idx) {
+  if (idx < 0) idx = 0;
+  col.scrollTop = idx * 44;
+}
+
+function updateDrumActive(col) {
+  const scrollTop = col.scrollTop;
+  const activeIdx = Math.round(scrollTop / 44);
+  col.querySelectorAll('.drum-item[data-val]').forEach((el, i) => {
+    el.classList.toggle('active', i === activeIdx);
+  });
+}
+
+function drumGetSelected(col) {
+  const scrollTop = col.scrollTop;
+  const idx = Math.round(scrollTop / 44);
+  const items = col.querySelectorAll('.drum-item[data-val]');
+  return items[idx] ? items[idx].dataset.val : null;
+}
+
+function drumConfirm() {
+  const mCol = document.getElementById('drum-month-col');
+  const yCol = document.getElementById('drum-year-col');
+  const month = drumGetSelected(mCol);
+  const year = drumGetSelected(yCol);
+  if (!month || !year) { drumClose(); return; }
+  const monthKey = '20' + year + '-' + month;
+  const sel = document.getElementById(_drumPrefix + '-month-sel');
+  const btn = document.getElementById(_drumPrefix + '-month-btn');
+  if (sel) sel.value = monthKey;
+  if (btn) btn.textContent = formatMonthLabel(monthKey);
+  drumClose();
+  if (_drumPrefix === 'money') renderEntries();
+  else renderBudget();
+}
+
+function drumClose() {
+  document.getElementById('drum-overlay').classList.remove('open');
+}
+
+function drumOverlayClick(e) {
+  if (e.target === document.getElementById('drum-overlay')) drumClose();
+}
+
+function toggleMonthPicker(prefix){
+  openDrumPicker(prefix);
 }
 
 function selectMonth(prefix,value){
