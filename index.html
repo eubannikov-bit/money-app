@@ -737,38 +737,21 @@ function buildMonthDropdown(prefix){
 const _drumMonths = ['01','02','03','04','05','06','07','08','09','10','11','12'];
 const _drumYears = ['26','27','28','29','30'];
 
-// Бесконечный барабан — 3 копии списка для иллюзии зацикливания
+// ====== Барабанный пикер — нативный scroll-snap, без JS зацикливания ======
+// 200 копий — хватит для любого скролла, без прыжков
+const DRUM_REPEAT = 200;
+
 function _drumFill(col, items, curIdx) {
-  // 5 копий для надёжного бесконечного скролла в любую сторону
-  const REPEAT = 5;
   let html = '';
-  for (let r = 0; r < REPEAT; r++) {
+  for (let r = 0; r < DRUM_REPEAT; r++) {
     items.forEach(v => {
       html += `<div class="drum-popup-item" data-val="${v}">${v}</div>`;
     });
   }
   col.innerHTML = html;
-  // Центральная (третья) копия + позиция выбранного элемента
-  // CSS padding:55px добавляет ~1.25 элемента визуально сверху
-  // Нужно компенсировать это смещение чтобы выбранный был в рамке
-  const centerCopy = 2; // 0-based, третья копия
-  col.scrollTop = (centerCopy * items.length + curIdx) * 44;
-}
-
-function _drumLoop(col, items) {
-  col.addEventListener('scroll', function() {
-    const n = items.length;
-    const idx = Math.round(col.scrollTop / 44);
-    // Если ушли в первую или вторую копию — прыгаем в третью (центр)
-    if (idx < n * 2) {
-      col.scrollTop += n * 2 * 44;
-    }
-    // Если ушли в четвёртую или пятую — прыгаем в третью
-    if (idx >= n * 3) {
-      col.scrollTop -= n * 2 * 44;
-    }
-    updateDrumActive(col, items);
-  }, { passive: true });
+  // Стартуем с середины + позиция выбранного
+  col.style.scrollBehavior = 'auto';
+  col.scrollTop = (DRUM_REPEAT / 2 * items.length + curIdx) * 44;
 }
 
 function openDrumPicker(prefix) {
@@ -794,14 +777,19 @@ function openDrumPicker(prefix) {
   const mCol = document.getElementById(prefix + '-drum-month');
   const yCol = document.getElementById(prefix + '-drum-year');
 
-  _drumFill(mCol, _drumMonths, _drumMonths.indexOf(curMonth));
+  _drumFill(mCol, _drumMonths, _drumMonths.indexOf(curMonth) < 0 ? 0 : _drumMonths.indexOf(curMonth));
   _drumFill(yCol, _drumYears, _drumYears.indexOf(curYear) < 0 ? 0 : _drumYears.indexOf(curYear));
 
   popup.classList.add('open');
 
-  // Вешаем loop только один раз
-  if (!mCol._loopAdded) { _drumLoop(mCol, _drumMonths); mCol._loopAdded = true; }
-  if (!yCol._loopAdded) { _drumLoop(yCol, _drumYears); yCol._loopAdded = true; }
+  if (!mCol._scrollAdded) {
+    mCol.addEventListener('scroll', () => updateDrumActive(mCol, _drumMonths), {passive: true});
+    mCol._scrollAdded = true;
+  }
+  if (!yCol._scrollAdded) {
+    yCol.addEventListener('scroll', () => updateDrumActive(yCol, _drumYears), {passive: true});
+    yCol._scrollAdded = true;
+  }
 
   requestAnimationFrame(() => {
     updateDrumActive(mCol, _drumMonths);
@@ -810,11 +798,10 @@ function openDrumPicker(prefix) {
 }
 
 function updateDrumActive(col, items) {
-  const n = items ? items.length : 12;
+  const n = items.length;
   const rawIdx = Math.round(col.scrollTop / 44);
   const realIdx = ((rawIdx % n) + n) % n;
-  col.querySelectorAll('.drum-popup-item[data-val]').forEach((el, i) => {
-    // Подсвечиваем все элементы с нужным значением (во всех 3 копиях)
+  col.querySelectorAll('.drum-popup-item').forEach((el, i) => {
     el.classList.toggle('active', i % n === realIdx);
   });
 }
@@ -822,8 +809,7 @@ function updateDrumActive(col, items) {
 function drumGetSelected(col, items) {
   const n = items.length;
   const rawIdx = Math.round(col.scrollTop / 44);
-  const realIdx = ((rawIdx % n) + n) % n;
-  return items[realIdx];
+  return items[((rawIdx % n) + n) % n];
 }
 
 function drumConfirm(prefix) {
