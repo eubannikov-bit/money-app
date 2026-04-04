@@ -488,6 +488,50 @@ const WHO_KEY='couple_who_v1';
 // Кто открывает приложение (Евгений / Аннушка)
 let whoAmI=localStorage.getItem(WHO_KEY)||'';
 
+// ====== Push уведомления ======
+const VAPID_PUBLIC_KEY = 'BMOKzzxBLBNqpYDyYLBJf5ylmjAMS64BCtXyU5mvoSqREkKSX3hl3DnOHzMiDcqNti13m0p-L0LoZaRzUdbT4_A';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
+  return outputArray;
+}
+
+async function registerPush(who) {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  try {
+    // Регистрируем SW
+    const reg = await navigator.serviceWorker.register('/money-app/sw.js', { scope: '/money-app/' });
+    await navigator.serviceWorker.ready;
+
+    // Запрашиваем разрешение
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') return;
+
+    // Подписываемся
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+
+    // Отправляем подписку на сервер
+    await fetch(API + '/push/subscribe', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'x-token': SERVER_TOKEN},
+      body: JSON.stringify({ who, sub })
+    });
+    console.log('Push registered for', who);
+  } catch(e) {
+    console.warn('Push registration failed:', e);
+  }
+}
+
 function chooseUser(name){
   whoAmI=name;
   localStorage.setItem(WHO_KEY,name);
@@ -495,6 +539,8 @@ function chooseUser(name){
   if(screen){screen.classList.add('hidden');screen.style.display='';}
   applyWhoAmI();
   renderGoals();
+  // Регистрируем push после выбора пользователя
+  registerPush(name);
 }
 
 function applyWhoAmI(){
@@ -518,6 +564,8 @@ function initWhoAmI(){
     if(screen){screen.classList.add('hidden');screen.style.display='';}
     applyWhoAmI();
     renderGoals();
+    // Восстанавливаем push подписку при повторном открытии
+    registerPush(whoAmI);
   }
   // Иначе экран онбординга остаётся видимым
 }
