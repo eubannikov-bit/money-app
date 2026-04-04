@@ -522,10 +522,9 @@ function initWhoAmI(){
 
 function monthLabel(monthKey){
   if(!monthKey||monthKey.startsWith('year_'))return '';
-  const MONTHS_RU=['Январь','Февраль','Март','Апрель','Май','Июнь',
-    'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
   const [y,m]=monthKey.split('-').map(Number);
-  return MONTHS_RU[m-1]+' '+y;
+  // Формат ГГГГ/ММ для всех мест, где используется monthLabel
+  return y + '/' + String(m).padStart(2, '0');
 }
 function localDateStr(d){
   const dt=d||new Date();
@@ -581,46 +580,30 @@ function buildMonthSelectors(){
   const months={};
   const years={};
   
-  let curY = new Date().getFullYear();
-  let curM = new Date().getMonth() + 1;
-  for (let i = 0; i < 12; i++) {
-    months[`${curY}-${String(curM).padStart(2, '0')}`] = true;
-    years[`${curY}`] = true;
-    curM--;
-    if (curM === 0) {
-      curM = 12;
-      curY--;
-    }
-  }
+  // Добавляем текущий месяц (чтобы список никогда не был пустым)
+  const ck = nowKey();
+  months[ck] = true;
+  years[ck.split('-')[0]] = true;
 
+  // Добавляем ТОЛЬКО те месяцы, в которых реально есть операции
   entries.forEach(e=>{
     if(e.date&&e.date.length>=7){
       months[e.date.substring(0,7)]=true;
       years[e.date.substring(0,4)]=true;
     }
   });
-  const ck=nowKey();
-  months[ck]=true;
-  years[new Date().getFullYear().toString()]=true;
-  
-  const allMonthKeys=Object.keys(months);
-  if(allMonthKeys.length>0){
-    const minMonth=allMonthKeys.sort()[0];
-    let [y,m]=[parseInt(minMonth.slice(0,4)),parseInt(minMonth.slice(5,7))];
-    const [cy,cm]=[parseInt(ck.slice(0,4)),parseInt(ck.slice(5,7))];
-    while(y<cy||(y===cy&&m<=cm)){
-      months[y+'-'+String(m).padStart(2,'0')]=true;
-      m++;if(m>12){m=1;y++;}
-    }
-  }
   
   const mKeys=Object.keys(months).sort().reverse();
   const yKeys=Object.keys(years).sort().reverse();
   
-  const buildOptions=(prev)=>{
+  const buildOptions=()=>{
     let html='';
     yKeys.forEach(y=>{html+=`<option value="year_${y}">${y}</option>`;});
-    mKeys.forEach(k=>{const p=k.split('-');html+=`<option value="${k}">${MONTHS_RU[parseInt(p[1])-1]} ${p[0]}</option>`;});
+    mKeys.forEach(k=>{
+      const p=k.split('-');
+      // Формат ГГГГ/ММ
+      html+=`<option value="${k}">${p[0]}/${p[1]}</option>`;
+    });
     return html;
   };
   
