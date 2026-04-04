@@ -195,6 +195,18 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .drum-item.active{color:#fff;font-size:24px;font-weight:500}
 .drum-selector{position:absolute;left:8px;right:8px;top:50%;transform:translateY(-50%);height:44px;background:rgba(255,255,255,.1);border-radius:8px;pointer-events:none;z-index:1}
 </style>
+<script>
+// Инлайн — доступно до загрузки основного скрипта
+window._earlyChooseUser = function(name) {
+  try { localStorage.setItem('couple_who_v1', name); } catch(e) {}
+  // Скрываем экран сразу
+  var el = document.getElementById('onboard-screen');
+  if (el) el.style.display = 'none';
+  // Если основной скрипт уже загружен — вызываем полную функцию
+  if (typeof chooseUser === 'function') chooseUser(name);
+  else window._pendingUser = name; // запомним для позднего вызова
+};
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -202,11 +214,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <div class="onboard-screen" id="onboard-screen">
     <div class="onboard-title">Привет, кто ты?</div>
     <div class="onboard-row">
-      <button class="onboard-btn" onclick="chooseUser('Евгений')">
+      <button class="onboard-btn" onclick="_earlyChooseUser('Евгений')">
         <span class="onboard-btn-emoji">🐗</span>
         <span class="onboard-btn-name">Евгений</span>
       </button>
-      <button class="onboard-btn" onclick="chooseUser('Аннушка')">
+      <button class="onboard-btn" onclick="_earlyChooseUser('Аннушка')">
         <span class="onboard-btn-emoji">🐘</span>
         <span class="onboard-btn-name">Аннушка</span>
       </button>
@@ -538,11 +550,9 @@ let whoAmI=localStorage.getItem(WHO_KEY)||'';
 function chooseUser(name){
   whoAmI=name;
   localStorage.setItem(WHO_KEY,name);
-  // Скрыть онбординг
-  document.getElementById('onboard-screen').classList.add('hidden');
-  // Применить имя в форме добавления операции
+  const screen=document.getElementById('onboard-screen');
+  if(screen){screen.classList.add('hidden');screen.style.display='';}
   applyWhoAmI();
-  // Перерендерить цели с фильтром
   renderGoals();
 }
 
@@ -554,11 +564,19 @@ function applyWhoAmI(){
 }
 
 function initWhoAmI(){
+  // Если пользователь нажал кнопку до загрузки скрипта
+  if(window._pendingUser) {
+    whoAmI = window._pendingUser;
+    localStorage.setItem(WHO_KEY, whoAmI);
+    delete window._pendingUser;
+  }
+  // Перечитываем из localStorage (мог быть записан _earlyChooseUser)
+  if(!whoAmI) whoAmI = localStorage.getItem(WHO_KEY)||'';
   const screen=document.getElementById('onboard-screen');
   if(whoAmI){
-    // Уже выбрали — скрыть экран
-    if(screen)screen.classList.add('hidden');
+    if(screen){screen.classList.add('hidden');screen.style.display='';}
     applyWhoAmI();
+    renderGoals();
   }
   // Иначе экран онбординга остаётся видимым
 }
