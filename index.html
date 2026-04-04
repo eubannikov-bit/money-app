@@ -178,21 +178,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .onboard-btn-emoji{font-size:40px;line-height:1}
 .onboard-btn-name{font-size:15px;font-weight:600;color:var(--text)}
 
-/* Compact drum picker */
-.drum-popup{position:absolute;top:calc(100% + 6px);right:0;z-index:200;background:rgba(255,246,249,.98);border:1px solid var(--line2);border-radius:14px;box-shadow:0 8px 32px rgba(180,80,120,.18);display:none;width:180px;overflow:hidden;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
-.drum-popup.open{display:block}
-.drum-popup-header{display:flex;justify-content:flex-end;padding:8px 10px 4px;border-bottom:1px solid var(--line)}
-.drum-popup-done{font-size:14px;color:var(--accent);font-family:var(--font);background:none;border:none;cursor:pointer;font-weight:600;padding:2px 6px;-webkit-tap-highlight-color:transparent}
-.drum-popup-cols{display:flex;height:154px;position:relative}
-.drum-popup-cols::before,.drum-popup-cols::after{content:'';position:absolute;left:0;right:0;height:48px;z-index:2;pointer-events:none}
-.drum-popup-cols::before{top:0;background:linear-gradient(to bottom,rgba(255,246,249,1) 0%,rgba(255,246,249,0) 100%)}
-.drum-popup-cols::after{bottom:0;background:linear-gradient(to top,rgba(255,246,249,1) 0%,rgba(255,246,249,0) 100%)}
-.drum-popup-col{flex:1;overflow-y:scroll;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior:contain}
-.drum-popup-col::-webkit-scrollbar{display:none}
-.drum-popup-item{height:44px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text3);font-family:var(--font);flex-shrink:0}
-.drum-spacer{height:55px;flex-shrink:0;scroll-snap-align:none}
-.drum-popup-item.active{color:var(--text);font-size:20px;font-weight:600}
-.drum-popup-sel{position:absolute;left:6px;right:6px;top:50%;transform:translateY(-50%);height:44px;background:transparent;border-radius:8px;pointer-events:none;z-index:3;border:1.5px solid var(--accent);opacity:.6}
 </style>
 <script>
 // Инлайн — доступно до загрузки основного скрипта
@@ -233,18 +218,7 @@ window._earlyChooseUser = function(name) {
     <div class="hdr">
       <div class="htitle">Деньги</div>
       <div class="hdr-right">
-        <div id="money-month-picker" style="position:relative;display:inline-block">
-          <button id="money-month-btn" onclick="toggleMonthPicker('money')" style="font-size:15px;padding:4px 28px 4px 10px;border-radius:8px;border:1px solid var(--line2);background:rgba(255,247,250,.9);color:var(--text);font-family:var(--font);cursor:pointer;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3l3 4 3-4' fill='none' stroke='%23c09aa7' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;white-space:nowrap">апрель 2026</button>
-          <div class="drum-popup" id="money-drum-popup">
-            <div class="drum-popup-header"><button class="drum-popup-done" onclick="drumConfirm('money')">Готово</button></div>
-            <div class="drum-popup-cols">
-              <div class="drum-popup-sel"></div>
-              <div class="drum-popup-col" id="money-drum-month"></div>
-              <div class="drum-popup-col" id="money-drum-year"></div>
-            </div>
-          </div>
-          <select id="money-month-sel" style="display:none" onchange="onMonthSelChange('money')"></select>
-        </div>
+        <select class="month-sel-small" id="money-month-sel" onchange="renderEntries()"></select>
       </div>
     </div>
     <div class="toolbar">
@@ -276,18 +250,7 @@ window._earlyChooseUser = function(name) {
     <div class="hdr">
       <div class="htitle">Бюджет</div>
       <div class="hdr-right">
-        <div id="budget-month-picker" style="position:relative;display:inline-block">
-          <button id="budget-month-btn" onclick="toggleMonthPicker('budget')" style="font-size:15px;padding:4px 28px 4px 10px;border-radius:8px;border:1px solid var(--line2);background:rgba(255,247,250,.9);color:var(--text);font-family:var(--font);cursor:pointer;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3l3 4 3-4' fill='none' stroke='%23c09aa7' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;white-space:nowrap">апрель 2026</button>
-          <div class="drum-popup" id="budget-drum-popup">
-            <div class="drum-popup-header"><button class="drum-popup-done" onclick="drumConfirm('budget')">Готово</button></div>
-            <div class="drum-popup-cols">
-              <div class="drum-popup-sel"></div>
-              <div class="drum-popup-col" id="budget-drum-month"></div>
-              <div class="drum-popup-col" id="budget-drum-year"></div>
-            </div>
-          </div>
-          <select id="budget-month-sel" style="display:none" onchange="onMonthSelChange('budget')"></select>
-        </div>
+        <select class="month-sel-small" id="budget-month-sel" onchange="renderBudget()"></select>
         <button class="btn-text" onclick="openBudgetModal()">План</button>
       </div>
     </div>
@@ -648,17 +611,8 @@ function buildMonthSelectors(){
   });
   const ck=nowKey();
   const curYear=new Date().getFullYear();
-  // Фиксированный диапазон: март 2026 – декабрь 2027
-  const START_YEAR=2026, START_MONTH=3;
-  const END_YEAR=2027, END_MONTH=12;
-  for(let y=START_YEAR;y<=END_YEAR;y++){
-    const mFrom=y===START_YEAR?START_MONTH:1;
-    const mTo=y===END_YEAR?END_MONTH:12;
-    for(let m=mFrom;m<=mTo;m++){
-      months[y+'-'+String(m).padStart(2,'0')]=true;
-    }
-    years[String(y)]=true;
-  }
+  // Только месяцы с данными + текущий месяц
+  years[new Date().getFullYear().toString()]=true;
   const mKeys=Object.keys(months).sort().reverse();
   const yKeys=Object.keys(years).sort().reverse();
   const buildOptions=(prev)=>{
@@ -668,21 +622,9 @@ function buildMonthSelectors(){
     return html;
   };
   const mSel=document.getElementById('money-month-sel');
-  if(mSel){
-    const prev=mSel.value;
-    mSel.innerHTML=buildOptions();
-    mSel.value=prev&&mSel.querySelector(`option[value="${prev}"]`)?prev:ck;
-    const btn=document.getElementById('money-month-btn');
-    if(btn)btn.textContent=formatMonthLabel(mSel.value);
-  }
+  if(mSel){const prev=mSel.value;mSel.innerHTML=buildOptions();mSel.value=prev&&mSel.querySelector(`option[value="${prev}"]`)?prev:ck;}
   const bSel=document.getElementById('budget-month-sel');
-  if(bSel){
-    const prev=bSel.value;
-    bSel.innerHTML=buildOptions();
-    bSel.value=prev&&bSel.querySelector(`option[value="${prev}"]`)?prev:ck;
-    const btn=document.getElementById('budget-month-btn');
-    if(btn)btn.textContent=formatMonthLabel(bSel.value);
-  }
+  if(bSel){const prev=bSel.value;bSel.innerHTML=buildOptions();bSel.value=prev&&bSel.querySelector(`option[value="${prev}"]`)?prev:ck;}
 }
 // ====== Кастомный пикер месяца ======
 const MONTHS_SHORT=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
@@ -695,198 +637,15 @@ function formatMonthLabel(key){
   return MONTHS_FULL[parseInt(m)-1]+' '+y;
 }
 
-function buildMonthDropdown(prefix){
-  const sel=document.getElementById(prefix+'-month-sel');
-  const dd=document.getElementById(prefix+'-month-dropdown');
-  const btn=document.getElementById(prefix+'-month-btn');
-  if(!sel||!dd||!btn)return;
-  const curVal=sel.value||nowKey();
-  // Группируем опции по годам
-  const years={};
-  [...sel.options].forEach(opt=>{
-    const v=opt.value;
-    if(v.startsWith('year_')){
-      const y=v.replace('year_','');
-      if(!years[y])years[y]={year:v,months:[]};
-    } else {
-      const y=v.slice(0,4);
-      if(!years[y])years[y]={year:'year_'+y,months:[]};
-      years[y].months.push({value:v,label:opt.text});
-    }
-  });
-  // Рендерим
-  let html='';
-  Object.keys(years).sort().reverse().forEach(y=>{
-    html+=`<div style="padding:6px 12px 2px;font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em">${y}</div>`;
-    const months=years[y].months;
-    // 3 месяца в строку
-    for(let i=0;i<months.length;i+=3){
-      html+='<div style="display:flex;gap:4px;padding:2px 8px">';
-      for(let j=i;j<Math.min(i+3,months.length);j++){
-        const m=months[j];
-        const isActive=m.value===curVal;
-        html+=`<button onclick="selectMonth('${prefix}','${m.value}')" style="flex:1;padding:6px 4px;border-radius:8px;border:${isActive?'1.5px solid var(--accent)':'1px solid var(--line2)'};background:${isActive?'var(--bg3)':'transparent'};color:${isActive?'var(--accent)':'var(--text)'};font-size:13px;font-family:var(--font);cursor:pointer;font-weight:${isActive?'600':'400'}">${MONTHS_SHORT[parseInt(m.value.slice(5))-1]}</button>`;
-      }
-      html+='</div>';
-    }
-  });
-  dd.innerHTML=html;
-  btn.textContent=formatMonthLabel(curVal);
-}
 
 // ====== Compact Drum Month Picker ======
-const _drumMonths = ['01','02','03','04','05','06','07','08','09','10','11','12'];
-const _drumYears = ['26','27','28','29','30'];
 
-// ====== Барабанный пикер — нативный scroll-snap, без JS зацикливания ======
-// 200 копий — хватит для любого скролла, без прыжков
-const DRUM_REPEAT = 200;
 
-function _drumFill(col, items, curIdx) {
-  // Spacer сверху и снизу = высота колонки / 2 - высота элемента / 2
-  // Колонка 154px, элемент 44px → spacer = (154-44)/2 = 55px
-  const spacer = '<div class="drum-spacer"></div>';
-  let html = spacer;
-  for (let r = 0; r < DRUM_REPEAT; r++) {
-    items.forEach(v => {
-      html += `<div class="drum-popup-item" data-val="${v}">${v}</div>`;
-    });
-  }
-  html += spacer;
-  col.innerHTML = html;
-  // Стартуем с середины (100-я копия) + позиция выбранного
-  // +1 за spacer сверху (55px не кратен 44px, поэтому используем px напрямую)
-  col.style.scrollBehavior = 'auto';
-  col.scrollTop = 55 + (DRUM_REPEAT / 2 * items.length + curIdx) * 44;
-}
 
-function openDrumPicker(prefix) {
-  ['money','budget'].forEach(p => {
-    if (p !== prefix) {
-      const pp = document.getElementById(p + '-drum-popup');
-      if (pp) pp.classList.remove('open');
-    }
-  });
 
-  const popup = document.getElementById(prefix + '-drum-popup');
-  if (!popup) return;
-  if (popup.classList.contains('open')) { popup.classList.remove('open'); return; }
 
-  const sel = document.getElementById(prefix + '-month-sel');
-  const curVal = sel ? sel.value : nowKey();
-  let curYear = '26', curMonth = '04';
-  if (curVal && !curVal.startsWith('year_')) {
-    curYear = curVal.slice(2, 4);
-    curMonth = curVal.slice(5, 7);
-  }
 
-  const mCol = document.getElementById(prefix + '-drum-month');
-  const yCol = document.getElementById(prefix + '-drum-year');
 
-  _drumFill(mCol, _drumMonths, _drumMonths.indexOf(curMonth) < 0 ? 0 : _drumMonths.indexOf(curMonth));
-  _drumFill(yCol, _drumYears, _drumYears.indexOf(curYear) < 0 ? 0 : _drumYears.indexOf(curYear));
-
-  popup.classList.add('open');
-
-  if (!mCol._scrollAdded) {
-    mCol.addEventListener('scroll', () => updateDrumActive(mCol, _drumMonths), {passive: true});
-    mCol.addEventListener('touchend', () => drumSnap(mCol), {passive: true});
-    mCol.addEventListener('touchcancel', () => drumSnap(mCol), {passive: true});
-    mCol._scrollAdded = true;
-  }
-  if (!yCol._scrollAdded) {
-    yCol.addEventListener('scroll', () => updateDrumActive(yCol, _drumYears), {passive: true});
-    yCol.addEventListener('touchend', () => drumSnap(yCol), {passive: true});
-    yCol.addEventListener('touchcancel', () => drumSnap(yCol), {passive: true});
-    yCol._scrollAdded = true;
-  }
-
-  requestAnimationFrame(() => {
-    updateDrumActive(mCol, _drumMonths);
-    updateDrumActive(yCol, _drumYears);
-  });
-}
-
-function updateDrumActive(col, items) {
-  const n = items.length;
-  const rawIdx = Math.round((col.scrollTop - 55) / 44);
-  const realIdx = ((rawIdx % n) + n) % n;
-  col.querySelectorAll('.drum-popup-item').forEach((el, i) => {
-    el.classList.toggle('active', i % n === realIdx);
-  });
-}
-
-function drumSnap(col) {
-  // Плавно доснапить к ближайшему элементу (44px сетка)
-  // scrollTop без spacer = scrollTop - 55
-  const raw = col.scrollTop - 55;
-  const snapped = Math.round(raw / 44) * 44 + 55;
-  if (Math.abs(col.scrollTop - snapped) > 1) {
-    col.style.scrollBehavior = 'smooth';
-    col.scrollTop = snapped;
-    setTimeout(() => { col.style.scrollBehavior = 'auto'; }, 300);
-  }
-}
-
-function drumGetSelected(col, items) {
-  const n = items.length;
-  // Вычитаем spacer (55px) перед делением
-  const rawIdx = Math.round((col.scrollTop - 55) / 44);
-  return items[((rawIdx % n) + n) % n];
-}
-
-function drumConfirm(prefix) {
-  const mCol = document.getElementById(prefix + '-drum-month');
-  const yCol = document.getElementById(prefix + '-drum-year');
-  const month = drumGetSelected(mCol, _drumMonths);
-  const year = drumGetSelected(yCol, _drumYears);
-  if (!month || !year) { drumClose(prefix); return; }
-  const monthKey = '20' + year + '-' + month;
-  const sel = document.getElementById(prefix + '-month-sel');
-  const btn = document.getElementById(prefix + '-month-btn');
-  if (sel) sel.value = monthKey;
-  if (btn) btn.textContent = formatMonthLabel(monthKey);
-  drumClose(prefix);
-  if (prefix === 'money') renderEntries();
-  else renderBudget();
-}
-
-function drumClose(prefix) {
-  const popup = document.getElementById(prefix + '-drum-popup');
-  if (popup) popup.classList.remove('open');
-}
-
-function toggleMonthPicker(prefix){
-  openDrumPicker(prefix);
-}
-
-function selectMonth(prefix,value){
-  const sel=document.getElementById(prefix+'-month-sel');
-  const dd=document.getElementById(prefix+'-month-dropdown');
-  const btn=document.getElementById(prefix+'-month-btn');
-  if(sel)sel.value=value;
-  if(dd)dd.style.display='none';
-  if(btn)btn.textContent=formatMonthLabel(value);
-  if(prefix==='money')renderEntries();
-  else renderBudget();
-}
-
-function onMonthSelChange(prefix){
-  const sel=document.getElementById(prefix+'-month-sel');
-  if(!sel)return;
-  selectMonth(prefix,sel.value);
-}
-
-// Закрывать drum-popup при клике вне
-document.addEventListener('click',function(e){
-  ['money','budget'].forEach(p=>{
-    const picker=document.getElementById(p+'-month-picker');
-    const popup=document.getElementById(p+'-drum-popup');
-    if(popup&&popup.classList.contains('open')&&picker&&!picker.contains(e.target)){
-      popup.classList.remove('open');
-    }
-  });
-});
 
 function setCurrentMonth(key){
   currentMonthKey=key||nowKey();
