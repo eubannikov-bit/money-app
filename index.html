@@ -90,7 +90,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .date-sep{font-size:11px;color:#cb8fa3;font-family:var(--mono);letter-spacing:.04em;padding:8px 14px 4px;background:rgba(255,241,245,.82)}
 .empty{text-align:center;padding:28px 0;color:var(--text3);font-size:13px;font-family:var(--mono)}
 .section-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;padding:4px 0 8px;font-family:var(--mono)}
-.swipe-wrap{position:relative;overflow:hidden;background:#fff6f9;isolation:isolate}
+.swipe-wrap{position:relative;overflow:hidden;background:#fff6f9;isolation:isolate;transition:border-color .2s}
 .swipe-actions{position:absolute;top:0;right:0;bottom:0;display:flex;z-index:1}
 .swipe-btn{width:70px;border:none;color:#fff;font-family:var(--font);font-size:15px;cursor:pointer}
 .swipe-btn.edit{background:#9b7a8c;isolation:isolate}
@@ -320,9 +320,11 @@ window._earlyChooseUser = function(name) {
     <div class="modal">
       <div class="modal-title" id="task-modal-title">Новая задача</div>
       <div class="frow"><label class="flabel">Задача</label><input type="text" id="tk-name" placeholder="что нужно сделать?"></div>
-      <div class="frow"><label class="flabel">Кому</label><select id="tk-who"><option value="Евгений">Евгению</option><option value="Аннушка">Аннушке</option><option value="both">обоим</option></select></div>
-      <div class="frow"><label class="flabel">Приоритет</label><select id="tk-prio"><option value="low">низкий</option><option value="mid">средний</option><option value="high">высокий</option></select></div>
-      <div class="brow"><button class="btn-cancel" onclick="closeM('add-task')">Отмена</button><button id="btn-del-task" style="display:none;background:none;border:1px solid #F09595;border-radius:8px;padding:11px 14px;cursor:pointer;font-family:var(--font);font-size:15px;color:#d94f6e" onclick="deleteTask()">Удалить</button><button class="btn-save" onclick="saveTask()">Сохранить</button></div>
+      <div class="frow"><label class="flabel">Кому</label><select id="tk-who"><option value="Евгений">Евгению 🐗</option><option value="Аннушка">Аннушке 🐘</option><option value="both">обоим</option></select></div>
+      <div class="frow"><label class="flabel">Когда</label><select id="tk-when"><option value="today">сегодня</option><option value="tomorrow">завтра</option><option value="week">эта неделя</option><option value="month">этот месяц</option><option value="none">без срока</option></select></div>
+      <div class="frow"><label class="flabel">Комментарий</label><input type="text" id="tk-note" placeholder="уточнение..."></div>
+      <div class="frow" id="tk-status-row" style="display:none"><label class="flabel">Статус</label><select id="tk-done-sel"><option value="0">Открыта</option><option value="1">Выполнена</option></select></div>
+      <div class="brow"><button class="btn-cancel" onclick="closeM('add-task')">Отмена</button><button id="btn-del-task" style="display:none;background:none;border:1px solid #F09595;border-radius:8px;padding:11px 14px;cursor:pointer;font-family:var(--font);font-size:15px;color:#d94f6e" onclick="deleteTask()">удалить</button><button class="btn-save" onclick="saveTask()">Сохранить</button></div>
     </div>
   </div>
 
@@ -2084,16 +2086,37 @@ function renderDayBudget(){
 // tasks
 let tasks=JSON.parse(localStorage.getItem('couple_tasks_v1')||'[]');
 function saveTasksData(){try{localStorage.setItem('couple_tasks_v1',JSON.stringify(tasks));}catch(e){}}
-const PRIO_LBL={low:'низкий',mid:'средний',high:'высокий'};
 let editingTaskIdx=-1;
+const WHEN_LBL={today:'сегодня',tomorrow:'завтра',week:'неделя',month:'месяц',none:'без срока'};
+const WHEN_DAYS={today:0,tomorrow:1,week:7,month:30,none:null};
+
+function taskDeadline(t){
+  if(!t.when||t.when==='none')return null;
+  const base=t.createdAt?new Date(t.createdAt):new Date();
+  const d=new Date(base);
+  if(t.when==='today')d.setHours(23,59,59);
+  else if(t.when==='tomorrow'){d.setDate(d.getDate()+1);d.setHours(23,59,59);}
+  else if(t.when==='week'){d.setDate(d.getDate()+7);d.setHours(23,59,59);}
+  else if(t.when==='month'){d.setDate(d.getDate()+30);d.setHours(23,59,59);}
+  return d;
+}
+function taskOverdue(t){
+  if(t.done)return false;
+  const dl=taskDeadline(t);
+  return dl&&dl<new Date();
+}
+
 function openNewTask(){
   editingTaskIdx=-1;
   document.getElementById('task-modal-title').textContent='Новая задача';
   document.getElementById('btn-del-task').style.display='none';
   document.getElementById('tk-name').value='';
-  document.getElementById('tk-who').value='Евгений';
-  document.getElementById('tk-prio').value='low';
+  document.getElementById('tk-who').value=whoAmI||'Евгений';
+  document.getElementById('tk-when').value='none';
+  document.getElementById('tk-note').value='';
+  const sr=document.getElementById('tk-status-row');if(sr)sr.style.display='none';
   openM('add-task');
+  setTimeout(()=>document.getElementById('tk-name').focus(),120);
 }
 function openEditTask(idx){
   const t=tasks[idx];editingTaskIdx=idx;
@@ -2101,45 +2124,136 @@ function openEditTask(idx){
   document.getElementById('btn-del-task').style.display='';
   document.getElementById('tk-name').value=t.name||'';
   document.getElementById('tk-who').value=t.who||'Евгений';
-  document.getElementById('tk-prio').value=t.prio||'low';
+  document.getElementById('tk-when').value=t.when||'none';
+  document.getElementById('tk-note').value=t.note||'';
+  const sr=document.getElementById('tk-status-row');if(sr)sr.style.display='';
+  const ds=document.getElementById('tk-done-sel');if(ds)ds.value=t.done?'1':'0';
   openM('add-task');
 }
 function deleteTask(){
   if(editingTaskIdx<0)return;
   tasks.splice(editingTaskIdx,1);editingTaskIdx=-1;
-  document.getElementById('task-modal-title').textContent='Новая задача';
   document.getElementById('btn-del-task').style.display='none';
   closeM('add-task');saveTasksData();renderTasks();
 }
 function saveTask(){
   const name=document.getElementById('tk-name').value.trim();
   const who=document.getElementById('tk-who').value;
-  const prio=document.getElementById('tk-prio').value;
+  const when=document.getElementById('tk-when').value;
+  const note=document.getElementById('tk-note').value.trim();
+  const doneEl=document.getElementById('tk-done-sel');
+  const done=doneEl?doneEl.value==='1':false;
   if(!name)return;
-  if(editingTaskIdx>=0){Object.assign(tasks[editingTaskIdx],{name,who,prio});}
-  else{tasks.unshift({name,who,prio,done:false});}
+  if(editingTaskIdx>=0){
+    const prev=tasks[editingTaskIdx];
+    const prevWho=prev.who;
+    Object.assign(tasks[editingTaskIdx],{name,who,when,note,done});
+    // Push при смене адресата
+    if(who!==prevWho&&who!=='both')sendTaskPush(who,name);
+  } else {
+    const task={id:'tk_'+Date.now(),name,who,when,note,done:false,createdAt:new Date().toISOString()};
+    tasks.unshift(task);
+    // Push новой задачи
+    if(who!=='both'&&who!==whoAmI)sendTaskPush(who,name);
+  }
   editingTaskIdx=-1;
-  document.getElementById('task-modal-title').textContent='Новая задача';
   document.getElementById('btn-del-task').style.display='none';
   closeM('add-task');saveTasksData();renderTasks();
 }
-function toggleTask(i,ev){ev.stopPropagation();tasks[i].done=!tasks[i].done;saveTasksData();renderTasks();}
+
+// Push-уведомления для задач
+function sendTaskPush(toWho,taskName){
+  try{
+    fetch(API+'/push',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-token':SERVER_TOKEN},
+      body:JSON.stringify({
+        to:toWho,
+        title:'Новая задача от '+(whoAmI||'партнёра'),
+        body:taskName
+      })
+    }).catch(()=>{});
+  }catch(e){}
+}
+
+function toggleTask(i,ev){
+  ev.stopPropagation();
+  tasks[i].done=!tasks[i].done;
+  if(tasks[i].done)tasks[i].doneAt=new Date().toISOString();
+  saveTasksData();renderTasks();
+}
+
 function renderTasks(){
   document.getElementById('t-open').textContent=tasks.filter(t=>!t.done).length;
   document.getElementById('t-done').textContent=tasks.filter(t=>t.done).length;
   const el=document.getElementById('tasks-list');
   if(!tasks.length){el.innerHTML='<div class="empty">нет задач</div>';return;}
-  const sorted=[...tasks].map((t,i)=>({...t,i})).sort((a,b)=>a.done-b.done);
-  el.innerHTML=sorted.map(t=>`<div class="row-item" style="cursor:pointer" onclick="openEditTask(${t.i})">
-    <div style="width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:${t.done?'var(--accent)':'var(--bg)'}" onclick="toggleTask(${t.i},event)">
-      ${t.done?'<svg width="9" height="9" viewBox="0 0 9 9"><polyline points="1.5,4.5 3.5,6.5 7.5,2" fill="none" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}
-    </div>
-    <div style="flex:1;min-width:0">
-      <div style="font-size:15px;color:var(--text);${t.done?'text-decoration:line-through;color:var(--text3)':''}">${t.name}</div>
-      <div style="font-size:13px;color:var(--text3);font-family:var(--mono)">${t.who==='both'?'Евгений + Аннушка':t.who}</div>
-    </div>
-    <span style="font-size:15px;color:var(--text3);font-family:var(--mono);border:1px solid var(--line2);padding:2px 7px;border-radius:20px">${PRIO_LBL[t.prio]||'низкий'}</span>
-  </div>`).join('');
+  // Сортировка: сначала невыполненные, внутри — по сроку (overdue вверху)
+  const sorted=[...tasks].map((t,i)=>({...t,_i:i})).sort((a,b)=>{
+    if(a.done!==b.done)return a.done?1:-1;
+    if(!a.done&&!b.done){
+      const aOvd=taskOverdue(a),bOvd=taskOverdue(b);
+      if(aOvd!==bOvd)return aOvd?-1:1;
+      // По срочности
+      const wOrder={today:0,tomorrow:1,week:2,month:3,none:4};
+      return(wOrder[a.when]||4)-(wOrder[b.when]||4);
+    }
+    return 0;
+  });
+
+  let html='';
+  sorted.forEach(t=>{
+    const ovd=taskOverdue(t);
+    const whenLbl=t.when&&t.when!=='none'?WHEN_LBL[t.when]:'';
+    const whoLbl=t.who==='both'?'оба 🐗🐘':t.who==='Евгений'?'🐗 Евгений':'🐘 Аннушка';
+    const sub=[whoLbl,whenLbl,t.note].filter(Boolean).join(' · ');
+    const borderStyle=ovd?'border-left:3px solid #ffb3b3':'';
+    html+=`<div class="swipe-wrap" data-tkidx="${t._i}" style="${borderStyle}">
+      <div class="swipe-actions">
+        <button class="swipe-btn edit" data-tkaction="edit" data-tkidx="${t._i}">править</button>
+        <button class="swipe-btn delete" data-tkaction="delete" data-tkidx="${t._i}">удалить</button>
+      </div>
+      <div class="swipe-content"><div class="row-item">
+        <div style="width:22px;height:22px;border-radius:50%;border:1.5px solid ${t.done?'var(--accent)':'var(--line2)'};cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:${t.done?'var(--accent)':'transparent'};touch-action:manipulation" onclick="toggleTask(${t._i},event)">
+          ${t.done?'<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}
+        </div>
+        <div style="flex:1;min-width:0" onclick="openEditTask(${t._i})">
+          <div style="font-size:15px;color:${t.done?'var(--text3)':'var(--text)'};${t.done?'text-decoration:line-through':''};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
+          ${sub?`<div style="font-size:13px;color:var(--text3);font-family:var(--mono);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sub}</div>`:''}
+        </div>
+      </div></div>
+    </div>`;
+  });
+  el.innerHTML=html;
+
+  // Свайпы для задач
+  el.querySelectorAll('.swipe-wrap').forEach(wrap=>{
+    let startX=0,curX=0;
+    const content=wrap.querySelector('.swipe-content');
+    if(!content)return;
+    wrap.addEventListener('touchstart',e=>{startX=e.touches[0].clientX;curX=startX;},{passive:true});
+    wrap.addEventListener('touchmove',e=>{
+      curX=e.touches[0].clientX;const dx=curX-startX;
+      if(dx<0)content.style.transform=`translate3d(${Math.max(dx,-140)}px,0,0)`;
+    },{passive:true});
+    wrap.addEventListener('touchend',()=>{
+      const dx=curX-startX;content.style.transform='';
+      el.querySelectorAll('.swipe-wrap.swiped').forEach(w=>{if(w!==wrap)w.classList.remove('swiped');});
+      if(dx<-55)wrap.classList.add('swiped');else if(dx>35)wrap.classList.remove('swiped');
+    });
+  });
+  el.querySelectorAll('[data-tkaction]').forEach(btn=>{
+    btn.onclick=function(ev){
+      ev.stopPropagation();
+      const idx=parseInt(this.getAttribute('data-tkidx'),10);
+      if(this.getAttribute('data-tkaction')==='edit')openEditTask(idx);
+      else{tasks.splice(idx,1);saveTasksData();renderTasks();}
+    };
+  });
+  el.onclick=function(e){
+    if(!e.target.closest('.swipe-wrap'))
+      el.querySelectorAll('.swipe-wrap.swiped').forEach(w=>w.classList.remove('swiped'));
+  };
 }
 // trips
 function switchTT(t){tripTab=t;document.querySelectorAll('[id^=trt-]').forEach(b=>b.classList.remove('on'));document.getElementById('trt-'+t).classList.add('on');renderTrips();}
