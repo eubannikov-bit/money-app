@@ -187,9 +187,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .drum-popup-cols::before,.drum-popup-cols::after{content:'';position:absolute;left:0;right:0;height:48px;z-index:2;pointer-events:none}
 .drum-popup-cols::before{top:0;background:linear-gradient(to bottom,rgba(255,246,249,1) 0%,rgba(255,246,249,0) 100%)}
 .drum-popup-cols::after{bottom:0;background:linear-gradient(to top,rgba(255,246,249,1) 0%,rgba(255,246,249,0) 100%)}
-.drum-popup-col{flex:1;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:55px 0}
+.drum-popup-col{flex:1;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .drum-popup-col::-webkit-scrollbar{display:none}
 .drum-popup-item{height:44px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text3);font-family:var(--font);scroll-snap-align:center;flex-shrink:0}
+.drum-spacer{height:55px;flex-shrink:0;scroll-snap-align:none}
 .drum-popup-item.active{color:var(--text);font-size:20px;font-weight:600}
 .drum-popup-sel{position:absolute;left:6px;right:6px;top:50%;transform:translateY(-50%);height:44px;background:transparent;border-radius:8px;pointer-events:none;z-index:3;border:1.5px solid var(--accent);opacity:.6}
 </style>
@@ -742,16 +743,21 @@ const _drumYears = ['26','27','28','29','30'];
 const DRUM_REPEAT = 200;
 
 function _drumFill(col, items, curIdx) {
-  let html = '';
+  // Spacer сверху и снизу = высота колонки / 2 - высота элемента / 2
+  // Колонка 154px, элемент 44px → spacer = (154-44)/2 = 55px
+  const spacer = '<div class="drum-spacer"></div>';
+  let html = spacer;
   for (let r = 0; r < DRUM_REPEAT; r++) {
     items.forEach(v => {
       html += `<div class="drum-popup-item" data-val="${v}">${v}</div>`;
     });
   }
+  html += spacer;
   col.innerHTML = html;
-  // Стартуем с середины + позиция выбранного
+  // Стартуем с середины (100-я копия) + позиция выбранного
+  // +1 за spacer сверху (55px не кратен 44px, поэтому используем px напрямую)
   col.style.scrollBehavior = 'auto';
-  col.scrollTop = (DRUM_REPEAT / 2 * items.length + curIdx) * 44;
+  col.scrollTop = 55 + (DRUM_REPEAT / 2 * items.length + curIdx) * 44;
 }
 
 function openDrumPicker(prefix) {
@@ -799,7 +805,7 @@ function openDrumPicker(prefix) {
 
 function updateDrumActive(col, items) {
   const n = items.length;
-  const rawIdx = Math.round(col.scrollTop / 44);
+  const rawIdx = Math.round((col.scrollTop - 55) / 44);
   const realIdx = ((rawIdx % n) + n) % n;
   col.querySelectorAll('.drum-popup-item').forEach((el, i) => {
     el.classList.toggle('active', i % n === realIdx);
@@ -808,7 +814,8 @@ function updateDrumActive(col, items) {
 
 function drumGetSelected(col, items) {
   const n = items.length;
-  const rawIdx = Math.round(col.scrollTop / 44);
+  // Вычитаем spacer (55px) перед делением
+  const rawIdx = Math.round((col.scrollTop - 55) / 44);
   return items[((rawIdx % n) + n) % n];
 }
 
