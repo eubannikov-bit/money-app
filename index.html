@@ -187,11 +187,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .drum-popup-cols::before,.drum-popup-cols::after{content:'';position:absolute;left:0;right:0;height:48px;z-index:2;pointer-events:none}
 .drum-popup-cols::before{top:0;background:linear-gradient(to bottom,rgba(255,246,249,1) 0%,rgba(255,246,249,0) 100%)}
 .drum-popup-cols::after{bottom:0;background:linear-gradient(to top,rgba(255,246,249,1) 0%,rgba(255,246,249,0) 100%)}
-.drum-popup-col{flex:1;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.drum-popup-col{flex:1;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:55px 0}
 .drum-popup-col::-webkit-scrollbar{display:none}
-.drum-popup-item{height:44px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text3);font-family:var(--font);scroll-snap-align:center}
+.drum-popup-item{height:44px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text3);font-family:var(--font);scroll-snap-align:center;flex-shrink:0}
 .drum-popup-item.active{color:var(--text);font-size:20px;font-weight:600}
-.drum-popup-sel{position:absolute;left:6px;right:6px;top:50%;transform:translateY(-50%);height:44px;background:transparent;border-radius:8px;pointer-events:none;z-index:1;border:1.5px solid var(--accent);opacity:.4}
+.drum-popup-sel{position:absolute;left:6px;right:6px;top:50%;transform:translateY(-50%);height:44px;background:transparent;border-radius:8px;pointer-events:none;z-index:3;border:1.5px solid var(--accent);opacity:.6}
 </style>
 <script>
 // Инлайн — доступно до загрузки основного скрипта
@@ -739,33 +739,29 @@ const _drumYears = ['26','27','28','29','30'];
 
 // Бесконечный барабан — 3 копии списка для иллюзии зацикливания
 function _drumFill(col, items, curIdx) {
-  const REPEAT = 3; // центральная копия + по одной с каждой стороны
-  const pad = 1; // 1 пустой элемент сверху/снизу для центрирования крайних
-  let html = `<div style="height:${pad*44}px"></div>`;
+  const REPEAT = 3;
+  let html = '';
   for (let r = 0; r < REPEAT; r++) {
     items.forEach(v => {
       html += `<div class="drum-popup-item" data-val="${v}">${v}</div>`;
     });
   }
-  html += `<div style="height:${pad*44}px"></div>`;
   col.innerHTML = html;
-  // Скролл на центральную копию
-  col.scrollTop = (pad + items.length + curIdx) * 44;
+  // Скролл на центральную копию (без pad — CSS padding берёт на себя)
+  col.scrollTop = (items.length + curIdx) * 44;
 }
 
 function _drumLoop(col, items) {
   col.addEventListener('scroll', function() {
-    const pad = 1;
     const n = items.length;
-    const total = pad + n * 3;
     const idx = Math.round(col.scrollTop / 44);
-    // Если ушли в первую копию — прыгаем во вторую
-    if (idx < pad + n) {
-      col.scrollTop = (pad + n + (idx - pad)) * 44;
+    // Первая копия (0..n-1) → прыгаем во вторую
+    if (idx < n) {
+      col.scrollTop = (n + idx) * 44;
     }
-    // Если ушли в третью копию — прыгаем во вторую
-    if (idx >= pad + n * 2) {
-      col.scrollTop = (pad + n + (idx - pad - n * 2)) * 44;
+    // Третья копия (2n..3n-1) → прыгаем во вторую
+    if (idx >= n * 2) {
+      col.scrollTop = (n + idx - n * 2) * 44;
     }
     updateDrumActive(col, items);
   }, { passive: true });
@@ -810,22 +806,19 @@ function openDrumPicker(prefix) {
 }
 
 function updateDrumActive(col, items) {
-  const pad = 1;
   const n = items ? items.length : 12;
   const rawIdx = Math.round(col.scrollTop / 44);
-  // Реальный индекс в исходном списке
-  const realIdx = (rawIdx - pad) % n;
+  const realIdx = ((rawIdx % n) + n) % n;
   col.querySelectorAll('.drum-popup-item[data-val]').forEach((el, i) => {
-    const elReal = i % n;
-    el.classList.toggle('active', elReal === realIdx && Math.floor(i / n) === 1);
+    // Подсвечиваем все элементы с нужным значением (во всех 3 копиях)
+    el.classList.toggle('active', i % n === realIdx);
   });
 }
 
 function drumGetSelected(col, items) {
-  const pad = 1;
   const n = items.length;
   const rawIdx = Math.round(col.scrollTop / 44);
-  const realIdx = ((rawIdx - pad) % n + n) % n;
+  const realIdx = ((rawIdx % n) + n) % n;
   return items[realIdx];
 }
 
