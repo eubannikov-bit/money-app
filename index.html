@@ -10,7 +10,6 @@
 <link rel="manifest" href="/money-app/manifest.json">
 <link rel="apple-touch-icon" href="/money-app/icon.png">
 <title>Евгений и Аннушка</title>
-<!-- системный шрифт Apple -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%}
@@ -189,7 +188,6 @@ window._earlyChooseUser = function(name) {
 </head>
 <body>
 <div class="wrap">
-  <!-- Экран выбора пользователя -->
   <div class="onboard-screen" id="onboard-screen">
     <div class="onboard-title">Привет, кто ты?</div>
     <div class="onboard-row">
@@ -206,7 +204,6 @@ window._earlyChooseUser = function(name) {
 
 
 
-  <!-- ДЕНЬГИ -->
   <div class="scr on" id="s-money">
     <div class="hdr">
       <div class="htitle">Деньги</div>
@@ -238,7 +235,6 @@ window._earlyChooseUser = function(name) {
     </div>
   </div>
 
-  <!-- БЮДЖЕТ -->
   <div class="scr" id="s-budget">
     <div class="hdr">
       <div class="htitle">Бюджет</div>
@@ -282,7 +278,6 @@ window._earlyChooseUser = function(name) {
     </div>
   </div>
 
-  <!-- ЗАДАЧИ -->
   <div class="scr" id="s-tasks">
     <div class="hdr"><div class="htitle">Задачи</div></div>
     <div class="body">
@@ -294,24 +289,20 @@ window._earlyChooseUser = function(name) {
     </div>
   </div>
 
-  <!-- ПОЕЗДКИ -->
   <div class="scr" id="s-travel">
     <div class="hdr"><div class="htitle">Путешествия</div></div>
     <div class="toolbar"><div class="tabs-row"><button class="tab on" id="trt-all" onclick="switchTT('all')">все</button><button class="tab" id="trt-planned" onclick="switchTT('planned')">Планируем</button><button class="tab" id="trt-done" onclick="switchTT('done')">были</button></div></div>
     <div class="body"><div id="trips-list"></div></div>
   </div>
 
-  <!-- ХОЧУ -->
   <div class="scr" id="s-wish">
     <div class="hdr"><div class="htitle">Хочу</div></div>
     <div class="toolbar"><div class="tabs-row"><button class="tab on" id="wt-all" onclick="switchWT('all')">все</button><button class="tab" id="wt-me" onclick="switchWT('me')">Евгений</button><button class="tab" id="wt-them" onclick="switchWT('them')">Аннушка</button></div></div>
     <div class="body"><div id="wishes-list"></div></div>
   </div>
 
-  <!-- FAB -->
   <button class="fab" id="fab-btn" onclick="fabAction()" aria-label="Добавить">+</button>
 
-  <!-- MODALS -->
   <div class="mbg" id="m-add-entry">
     <div class="modal">
       <div class="modal-title" id="entry-modal-title">Новая запись</div>
@@ -420,7 +411,6 @@ window._earlyChooseUser = function(name) {
     <div class="ni" id="n-travel" onclick="switchS('travel')"><div class="nic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a2 2 0 01-2 2H15l-2.5 5H11l1.2-5H8.5L7 15H5.5L7 12 5.5 9H7l1.5 1.5 3.7-1.5L11 4h1.5l2.5 5H19a2 2 0 012 2z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="nil">поездки</div></div>
     <div class="ni" id="n-wish" onclick="switchS('wish')"><div class="nic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 20S4 15 4 9a4 4 0 018 0 4 4 0 018 0c0 6-8 11-8 11z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div><div class="nil">хочу</div></div>
   </div>
-  <!-- MODAL: финансовая цель -->
   <div class="mbg" id="m-add-goal">
     <div class="modal">
       <div class="modal-title" id="goal-modal-title">Новая цель</div>
@@ -439,10 +429,8 @@ window._earlyChooseUser = function(name) {
 
 
 
-  <!-- MODAL: детализация цели -->
   <div class="mbg" id="m-goal-detail">
     <div class="modal">
-      <!-- Основной вид: детализация цели -->
       <div id="gd-main-view">
         <div id="goal-detail-content"></div>
         <div class="brow">
@@ -450,7 +438,6 @@ window._earlyChooseUser = function(name) {
           <button class="btn-save" onclick="showContribForm()">Добавить вклад</button>
         </div>
       </div>
-      <!-- Встроенная форма вклада -->
       <div id="gd-contrib-view" style="display:none">
         <div class="modal-title">Добавить вклад</div>
         <div class="ttype" style="margin-bottom:12px">
@@ -467,14 +454,12 @@ window._earlyChooseUser = function(name) {
     </div>
   </div>
 
-  <!-- MODAL: дневной бюджет -->
   <div class="mbg" id="m-day-budget">
     <div class="modal" style="max-height:96%">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div class="modal-title" style="margin-bottom:0">Дневной бюджет</div>
         <button onclick="closeM('day-budget')" style="background:none;border:none;font-size:20px;color:var(--text3);cursor:pointer;padding:0;line-height:1">×</button>
       </div>
-      <!-- переключатель пользователя -->
       <div style="display:flex;gap:6px;margin-bottom:14px" id="db-user-filter">
         <button class="anl-user-btn on" id="db-u-all" onclick="setDbUser('all')">Общее</button>
         <button class="anl-user-btn" id="db-u-e" onclick="setDbUser('Евгений')">Евгений</button>
@@ -595,6 +580,19 @@ let currentMonthKey=nowKey();
 function buildMonthSelectors(){
   const months={};
   const years={};
+  
+  let curY = new Date().getFullYear();
+  let curM = new Date().getMonth() + 1;
+  for (let i = 0; i < 12; i++) {
+    months[`${curY}-${String(curM).padStart(2, '0')}`] = true;
+    years[`${curY}`] = true;
+    curM--;
+    if (curM === 0) {
+      curM = 12;
+      curY--;
+    }
+  }
+
   entries.forEach(e=>{
     if(e.date&&e.date.length>=7){
       months[e.date.substring(0,7)]=true;
@@ -604,7 +602,7 @@ function buildMonthSelectors(){
   const ck=nowKey();
   months[ck]=true;
   years[new Date().getFullYear().toString()]=true;
-  // Если есть записи — заполняем все месяцы между первой записью и текущим
+  
   const allMonthKeys=Object.keys(months);
   if(allMonthKeys.length>0){
     const minMonth=allMonthKeys.sort()[0];
@@ -615,19 +613,24 @@ function buildMonthSelectors(){
       m++;if(m>12){m=1;y++;}
     }
   }
+  
   const mKeys=Object.keys(months).sort().reverse();
   const yKeys=Object.keys(years).sort().reverse();
+  
   const buildOptions=(prev)=>{
     let html='';
-    yKeys.forEach(y=>{html+=`<option value="year_${y}">${y} год (весь год)</option>`;});
+    yKeys.forEach(y=>{html+=`<option value="year_${y}">${y}</option>`;});
     mKeys.forEach(k=>{const p=k.split('-');html+=`<option value="${k}">${MONTHS_RU[parseInt(p[1])-1]} ${p[0]}</option>`;});
     return html;
   };
+  
   const mSel=document.getElementById('money-month-sel');
   if(mSel){const prev=mSel.value;mSel.innerHTML=buildOptions();mSel.value=prev&&mSel.querySelector(`option[value="${prev}"]`)?prev:ck;}
+  
   const bSel=document.getElementById('budget-month-sel');
   if(bSel){const prev=bSel.value;bSel.innerHTML=buildOptions();bSel.value=prev&&bSel.querySelector(`option[value="${prev}"]`)?prev:ck;}
 }
+
 // ====== Кастомный пикер месяца ======
 const MONTHS_SHORT=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
 const MONTHS_FULL=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
@@ -1986,7 +1989,6 @@ function renderDayBudget(){
     : `<span style="color:var(--red)">Выйдешь за бюджет на ${Math.abs(d.forecastOverrun).toLocaleString('ru')} ₽</span>`;
 
   el.innerHTML=`
-    <!-- Главный блок -->
     <div class="anl-card" style="text-align:center;margin-bottom:10px">
       <div class="anl-title" style="margin-bottom:4px">Сегодня можно потратить</div>
       <div class="day-main-num" style="color:${d.availableToday>0?d.mainColor:'var(--red)'}">${Math.round(d.availableToday).toLocaleString('ru')} ₽</div>
@@ -1994,7 +1996,6 @@ function renderDayBudget(){
       <div style="font-size:15px;font-weight:500">${forecastStr}</div>
     </div>
 
-    <!-- Статус -->
     <div class="day-section">
       <div class="day-stat-row">
         <span class="day-stat-lbl">Статус</span>
@@ -2006,7 +2007,6 @@ function renderDayBudget(){
       </div>
     </div>
 
-    <!-- Переменные расходы -->
     <div class="day-section">
       <div class="anl-title" style="margin-bottom:6px">Переменные расходы</div>
       <div class="day-stat-row"><span class="day-stat-lbl">План</span><span class="day-stat-val">${d.varPlan.toLocaleString('ru')} ₽</span></div>
@@ -2014,7 +2014,6 @@ function renderDayBudget(){
       <div class="day-stat-row"><span class="day-stat-lbl">Остаток</span><span class="day-stat-val" style="color:${d.varLeft<0?'var(--red)':'var(--green)'}">${d.varLeft>=0?'':'-'}${Math.abs(d.varLeft).toLocaleString('ru')} ₽</span></div>
     </div>
 
-    <!-- Сегодня -->
     <div class="day-section">
       <div class="anl-title" style="margin-bottom:6px">Сегодня</div>
       <div class="day-stat-row"><span class="day-stat-lbl">Лимит на день</span><span class="day-stat-val">${Math.round(d.dayLimit).toLocaleString('ru')} ₽</span></div>
@@ -2022,14 +2021,12 @@ function renderDayBudget(){
       <div class="day-stat-row"><span class="day-stat-lbl">Ещё можно потратить</span><span class="day-stat-val" style="color:${d.availableToday>0?'var(--green)':'var(--red)'}">${Math.round(d.availableToday).toLocaleString('ru')} ₽</span></div>
     </div>
 
-    <!-- Скорость -->
     <div class="day-section">
       <div class="day-stat-row"><span class="day-stat-lbl">Темп трат</span><span class="day-stat-val">${d.pace.toLocaleString('ru')} ₽/день</span></div>
       <div class="day-stat-row"><span class="day-stat-lbl">Норма</span><span class="day-stat-val">${d.norm.toLocaleString('ru')} ₽/день</span></div>
       <div class="day-stat-row"><span class="day-stat-lbl">Оценка</span><span class="day-stat-val" style="color:${d.faster?'var(--red)':'var(--green)'}">${d.faster?'Тратишь быстрее нормы':'Ты в норме'}</span></div>
     </div>
 
-    <!-- Прогноз -->
     <div class="day-section">
       <div class="day-stat-row">
         <span class="day-stat-lbl">Прогноз к концу месяца</span>
@@ -2039,7 +2036,6 @@ function renderDayBudget(){
       </div>
     </div>
 
-    <!-- Структура -->
     <div class="day-section">
       <div class="anl-title" style="margin-bottom:6px">Структура расходов</div>
       <div class="day-stat-row"><span class="day-stat-lbl">Обязательные</span><span class="day-stat-val">${d.mandatoryFact.toLocaleString('ru')} ₽</span></div>
@@ -2047,7 +2043,6 @@ function renderDayBudget(){
       ${d.incomeTotal>0?`<div class="day-stat-row"><span class="day-stat-lbl">Переменные от дохода</span><span class="day-stat-val">${Math.round(d.varFact/d.incomeTotal*100)}%</span></div>`:''}
     </div>
 
-    <!-- Инсайт -->
     ${d.insight?`<div style="font-size:15px;color:var(--text2);background:rgba(255,246,249,.9);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:var(--mono)">${d.insight}</div>`:''}
 
     <div style="font-size:13px;color:var(--text3);font-family:var(--mono);text-align:center;margin-top:8px">
