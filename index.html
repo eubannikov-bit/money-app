@@ -614,26 +614,11 @@ function buildMonthSelectors(){
   if(bSel){const prev=bSel.value;bSel.innerHTML=buildOptions();bSel.value=prev&&bSel.querySelector(`option[value="${prev}"]`)?prev:ck;}
 }
 
-// ====== Кастомный пикер месяца ======
-const MONTHS_SHORT=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
-const MONTHS_FULL=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
-
-function formatMonthLabel(key){
-  if(!key)return'';
-  if(key.startsWith('year_'))return key.replace('year_','')+' год';
-  const [y,m]=key.split('-');
-  return MONTHS_FULL[parseInt(m)-1]+' '+y;
+function getPrevMonthKey(k){
+  const [y,m]=k.split('-').map(Number);
+  const d=new Date(y,m-2,1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
 }
-
-
-// ====== Compact Drum Month Picker ======
-
-
-
-
-
-
-
 
 function setCurrentMonth(key){
   currentMonthKey=key||nowKey();
@@ -645,11 +630,6 @@ function setCurrentMonth(key){
 function getMonthEntries(key){
   const k=key||currentMonthKey;
   return entries.filter(e=>e.date&&e.date.startsWith(k));
-}
-function getPrevMonthKey(k){
-  const [y,m]=k.split('-').map(Number);
-  const d=new Date(y,m-2,1);
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
 }
 
 // sync/state
@@ -1030,10 +1010,9 @@ function fetchEntriesForMonth(monthKey){
           changed=true;
         }
       });
-      // Всегда перерендеривать если это текущий выбранный месяц
-      const selEl=document.getElementById('money-month-sel');
-      const curSel=selEl?selEl.value:'';
-      if(changed||curSel===monthKey){
+      // Если подгрузились новые данные (например, за прошлый месяц),
+      // нужно перестроить интерфейс и выпадающий список
+      if(changed){
         saveData();
         buildMonthSelectors();
         renderEntries();
@@ -2347,12 +2326,24 @@ buildMonthSelectors();
 renderEntries();updateTodayCard();
 renderTasks();
 initWhoAmI();
-// Принудительно загружаем текущий месяц при старте
+
+// Принудительно загружаем данные при старте
 (function(){
   const selEl=document.getElementById('money-month-sel');
   const mk=selEl?selEl.value:nowKey();
-  if(mk&&!mk.startsWith('year_'))fetchEntriesForMonth(mk);
+  if(mk&&!mk.startsWith('year_')) fetchEntriesForMonth(mk);
+  
+  // Фоновая подгрузка последних 3 месяцев.
+  // Это нужно, чтобы разорвать замкнутый круг: если локальный кэш пуст,
+  // приложение подтянет старые операции за прошлые 3 месяца (например, март и февраль),
+  // добавит их в кэш, и нужные месяцы автоматически появятся в выпадающем списке!
+  let tempMk = nowKey();
+  for(let i=0; i<3; i++){
+    tempMk = getPrevMonthKey(tempMk);
+    fetchEntriesForMonth(tempMk);
+  }
 })();
+
 renderTrips();
 renderWishes();
 // goals rendered via renderBudget
