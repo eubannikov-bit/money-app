@@ -1076,8 +1076,9 @@ async function deleteEntry(){
   document.getElementById('entry-modal-title').textContent='Новая запись';
   document.getElementById('btn-del-entry').style.display='none';
   closeM('add-entry');saveData();renderEntries();
-  await postActionToSheets({action:'delete',id:entry.id,entry});
-  setSyncState('ok','Удалено','');
+  fetch(API+'/entries/'+encodeURIComponent(entry.id),{
+    method:'DELETE',headers:{'x-token':SERVER_TOKEN}
+  }).catch(e=>console.warn('delete error:',e));
 }
 async function addEntry(){
   const date=document.getElementById('e-date').value;
@@ -1086,22 +1087,19 @@ async function addEntry(){
   const comment=document.getElementById('e-cmt').value.trim();
   const who=document.getElementById('e-who').value;
   if(!date||!amount||!cat)return;
-  const entry={id:'loc_'+Date.now()+'_'+(++entrySeq),type:eType,date,cat,amount,comment,who,synced:false,_ts:Date.now()};
-  let oldEntry=null;
-  if(editingEntryIdx>=0){
-    oldEntry=Object.assign({},entries[editingEntryIdx]);
-    entries[editingEntryIdx]=Object.assign({},entries[editingEntryIdx],entry,{id:entries[editingEntryIdx].id,synced:true});
+    if(editingEntryIdx>=0){
+    const origId=entries[editingEntryIdx].id;
+    const updatedEntry={...entries[editingEntryIdx],type:eType,date,cat,amount,comment,who,synced:true,_ts:Date.now()};
+    entries[editingEntryIdx]=updatedEntry;
     editingEntryIdx=-1;
+    resetEntryForm();closeM('add-entry');saveData();buildMonthSelectors();renderEntries();
+    fetch(API+'/entries/'+encodeURIComponent(origId),{method:'PUT',headers:{'Content-Type':'application/json','x-token':SERVER_TOKEN},body:JSON.stringify(updatedEntry)}).catch(e=>console.warn('update error:',e));
   }else{
+    const entry={id:'loc_'+Date.now()+'_'+(++entrySeq),type:eType,date,cat,amount,comment,who,synced:false,_ts:Date.now()};
     entries.unshift(entry);
+    resetEntryForm();closeM('add-entry');saveData();buildMonthSelectors();renderEntries();
     sendToSheets(entry);
   }
-  resetEntryForm();closeM('add-entry');saveData();buildMonthSelectors();renderEntries();
-  if(oldEntry){
-    const ok=await postActionToSheets({action:'update',id:oldEntry.id,oldEntry,newEntry:entry});
-    setSyncState(ok?'ok':'err',ok?'Запись обновлена':'Ошибка обновления',ok?'':'Изменения только локально');
-  }
-}
 
 // Загрузить записи для конкретного месяца с сервера
 const _loadedMonths=new Set();
