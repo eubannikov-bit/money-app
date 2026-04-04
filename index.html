@@ -205,7 +205,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="hdr">
       <div class="htitle">Деньги</div>
       <div class="hdr-right">
-        <select class="month-sel-small" id="money-month-sel" onchange="renderEntries()"></select>
+        <div id="money-month-picker" style="position:relative;display:inline-block">
+          <button id="money-month-btn" onclick="toggleMonthPicker('money')" style="font-size:15px;padding:4px 28px 4px 10px;border-radius:8px;border:1px solid var(--line2);background:rgba(255,247,250,.9);color:var(--text);font-family:var(--font);cursor:pointer;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3l3 4 3-4' fill='none' stroke='%23c09aa7' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;white-space:nowrap">апрель 2026</button>
+          <div id="money-month-dropdown" style="display:none;position:absolute;right:0;top:36px;background:#fff8fb;border:1px solid var(--line2);border-radius:12px;box-shadow:0 8px 24px rgba(180,100,120,.15);z-index:100;min-width:160px;max-height:280px;overflow-y:auto;-webkit-overflow-scrolling:touch"></div>
+          <select id="money-month-sel" style="display:none" onchange="onMonthSelChange('money')"></select>
+        </div>
       </div>
     </div>
     <div class="toolbar">
@@ -227,24 +231,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="stat" style="cursor:pointer" onclick="openDayBudget()"><div class="stat-lbl">сегодня</div><div class="stat-val" id="s-today">— ₽</div></div>
       </div>
       <div id="breakdown-block" style="display:none;margin-bottom:8px"></div>
-      <div class="sync-row" id="sync-row">
-        <div style="width:24px;height:24px;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-right:10px">
-          <!-- spinner -->
-          <div class="sync-spin" id="sync-spin" style="display:none"></div>
-          <!-- ok checkmark -->
-          <div class="sync-dot" id="sync-dot" style="display:none">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3.5 3.5 6.5-7" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <!-- error cross -->
-          <div class="sync-err" id="sync-err" style="display:none">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><line x1="4" y1="4" x2="12" y2="12" stroke="var(--red)" stroke-width="1.6" stroke-linecap="round"/><line x1="12" y1="4" x2="4" y2="12" stroke="var(--red)" stroke-width="1.6" stroke-linecap="round"/></svg>
-          </div>
-        </div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sync-title">Синхронизация...</div>
-          <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:1px" id="sync-sub"></div>
-        </div>
-      </div>
+
       <div class="card-flush"><div id="entries-list"><div class="empty">нет записей</div></div></div>
     </div>
   </div>
@@ -254,7 +241,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="hdr">
       <div class="htitle">Бюджет</div>
       <div class="hdr-right">
-        <select class="month-sel-small" id="budget-month-sel" onchange="renderBudget()"></select>
+        <div id="budget-month-picker" style="position:relative;display:inline-block">
+          <button id="budget-month-btn" onclick="toggleMonthPicker('budget')" style="font-size:15px;padding:4px 28px 4px 10px;border-radius:8px;border:1px solid var(--line2);background:rgba(255,247,250,.9);color:var(--text);font-family:var(--font);cursor:pointer;-webkit-appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3l3 4 3-4' fill='none' stroke='%23c09aa7' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 8px center;white-space:nowrap">апрель 2026</button>
+          <div id="budget-month-dropdown" style="display:none;position:absolute;right:0;top:36px;background:#fff8fb;border:1px solid var(--line2);border-radius:12px;box-shadow:0 8px 24px rgba(180,100,120,.15);z-index:100;min-width:160px;max-height:280px;overflow-y:auto;-webkit-overflow-scrolling:touch"></div>
+          <select id="budget-month-sel" style="display:none" onchange="onMonthSelChange('budget')"></select>
+        </div>
         <button class="btn-text" onclick="openBudgetModal()">План</button>
       </div>
     </div>
@@ -629,10 +620,112 @@ function buildMonthSelectors(){
     return html;
   };
   const mSel=document.getElementById('money-month-sel');
-  if(mSel){const prev=mSel.value;mSel.innerHTML=buildOptions();mSel.value=prev&&mSel.querySelector(`option[value="${prev}"]`)?prev:ck;}
+  if(mSel){
+    const prev=mSel.value;
+    mSel.innerHTML=buildOptions();
+    mSel.value=prev&&mSel.querySelector(`option[value="${prev}"]`)?prev:ck;
+    const btn=document.getElementById('money-month-btn');
+    if(btn)btn.textContent=formatMonthLabel(mSel.value);
+  }
   const bSel=document.getElementById('budget-month-sel');
-  if(bSel){const prev=bSel.value;bSel.innerHTML=buildOptions();bSel.value=prev&&bSel.querySelector(`option[value="${prev}"]`)?prev:ck;}
+  if(bSel){
+    const prev=bSel.value;
+    bSel.innerHTML=buildOptions();
+    bSel.value=prev&&bSel.querySelector(`option[value="${prev}"]`)?prev:ck;
+    const btn=document.getElementById('budget-month-btn');
+    if(btn)btn.textContent=formatMonthLabel(bSel.value);
+  }
 }
+// ====== Кастомный пикер месяца ======
+const MONTHS_SHORT=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+const MONTHS_FULL=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+
+function formatMonthLabel(key){
+  if(!key)return'';
+  if(key.startsWith('year_'))return key.replace('year_','')+' год';
+  const [y,m]=key.split('-');
+  return MONTHS_FULL[parseInt(m)-1]+' '+y;
+}
+
+function buildMonthDropdown(prefix){
+  const sel=document.getElementById(prefix+'-month-sel');
+  const dd=document.getElementById(prefix+'-month-dropdown');
+  const btn=document.getElementById(prefix+'-month-btn');
+  if(!sel||!dd||!btn)return;
+  const curVal=sel.value||nowKey();
+  // Группируем опции по годам
+  const years={};
+  [...sel.options].forEach(opt=>{
+    const v=opt.value;
+    if(v.startsWith('year_')){
+      const y=v.replace('year_','');
+      if(!years[y])years[y]={year:v,months:[]};
+    } else {
+      const y=v.slice(0,4);
+      if(!years[y])years[y]={year:'year_'+y,months:[]};
+      years[y].months.push({value:v,label:opt.text});
+    }
+  });
+  // Рендерим
+  let html='';
+  Object.keys(years).sort().reverse().forEach(y=>{
+    html+=`<div style="padding:6px 12px 2px;font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em">${y}</div>`;
+    const months=years[y].months;
+    // 3 месяца в строку
+    for(let i=0;i<months.length;i+=3){
+      html+='<div style="display:flex;gap:4px;padding:2px 8px">';
+      for(let j=i;j<Math.min(i+3,months.length);j++){
+        const m=months[j];
+        const isActive=m.value===curVal;
+        html+=`<button onclick="selectMonth('${prefix}','${m.value}')" style="flex:1;padding:6px 4px;border-radius:8px;border:${isActive?'1.5px solid var(--accent)':'1px solid var(--line2)'};background:${isActive?'var(--bg3)':'transparent'};color:${isActive?'var(--accent)':'var(--text)'};font-size:13px;font-family:var(--font);cursor:pointer;font-weight:${isActive?'600':'400'}">${MONTHS_SHORT[parseInt(m.value.slice(5))-1]}</button>`;
+      }
+      html+='</div>';
+    }
+  });
+  dd.innerHTML=html;
+  btn.textContent=formatMonthLabel(curVal);
+}
+
+function toggleMonthPicker(prefix){
+  const dd=document.getElementById(prefix+'-month-dropdown');
+  if(!dd)return;
+  const isOpen=dd.style.display!=='none';
+  // Закрыть все
+  ['money','budget'].forEach(p=>{
+    const d=document.getElementById(p+'-month-dropdown');
+    if(d)d.style.display='none';
+  });
+  if(!isOpen){buildMonthDropdown(prefix);dd.style.display='block';}
+}
+
+function selectMonth(prefix,value){
+  const sel=document.getElementById(prefix+'-month-sel');
+  const dd=document.getElementById(prefix+'-month-dropdown');
+  const btn=document.getElementById(prefix+'-month-btn');
+  if(sel)sel.value=value;
+  if(dd)dd.style.display='none';
+  if(btn)btn.textContent=formatMonthLabel(value);
+  if(prefix==='money')renderEntries();
+  else renderBudget();
+}
+
+function onMonthSelChange(prefix){
+  const sel=document.getElementById(prefix+'-month-sel');
+  if(!sel)return;
+  selectMonth(prefix,sel.value);
+}
+
+// Закрывать пикер при клике вне
+document.addEventListener('click',function(e){
+  ['money','budget'].forEach(p=>{
+    const picker=document.getElementById(p+'-month-picker');
+    const dd=document.getElementById(p+'-month-dropdown');
+    if(dd&&dd.style.display!=='none'&&picker&&!picker.contains(e.target)){
+      dd.style.display='none';
+    }
+  });
+});
+
 function setCurrentMonth(key){
   currentMonthKey=key||nowKey();
   const ms=document.getElementById('money-month-sel');
@@ -652,34 +745,9 @@ function getPrevMonthKey(k){
 
 // sync/state
 let _syncHideTimer=null;
-function setSyncState(st,t,sub){
-  const row=document.getElementById('sync-row');
-  const dot=document.getElementById('sync-dot');
-  const err=document.getElementById('sync-err');
-  const spin=document.getElementById('sync-spin');
-  const title=document.getElementById('sync-title');
-  const subEl=document.getElementById('sync-sub');
-  if(_syncHideTimer){clearTimeout(_syncHideTimer);_syncHideTimer=null;}
-  // Показать row
-  if(row)row.classList.remove('hidden');
-  // Управление иконками
-  if(spin)spin.style.display=(st==='wait')?'':'none';
-  if(spin)spin.classList.toggle('spinning',st==='wait');
-  if(dot)dot.style.display=(st==='ok')?'flex':'none';
-  if(err)err.style.display=(st==='err')?'flex':'none';
-  if(title)title.textContent=t;
-  if(subEl)subEl.textContent=sub||'';
-  if(st==='ok'||st==='err'){
-    if(typeof window._ptrStop==='function')window._ptrStop();
-    // Скрыть через 2.5 сек после ok
-    if(st==='ok'){
-      _syncHideTimer=setTimeout(()=>{if(row)row.classList.add('hidden');},2500);
-    }
-  }
-}
+function setSyncState(){}
 
 async function sendToSheets(entry){
-  setSyncState('wait','отправка...','');
   try{
     const r=await fetch(API+'/entries',{
       method:'POST',
@@ -688,10 +756,9 @@ async function sendToSheets(entry){
     });
     if(!r.ok)throw new Error('HTTP '+r.status);
     entry.synced=true;
-    setSyncState('ok','Запись добавлена','');
   }catch(e){
     entry.synced=false;
-    setSyncState('err','Ошибка отправки','Проверьте подключение');
+    console.warn('send error:',e.message);
   }
   saveData();renderEntries();updateTodayCard();
 }
@@ -732,11 +799,10 @@ let _ws=null,_wsReconnectTimer=null,_wsTryCount=0;
 function syncFromSheets(){syncFromServer();}
 
 async function syncFromServer(){
-  setSyncState('wait','Загрузка данных...','');
+  // Получаем текущий выбранный месяц
+  const selEl=document.getElementById('money-month-sel');
+  const monthKey=(selEl&&selEl.value&&!selEl.value.startsWith('year_'))?selEl.value:nowKey();
   try{
-    const mn=new Date().getMonth()+1;
-    const year=new Date().getFullYear();
-    const monthKey=year+'-'+String(mn).padStart(2,'0');
     const r=await fetch(API+'/sync?month='+monthKey,{
       headers:{'x-token':SERVER_TOKEN}
     });
@@ -744,16 +810,24 @@ async function syncFromServer(){
     const data=await r.json();
     processServerData(data);
   }catch(e){
-    setSyncState('err','Ошибка синхронизации','Проверьте подключение');
+    // тихая ошибка — не показываем пользователю
+    console.warn('sync error:',e.message);
   }
 }
 
 function processServerData(data){
   if(!data)return;
   if(data.entries&&data.entries.length>0){
+    // Определяем месяц ответа
+    const respMonth=data.budget?.monthKey||(data.entries[0]?.date||'').slice(0,7)||nowKey();
+    // Сохраняем записи других месяцев, заменяем только записи этого месяца
     const localTsMap={};
     entries.forEach(e=>{if(e.id&&e._ts)localTsMap[e.id]=e._ts;});
-    entries=data.entries.map(e=>({...e,synced:true,_ts:localTsMap[e.id]||e._ts||null}));
+    const otherEntries=entries.filter(e=>!e.date||!e.date.startsWith(respMonth));
+    const newMonthEntries=data.entries.map(e=>({...e,synced:true,_ts:localTsMap[e.id]||e._ts||null}));
+    entries=[...otherEntries,...newMonthEntries];
+    // Помечаем месяц как загруженный
+    _loadedMonths.add(respMonth);
   }
   if(data.budget&&data.budget.cats&&Object.keys(data.budget.cats).length>0){
     const mk=data.budget.monthKey||nowKey();
@@ -761,7 +835,6 @@ function processServerData(data){
   }
   if(data.goals&&data.goals.length>0){goals=data.goals;saveGoals();}
   saveData();buildMonthSelectors();renderEntries();renderBudget();updateTodayCard();
-  setSyncState('ok','Синхронизировано','');
   connectWebSocket();
 }
 
@@ -784,8 +857,26 @@ function connectWebSocket(){
 
 function handleServerEvent(msg){
   const {event,data}=msg;
-  if(['entry_added','entry_updated','entry_deleted','goal_updated','goal_deleted'].includes(event)){
-    syncFromServer();
+  if(event==='entry_added'){
+    // Добавить запись если её нет локально
+    if(data&&data.id&&!entries.find(e=>e.id===data.id)){
+      entries.unshift({...data,synced:true});
+      saveData();renderEntries();updateTodayCard();
+    }
+  } else if(event==='entry_updated'){
+    if(data&&data.id){
+      const idx=entries.findIndex(e=>e.id===data.id);
+      if(idx>=0){entries[idx]={...data,synced:true};saveData();renderEntries();updateTodayCard();}
+    }
+  } else if(event==='entry_deleted'){
+    if(data&&data.id){
+      entries=entries.filter(e=>e.id!==data.id);
+      saveData();renderEntries();updateTodayCard();
+    }
+  } else if(event==='goal_updated'||event==='goal_deleted'){
+    // Для целей делаем лёгкий рефреш
+    fetch(API+'/goals',{headers:{'x-token':SERVER_TOKEN}})
+      .then(r=>r.json()).then(g=>{goals=g;saveGoals();renderGoals();}).catch(()=>{});
   } else if(event==='budget_updated'&&data?.monthKey&&data?.cats){
     setBudgetForMonth(data.monthKey,data.cats);renderBudget();
   }
