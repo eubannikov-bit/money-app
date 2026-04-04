@@ -610,8 +610,8 @@ function buildMonthSelectors(){
     }
   });
   const ck=nowKey();
-  const curYear=new Date().getFullYear();
-  // Только месяцы с данными + текущий месяц
+  // Текущий месяц всегда в списке
+  months[ck]=true;
   years[new Date().getFullYear().toString()]=true;
   const mKeys=Object.keys(months).sort().reverse();
   const yKeys=Object.keys(years).sort().reverse();
