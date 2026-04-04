@@ -1230,6 +1230,7 @@ async function addEntry(){
     resetEntryForm();closeM('add-entry');saveData();buildMonthSelectors();renderEntries();
     sendToSheets(entry);
   }
+}
 
 // Загрузить записи для конкретного месяца с сервера
 const _loadedMonths=new Set();
