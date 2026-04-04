@@ -554,6 +554,13 @@ INC_CATS.forEach(c=>{if(!budget.cats[c])budget.cats[c]=0;});
 // Получить план для конкретного месяца
 function getBudgetForMonth(monthKey){
   if(!monthKey||monthKey.startsWith('year_'))return budget.cats;
+  // Возвращаем только явно сохранённый план для этого месяца
+  // НЕ падаем на budget.cats — это предотвращает задвоение при суммировании года
+  return budget.monthly[monthKey]||{};
+}
+// Для обратной совместимости — получить план с fallback на текущий
+function getBudgetForMonthOrCurrent(monthKey){
+  if(!monthKey||monthKey.startsWith('year_'))return budget.cats;
   return budget.monthly[monthKey]||budget.cats;
 }
 
@@ -1249,7 +1256,7 @@ function renderBudget(){
   } else {
     for(let mi=1;mi<=12;mi++){fetchBudgetForMonth(yearStr+'-'+String(mi).padStart(2,'0'));}
   }
-  // Для года — суммируем планы прошедших месяцев + текущий
+  // Для года — суммируем планы прошедших месяцев + текущий (только из monthly, без дублей)
   let monthBudgetCats;
   if(isYearSel&&yearStr){
     const cur=nowKey();
@@ -1257,12 +1264,12 @@ function renderBudget(){
     for(let mi=1;mi<=12;mi++){
       const mk=yearStr+'-'+String(mi).padStart(2,'0');
       if(mk>cur)break; // только до текущего месяца включительно
-      const mc=getBudgetForMonth(mk);
+      const mc=budget.monthly[mk]||{}; // ТОЛЬКО явно сохранённые планы, без fallback
       Object.keys(mc).forEach(c=>{yearCats[c]=(yearCats[c]||0)+(mc[c]||0);});
     }
     monthBudgetCats=yearCats;
   } else {
-    monthBudgetCats=getBudgetForMonth(selRaw);
+    monthBudgetCats=getBudgetForMonthOrCurrent(selRaw);
   }
   const selMonth=isYearSel?yearStr+'-01':selRaw; // for prevMonth calc, use Jan of year
   const actualKey=isYearSel?yearStr:selRaw;
@@ -1377,11 +1384,14 @@ function renderAnalytics(selMonth,prevMonth,filtered,prevFiltered,expTotal,catTo
   const incChg=pct(incTotal,prevIncTotal);
   const balChg=pct(balance,prevBalance);
 
-  const mandatory=filtered.filter(e=>e.type==='expense'&&isFcCat(e.cat)).reduce((s,e)=>s+e.amount,0);
+  // FC / VC разбивка — только по выбранному периоду
+  const fcFact=filtered.filter(e=>e.type==='expense'&&isFcCat(e.cat)).reduce((s,e)=>s+e.amount,0);
+  const vcFact=filtered.filter(e=>e.type==='expense'&&isVcCat(e.cat)).reduce((s,e)=>s+e.amount,0);
+  const mandatory=fcFact; // FC = обязательные
   const mandatoryPct=expTotal>0?Math.round(mandatory/expTotal*100):0;
   const discPct=100-mandatoryPct;
 
-  // avg per day
+  // Средний расход и прогноз — только по VC
   const isYearSelMode=selMonth&&selMonth.startsWith('year_');
   let daysInMonth,daysElapsed,isCurrentMonth;
   if(isYearSelMode){
@@ -1396,9 +1406,13 @@ function renderAnalytics(selMonth,prevMonth,filtered,prevFiltered,expTotal,catTo
     const today=new Date();isCurrentMonth=selMonth===nowKey();
     daysElapsed=isCurrentMonth?Math.max(1,today.getDate()):daysInMonth;
   }
-  const avgPerDay=daysElapsed>0?Math.round(expTotal/daysElapsed):0;
-  const forecast=Math.round(avgPerDay*daysInMonth);
-  const forecastBalance=incTotal-forecast;
+  // avgPerDay и forecast — только VC
+  const avgPerDay=daysElapsed>0?Math.round(vcFact/daysElapsed):0;
+  const vcForecast=Math.round(avgPerDay*daysInMonth);
+  // Прогноз баланса: доходы — (прогноз VC + FC факт уже потрачено)
+  const forecastBalance=incTotal-(vcForecast+fcFact);
+  // forecast для отображения (VC)
+  const forecast=vcForecast;
 
   // top3
   const sorted=EXP_CATS.map(c=>({c,v:catTotals[c]||0})).sort((a,b)=>b.v-a.v).filter(x=>x.v>0).slice(0,3);
@@ -1522,12 +1536,13 @@ function openBudgetModal(){
     +EXP_CATS.map(c=>{
       const t=budget.fc[c]||'vc';
       const key=encodeURIComponent(c);
-      return `<div class="frow"><label class="flabel" style="flex:1">${c}</label>`
-        +`<select id="fc-${key}" onchange="budget.fc['${c.replace(/'/g,"\'")}'']=this.value" style="width:64px;margin-right:6px;padding:9px 4px;text-align:center;font-family:var(--mono);font-size:13px;color:var(--accent);background:rgba(255,247,250,.9);border:1px solid var(--line);border-radius:8px">`
+      return `<div class="frow"><label class="flabel">${c}</label>`
+        +`<div style="display:flex;gap:6px;align-items:stretch">`
+        +`<input type="number" id="pc-${key}" value="${cats[c]||0}" placeholder="0" inputmode="decimal" style="flex:1;min-width:0">`
+        +`<select id="fc-${key}" style="width:56px;flex-shrink:0;padding:9px 4px;text-align:center;font-family:var(--mono);font-size:13px;color:var(--accent);background:rgba(255,247,250,.9);border:1px solid var(--line);border-radius:8px;-webkit-appearance:none">`
         +`<option value="fc"${t==='fc'?' selected':''}>FC</option>`
         +`<option value="vc"${t==='vc'?' selected':''}>VC</option>`
-        +`</select>`
-        +`<input type="number" id="pc-${key}" value="${cats[c]||0}" placeholder="0" inputmode="decimal" style="width:100px"></div>`;
+        +`</select></div></div>`;
     }).join('');
   document.getElementById('p-cats-form').innerHTML=incSection+expSection;
   openM('edit-budget');
@@ -1578,12 +1593,26 @@ function setAnlUser(u){
 function renderBudgetAnalytics(){
   const selEl=document.getElementById('budget-month-sel');
   const selRaw=selEl?selEl.value:nowKey();
-  const monthBudgetCats=getBudgetForMonth(selRaw);
   const isYearSel=selRaw&&selRaw.startsWith('year_');
   const yearStr=isYearSel?selRaw.replace('year_',''):'';
   const selMonth=selRaw;
   const prevMonth=isYearSel?String(Number(yearStr)-1):getPrevMonthKey(selRaw);
   const curMk=nowKey();
+  // Для месяца — план этого месяца (с fallback на current)
+  // Для года — суммируем планы только прошедших+текущего месяцев
+  let monthBudgetCats;
+  if(isYearSel&&yearStr){
+    const yCats={};
+    for(let mi=1;mi<=12;mi++){
+      const mk=yearStr+'-'+String(mi).padStart(2,'0');
+      if(mk>curMk)break;
+      const mc=budget.monthly[mk]||{};
+      Object.keys(mc).forEach(c=>{yCats[c]=(yCats[c]||0)+(mc[c]||0);});
+    }
+    monthBudgetCats=yCats;
+  } else {
+    monthBudgetCats=getBudgetForMonthOrCurrent(selRaw);
+  }
   const base=isYearSel
     ?entries.filter(e=>e.date&&e.date.startsWith(yearStr)&&e.date.slice(0,7)<=curMk)
     :entries.filter(e=>e.date&&e.date.startsWith(selRaw));
@@ -1798,7 +1827,7 @@ function renderBudgetDayCard(selRaw, anlUser, monthCats){
     // Прошлый месяц — итоговая статистика
     const base=entries.filter(e=>e.date&&e.date.startsWith(selRaw)&&(anlUser==='all'||e.who===anlUser));
     const varFact=base.filter(e=>e.type==='expense'&&isVcCat(e.cat)).reduce((a,e)=>a+e.amount,0);
-    const mc=monthCats||getBudgetForMonth(selRaw);
+    const mc=monthCats||getBudgetForMonthOrCurrent(selRaw);
     const varPlan=EXP_CATS.filter(c=>isVcCat(c)).reduce((a,c)=>a+(mc[c]||0),0);
     if(!varPlan){el.innerHTML='';return;}
     const pct=Math.round(varFact/varPlan*100);
@@ -1907,8 +1936,9 @@ function getDayBudgetData(who){
   const varFact=monthEntries.filter(e=>e.type==='expense'&&isVcCat(e.cat)).reduce((a,e)=>a+e.amount,0);
 
   // Планы из budget.cats (суммируем переменные категории)
-  const varPlan=EXP_CATS.filter(c=>isVcCat(c)).reduce((a,c)=>a+(budget.cats[c]||0),0);
-  const mandPlan=EXP_CATS.filter(c=>isFcCat(c)).reduce((a,c)=>a+(budget.cats[c]||0),0);
+  const _dayMc=getBudgetForMonthOrCurrent(nowKey());
+  const varPlan=EXP_CATS.filter(c=>isVcCat(c)).reduce((a,c)=>a+(_dayMc[c]||0),0);
+  const mandPlan=EXP_CATS.filter(c=>isFcCat(c)).reduce((a,c)=>a+(_dayMc[c]||0),0);
 
   // Остаток переменных
   const varLeft=varPlan-varFact;
