@@ -137,7 +137,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .breakdown-row{display:flex;align-items:center;gap:8px;padding:6px 0}
 .hdr-right{display:flex;align-items:center;gap:8px}
 .month-sel-small{font-size:15px;padding:4px 28px 4px 10px;border-radius:8px;border:1px solid var(--line2);background:rgba(255,247,250,.9);color:var(--text);font-family:var(--font);-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3l3 4 3-4' fill='none' stroke='%23c09aa7' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
-.fab{position:fixed;right:20px;bottom:calc(var(--safe-bot) + 90px);z-index:25;width:54px;height:54px;border-radius:50%;background:rgba(215,142,168,.88);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;line-height:1;font-family:var(--font);box-shadow:0 6px 20px rgba(215,142,168,.42),0 2px 8px rgba(215,142,168,.22);-webkit-tap-highlight-color:transparent;transition:transform .1s cubic-bezier(.25,.46,.45,.94);will-change:transform;transform:translateZ(0)}
+.fab{position:fixed;right:28px;bottom:calc(var(--safe-bot) + 108px);z-index:25;width:54px;height:54px;border-radius:50%;background:rgba(215,142,168,.88);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;line-height:1;font-family:var(--font);box-shadow:0 6px 20px rgba(215,142,168,.42),0 2px 8px rgba(215,142,168,.22);-webkit-tap-highlight-color:transparent;transition:transform .1s cubic-bezier(.25,.46,.45,.94);will-change:transform;transform:translateZ(0)}
 .fab:active{transform:scale3d(.94,.94,1);transition:transform .1s cubic-bezier(.25,.46,.45,.94)}
 .thumb-list{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .thumb-list img{width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
@@ -191,7 +191,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .drum-popup-col::-webkit-scrollbar{display:none}
 .drum-popup-item{height:44px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text3);font-family:var(--font);scroll-snap-align:center}
 .drum-popup-item.active{color:var(--text);font-size:20px;font-weight:600}
-.drum-popup-sel{position:absolute;left:6px;right:6px;top:50%;transform:translateY(-50%);height:44px;background:var(--bg3);border-radius:8px;pointer-events:none;z-index:1;border:1px solid var(--line)}
+.drum-popup-sel{position:absolute;left:6px;right:6px;top:50%;transform:translateY(-50%);height:44px;background:transparent;border-radius:8px;pointer-events:none;z-index:1;border:1.5px solid var(--accent);opacity:.4}
 </style>
 <script>
 // Инлайн — доступно до загрузки основного скрипта
@@ -737,8 +737,41 @@ function buildMonthDropdown(prefix){
 const _drumMonths = ['01','02','03','04','05','06','07','08','09','10','11','12'];
 const _drumYears = ['26','27','28','29','30'];
 
+// Бесконечный барабан — 3 копии списка для иллюзии зацикливания
+function _drumFill(col, items, curIdx) {
+  const REPEAT = 3; // центральная копия + по одной с каждой стороны
+  const pad = 1; // 1 пустой элемент сверху/снизу для центрирования крайних
+  let html = `<div style="height:${pad*44}px"></div>`;
+  for (let r = 0; r < REPEAT; r++) {
+    items.forEach(v => {
+      html += `<div class="drum-popup-item" data-val="${v}">${v}</div>`;
+    });
+  }
+  html += `<div style="height:${pad*44}px"></div>`;
+  col.innerHTML = html;
+  // Скролл на центральную копию
+  col.scrollTop = (pad + items.length + curIdx) * 44;
+}
+
+function _drumLoop(col, items) {
+  col.addEventListener('scroll', function() {
+    const pad = 1;
+    const n = items.length;
+    const total = pad + n * 3;
+    const idx = Math.round(col.scrollTop / 44);
+    // Если ушли в первую копию — прыгаем во вторую
+    if (idx < pad + n) {
+      col.scrollTop = (pad + n + (idx - pad)) * 44;
+    }
+    // Если ушли в третью копию — прыгаем во вторую
+    if (idx >= pad + n * 2) {
+      col.scrollTop = (pad + n + (idx - pad - n * 2)) * 44;
+    }
+    updateDrumActive(col, items);
+  }, { passive: true });
+}
+
 function openDrumPicker(prefix) {
-  // Закрыть другой если открыт
   ['money','budget'].forEach(p => {
     if (p !== prefix) {
       const pp = document.getElementById(p + '-drum-popup');
@@ -748,8 +781,7 @@ function openDrumPicker(prefix) {
 
   const popup = document.getElementById(prefix + '-drum-popup');
   if (!popup) return;
-  const isOpen = popup.classList.contains('open');
-  if (isOpen) { popup.classList.remove('open'); return; }
+  if (popup.classList.contains('open')) { popup.classList.remove('open'); return; }
 
   const sel = document.getElementById(prefix + '-month-sel');
   const curVal = sel ? sel.value : nowKey();
@@ -761,48 +793,47 @@ function openDrumPicker(prefix) {
 
   const mCol = document.getElementById(prefix + '-drum-month');
   const yCol = document.getElementById(prefix + '-drum-year');
-  const pad = 1;
-  const padH = pad * 44;
 
-  mCol.innerHTML = `<div style="height:${padH}px"></div>` +
-    _drumMonths.map(m => `<div class="drum-popup-item" data-val="${m}">${m}</div>`).join('') +
-    `<div style="height:${padH}px"></div>`;
-  yCol.innerHTML = `<div style="height:${padH}px"></div>` +
-    _drumYears.map(y => `<div class="drum-popup-item" data-val="${y}">${y}</div>`).join('') +
-    `<div style="height:${padH}px"></div>`;
+  _drumFill(mCol, _drumMonths, _drumMonths.indexOf(curMonth));
+  _drumFill(yCol, _drumYears, _drumYears.indexOf(curYear) < 0 ? 0 : _drumYears.indexOf(curYear));
 
   popup.classList.add('open');
 
+  // Вешаем loop только один раз
+  if (!mCol._loopAdded) { _drumLoop(mCol, _drumMonths); mCol._loopAdded = true; }
+  if (!yCol._loopAdded) { _drumLoop(yCol, _drumYears); yCol._loopAdded = true; }
+
   requestAnimationFrame(() => {
-    mCol.scrollTop = _drumMonths.indexOf(curMonth) * 44;
-    yCol.scrollTop = _drumYears.indexOf(curYear) * 44;
-    updateDrumActive(mCol);
-    updateDrumActive(yCol);
-  });
-
-  [mCol, yCol].forEach(col => {
-    col.onscroll = () => updateDrumActive(col);
+    updateDrumActive(mCol, _drumMonths);
+    updateDrumActive(yCol, _drumYears);
   });
 }
 
-function updateDrumActive(col) {
-  const idx = Math.round(col.scrollTop / 44);
+function updateDrumActive(col, items) {
+  const pad = 1;
+  const n = items ? items.length : 12;
+  const rawIdx = Math.round(col.scrollTop / 44);
+  // Реальный индекс в исходном списке
+  const realIdx = (rawIdx - pad) % n;
   col.querySelectorAll('.drum-popup-item[data-val]').forEach((el, i) => {
-    el.classList.toggle('active', i === idx);
+    const elReal = i % n;
+    el.classList.toggle('active', elReal === realIdx && Math.floor(i / n) === 1);
   });
 }
 
-function drumGetSelected(col) {
-  const idx = Math.round(col.scrollTop / 44);
-  const items = col.querySelectorAll('.drum-popup-item[data-val]');
-  return items[idx] ? items[idx].dataset.val : null;
+function drumGetSelected(col, items) {
+  const pad = 1;
+  const n = items.length;
+  const rawIdx = Math.round(col.scrollTop / 44);
+  const realIdx = ((rawIdx - pad) % n + n) % n;
+  return items[realIdx];
 }
 
 function drumConfirm(prefix) {
   const mCol = document.getElementById(prefix + '-drum-month');
   const yCol = document.getElementById(prefix + '-drum-year');
-  const month = drumGetSelected(mCol);
-  const year = drumGetSelected(yCol);
+  const month = drumGetSelected(mCol, _drumMonths);
+  const year = drumGetSelected(yCol, _drumYears);
   if (!month || !year) { drumClose(prefix); return; }
   const monthKey = '20' + year + '-' + month;
   const sel = document.getElementById(prefix + '-month-sel');
