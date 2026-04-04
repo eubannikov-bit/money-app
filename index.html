@@ -609,18 +609,17 @@ function buildMonthSelectors(){
   });
   const ck=nowKey();
   const curYear=new Date().getFullYear();
-  // Добавить все месяцы текущего года
-  for(let m=1;m<=12;m++){
-    const mk=curYear+'-'+String(m).padStart(2,'0');
-    months[mk]=true;
+  // Фиксированный диапазон: март 2026 – декабрь 2027
+  const START_YEAR=2026, START_MONTH=3;
+  const END_YEAR=2027, END_MONTH=12;
+  for(let y=START_YEAR;y<=END_YEAR;y++){
+    const mFrom=y===START_YEAR?START_MONTH:1;
+    const mTo=y===END_YEAR?END_MONTH:12;
+    for(let m=mFrom;m<=mTo;m++){
+      months[y+'-'+String(m).padStart(2,'0')]=true;
+    }
+    years[String(y)]=true;
   }
-  // Добавить все месяцы прошлого года
-  for(let m=1;m<=12;m++){
-    const mk=(curYear-1)+'-'+String(m).padStart(2,'0');
-    months[mk]=true;
-  }
-  years[String(curYear)]=true;
-  years[String(curYear-1)]=true;
   const mKeys=Object.keys(months).sort().reverse();
   const yKeys=Object.keys(years).sort().reverse();
   const buildOptions=(prev)=>{
@@ -1013,7 +1012,7 @@ async function addEntry(){
   }
 }
 
-// Загрузить записи для конкретного месяца с сервера (если ещё не загружены)
+// Загрузить записи для конкретного месяца с сервера
 const _loadedMonths=new Set();
 function fetchEntriesForMonth(monthKey){
   if(!monthKey||monthKey.startsWith('year_'))return;
@@ -1023,7 +1022,6 @@ function fetchEntriesForMonth(monthKey){
     .then(r=>r.json())
     .then(newEntries=>{
       if(!newEntries||!newEntries.length)return;
-      // Мержим: обновляем существующие и добавляем новые
       const existingIds=new Set(entries.map(e=>e.id));
       let changed=false;
       newEntries.forEach(e=>{
@@ -1032,9 +1030,24 @@ function fetchEntriesForMonth(monthKey){
           changed=true;
         }
       });
-      if(changed){saveData();renderEntries();renderBudget();}
+      // Всегда перерендеривать если это текущий выбранный месяц
+      const selEl=document.getElementById('money-month-sel');
+      const curSel=selEl?selEl.value:'';
+      if(changed||curSel===monthKey){
+        saveData();
+        buildMonthSelectors();
+        renderEntries();
+        renderBudget();
+        updateTodayCard();
+      }
     })
     .catch(()=>{_loadedMonths.delete(monthKey);}); // retry on error
+}
+
+// Принудительно перезагрузить месяц (сбрасывает кэш)
+function reloadMonth(monthKey){
+  _loadedMonths.delete(monthKey);
+  fetchEntriesForMonth(monthKey);
 }
 
 function renderEntries(){
@@ -2370,6 +2383,12 @@ buildMonthSelectors();
 renderEntries();updateTodayCard();
 renderTasks();
 initWhoAmI();
+// Принудительно загружаем текущий месяц при старте
+(function(){
+  const selEl=document.getElementById('money-month-sel');
+  const mk=selEl?selEl.value:nowKey();
+  if(mk&&!mk.startsWith('year_'))fetchEntriesForMonth(mk);
+})();
 renderTrips();
 renderWishes();
 // goals rendered via renderBudget
