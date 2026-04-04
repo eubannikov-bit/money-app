@@ -2600,7 +2600,7 @@ function pieTooltipToggle(evt){
 })();
 
 // unregister SW
-if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>r.unregister())).catch(()=>{});}
+if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>{if(!r.active||!r.active.scriptURL.includes('sw.js'))r.unregister();})).catch(()=>{});}
 
 syncFromSheets();
 </script>
