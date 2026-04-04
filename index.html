@@ -540,8 +540,18 @@ const saved=loadData();
 let entries=saved?.entries||[];
 let trips=saved?.trips||[{id:'loc_1_1',name:'Тбилиси',status:'planned',dates:'Май 2026',link:'',note:'Нарикала, хинкали'},{id:'loc_1_2',name:'Стамбул',status:'done',dates:'Октябрь 2025',link:'',note:'Гранд Базар, Босфор'}];
 let wishes=saved?.wishes||[{id:'loc_1_3',name:'AirPods Pro',who:'me',link:'https://apple.com',note:'Белые, 2-е поколение',price:19990,reserved:false},{id:'loc_1_4',name:'Книга «Мастер и Маргарита»',who:'them',link:'',note:'Подарочное издание',price:2500,reserved:false}];
-let budget=saved?.budget||{cats:{},monthly:{}};
+let budget=saved?.budget||{cats:{},monthly:{},fc:{}};
 if(!budget.monthly)budget.monthly={};
+if(!budget.fc)budget.fc={};
+// Инициализация FC по умолчанию из MANDATORY_CATS
+EXP_CATS.forEach(c=>{
+  if(!(c in budget.fc))budget.fc[c]=MANDATORY_CATS.has(c)?'fc':'vc';
+});
+
+// Получить тип категории: 'fc' или 'vc'
+function getCatType(c){return budget.fc[c]||'vc';}
+function isFcCat(c){return getCatType(c)==='fc';}
+function isVcCat(c){return !isFcCat(c);}
 // Текущий план (текущий месяц) в budget.cats — для совместимости
 EXP_CATS.forEach(c=>{if(!budget.cats[c])budget.cats[c]=0;});
 INC_CATS.forEach(c=>{if(!budget.cats[c])budget.cats[c]=0;});
@@ -1128,7 +1138,7 @@ function renderEntries(){
         html+=`<div class="swipe-wrap" data-idx="${e._i}">
           <div class="swipe-actions">
             <button class="swipe-btn edit" data-action="edit" data-idx="${e._i}">править</button>
-            <button class="swipe-btn delete" data-action="delete" data-idx="${e._i}">Удалить</button>
+            <button class="swipe-btn delete" data-action="delete" data-idx="${e._i}">удалить</button>
           </div>
           <div class="swipe-content"><div class="row-item">
             <div class="av ${isEv?'av-e':'av-a'}">${getAvatar(e.who,24)}</div>
@@ -1155,7 +1165,7 @@ function renderEntries(){
       html+=`<div class="swipe-wrap" data-idx="${e._i}">
         <div class="swipe-actions">
           <button class="swipe-btn edit" data-action="edit" data-idx="${e._i}">править</button>
-          <button class="swipe-btn delete" data-action="delete" data-idx="${e._i}">Удалить</button>
+          <button class="swipe-btn delete" data-action="delete" data-idx="${e._i}">удалить</button>
         </div>
         <div class="swipe-content"><div class="row-item">
           <div class="av ${isEv?'av-e':'av-a'}">${getAvatar(e.who,24)}</div>
@@ -1237,11 +1247,29 @@ function renderBudget(){
   const selEl=document.getElementById('budget-month-sel');
   const selRaw=selEl?selEl.value:nowKey();
   // Подтянуть план для выбранного месяца из Sheets если ещё не загружен
-  if(selRaw&&!selRaw.startsWith('year_'))fetchBudgetForMonth(selRaw);
+// fetchBudgetForMonth вызывается ниже после объявления isYearSel
   // Используем план конкретного месяца
-  const monthBudgetCats=getBudgetForMonth(selRaw);
   const isYearSel=selRaw&&selRaw.startsWith('year_');
   const yearStr=isYearSel?selRaw.replace('year_',''):'';
+  // Загружаем планы с сервера
+  if(!selRaw.startsWith('year_')){
+    fetchBudgetForMonth(selRaw);
+  } else if(yearStr){
+    for(let m2=1;m2<=12;m2++){fetchBudgetForMonth(yearStr+'-'+String(m2).padStart(2,'0'));}
+  }
+  // Для года — суммируем планы всех месяцев года
+  let monthBudgetCats;
+  if(isYearSel&&yearStr){
+    const yearCats={};
+    for(let m=1;m<=12;m++){
+      const mk=yearStr+'-'+String(m).padStart(2,'0');
+      const mc=getBudgetForMonth(mk);
+      Object.keys(mc).forEach(c=>{yearCats[c]=(yearCats[c]||0)+(mc[c]||0);});
+    }
+    monthBudgetCats=yearCats;
+  } else {
+    monthBudgetCats=getBudgetForMonth(selRaw);
+  }
   const selMonth=isYearSel?yearStr+'-01':selRaw; // for prevMonth calc, use Jan of year
   const actualKey=isYearSel?yearStr:selRaw;
   const prevMonth=isYearSel?(String(Number(yearStr)-1)):getPrevMonthKey(selRaw);
@@ -1488,7 +1516,19 @@ function openBudgetModal(){
   const selRaw=selEl?selEl.value:nowKey();
   const cats=getBudgetForMonth(selRaw);
   const incSection='<div style="font-size:15px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);margin:14px 0 6px">план доходов, ₽</div>'+INC_CATS.map(c=>`<div class="frow"><label class="flabel">${c}</label><input type="number" id="pc-${encodeURIComponent(c)}" value="${cats[c]||0}" placeholder="0" inputmode="decimal"></div>`).join('');
-  const expSection='<div style="font-size:15px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);margin:10px 0 6px">лимиты расходов, ₽</div>'+EXP_CATS.map(c=>`<div class="frow"><label class="flabel">${c}</label><input type="number" id="pc-${encodeURIComponent(c)}" value="${cats[c]||0}" placeholder="0" inputmode="decimal"></div>`).join('');
+  const expSection='<div style="font-size:15px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono);margin:10px 0 6px">лимиты расходов, ₽</div>'+EXP_CATS.map(c=>{
+    const t=getCatType(c);
+    return `<div class="frow" style="align-items:center;gap:8px">
+      <div style="flex:1">
+        <label class="flabel" style="margin-bottom:4px;display:block">${c}</label>
+        <div style="display:flex;gap:4px">
+          <button onclick="setCatType('${c.replace(/'/g,"\\'")}','fc',this)" style="padding:2px 8px;border-radius:6px;font-size:11px;font-family:var(--mono);border:1px solid var(--line2);cursor:pointer;background:${t==='fc'?'var(--accent)':'transparent'};color:${t==='fc'?'#fff':'var(--text3)'}">FC</button>
+          <button onclick="setCatType('${c.replace(/'/g,"\\'")}','vc',this)" style="padding:2px 8px;border-radius:6px;font-size:11px;font-family:var(--mono);border:1px solid var(--line2);cursor:pointer;background:${t==='vc'?'var(--accent)':'transparent'};color:${t==='vc'?'#fff':'var(--text3)'}">VC</button>
+        </div>
+      </div>
+      <input type="number" id="pc-${encodeURIComponent(c)}" value="${cats[c]||0}" placeholder="0" inputmode="decimal" style="width:100px;flex-shrink:0">
+    </div>`;
+  }).join('');
   document.getElementById('p-cats-form').innerHTML=incSection+expSection;
   openM('edit-budget');
 }
@@ -1518,7 +1558,21 @@ function saveBudget(){
     newCats[c]=parseFloat(inp.value)||0;
   });
   setBudgetForMonth(monthKey,newCats);
+  saveData(); // сохраняем budget.fc
   closeM('edit-budget');renderBudget();
+}
+
+function setCatType(cat,type,btn){
+  budget.fc[cat]=type;
+  // Обновить кнопки визуально
+  const row=btn.closest('.frow');
+  if(row){
+    row.querySelectorAll('button').forEach(b=>{
+      const isActive=b.textContent===type.toUpperCase();
+      b.style.background=isActive?'var(--accent)':'transparent';
+      b.style.color=isActive?'#fff':'var(--text3)';
+    });
+  }
 }
 
 
@@ -1541,9 +1595,27 @@ function setAnlUser(u){
 function renderBudgetAnalytics(){
   const selEl=document.getElementById('budget-month-sel');
   const selRaw=selEl?selEl.value:nowKey();
-  const monthBudgetCats=getBudgetForMonth(selRaw);
   const isYearSel=selRaw&&selRaw.startsWith('year_');
   const yearStr=isYearSel?selRaw.replace('year_',''):'';
+  // Загружаем планы с сервера
+  if(!selRaw.startsWith('year_')){
+    fetchBudgetForMonth(selRaw);
+  } else if(yearStr){
+    for(let m2=1;m2<=12;m2++){fetchBudgetForMonth(yearStr+'-'+String(m2).padStart(2,'0'));}
+  }
+  // Для года — суммируем планы всех месяцев года
+  let monthBudgetCats;
+  if(isYearSel&&yearStr){
+    const yearCats={};
+    for(let m=1;m<=12;m++){
+      const mk=yearStr+'-'+String(m).padStart(2,'0');
+      const mc=getBudgetForMonth(mk);
+      Object.keys(mc).forEach(c=>{yearCats[c]=(yearCats[c]||0)+(mc[c]||0);});
+    }
+    monthBudgetCats=yearCats;
+  } else {
+    monthBudgetCats=getBudgetForMonth(selRaw);
+  }
   const selMonth=selRaw;
   const prevMonth=isYearSel?String(Number(yearStr)-1):getPrevMonthKey(selRaw);
   const base=isYearSel
@@ -1759,9 +1831,9 @@ function renderBudgetDayCard(selRaw, anlUser, monthCats){
   } else {
     // Прошлый месяц — итоговая статистика
     const base=entries.filter(e=>e.date&&e.date.startsWith(selRaw)&&(anlUser==='all'||e.who===anlUser));
-    const varFact=base.filter(e=>e.type==='expense'&&!MANDATORY_CATS.has(e.cat)).reduce((a,e)=>a+e.amount,0);
+    const varFact=base.filter(e=>e.type==='expense'&&isVcCat(e.cat)).reduce((a,e)=>a+e.amount,0);
     const mc=monthCats||getBudgetForMonth(selRaw);
-    const varPlan=EXP_CATS.filter(c=>!MANDATORY_CATS.has(c)).reduce((a,c)=>a+(mc[c]||0),0);
+    const varPlan=EXP_CATS.filter(c=>isVcCat(c)).reduce((a,c)=>a+(mc[c]||0),0);
     if(!varPlan){el.innerHTML='';return;}
     const pct=Math.round(varFact/varPlan*100);
     let statusColor=pct<=100?'var(--green)':pct<=110?'var(--amber)':pct<=120?'#e07030':'var(--red)';
@@ -1865,19 +1937,19 @@ function getDayBudgetData(who){
   const incomeTotal=monthEntries.filter(e=>e.type==='income').reduce((a,e)=>a+e.amount,0);
 
   // Обязательные и переменные расходы факт
-  const mandatoryFact=monthEntries.filter(e=>e.type==='expense'&&MANDATORY_CATS.has(e.cat)).reduce((a,e)=>a+e.amount,0);
-  const varFact=monthEntries.filter(e=>e.type==='expense'&&!MANDATORY_CATS.has(e.cat)).reduce((a,e)=>a+e.amount,0);
+  const mandatoryFact=monthEntries.filter(e=>e.type==='expense'&&isFcCat(e.cat)).reduce((a,e)=>a+e.amount,0);
+  const varFact=monthEntries.filter(e=>e.type==='expense'&&isVcCat(e.cat)).reduce((a,e)=>a+e.amount,0);
 
   // Планы из budget.cats (суммируем переменные категории)
-  const varPlan=EXP_CATS.filter(c=>!MANDATORY_CATS.has(c)).reduce((a,c)=>a+(budget.cats[c]||0),0);
-  const mandPlan=EXP_CATS.filter(c=>MANDATORY_CATS.has(c)).reduce((a,c)=>a+(budget.cats[c]||0),0);
+  const varPlan=EXP_CATS.filter(c=>isVcCat(c)).reduce((a,c)=>a+(budget.cats[c]||0),0);
+  const mandPlan=EXP_CATS.filter(c=>isFcCat(c)).reduce((a,c)=>a+(budget.cats[c]||0),0);
 
   // Остаток переменных
   const varLeft=varPlan-varFact;
   const dayLimit=daysLeft>0?Math.max(varLeft/daysLeft,0):0;
 
   // Сегодня потрачено (только переменные расходы, доходы не учитываем)
-  const todaySpent=monthEntries.filter(e=>e.type==='expense'&&!MANDATORY_CATS.has(e.cat)&&e.date===todayStr).reduce((a,e)=>a+e.amount,0);
+  const todaySpent=monthEntries.filter(e=>e.type==='expense'&&isVcCat(e.cat)&&e.date===todayStr).reduce((a,e)=>a+e.amount,0);
 
   // Сколько ещё можно потратить сегодня = лимит на день минус уже потраченное
   const availableToday=Math.max(dayLimit-todaySpent,0);
@@ -1905,7 +1977,7 @@ function getDayBudgetData(who){
   // Инсайт: переменная категория с наибольшим превышением лимита
   let insight='';
   let maxOver=0,maxCat='';
-  EXP_CATS.filter(c=>!MANDATORY_CATS.has(c)).forEach(c=>{
+  EXP_CATS.filter(c=>isVcCat(c)).forEach(c=>{
     const fact=monthEntries.filter(e=>e.type==='expense'&&e.cat===c).reduce((a,e)=>a+e.amount,0);
     const plan=budget.cats[c]||0;
     if(plan>0&&fact>plan){
