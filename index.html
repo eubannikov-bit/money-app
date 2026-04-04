@@ -831,6 +831,9 @@ function handleServerEvent(msg){
       .then(r=>r.json()).then(g=>{goals=g;saveGoals();renderGoals();}).catch(()=>{});
   } else if(event==='budget_updated'&&data?.monthKey&&data?.cats){
     setBudgetForMonth(data.monthKey,data.cats);renderBudget();
+  } else if(event==='tasks_updated'){
+    // Кто-то обновил задачи — загружаем актуальный список
+    fetchTasks();
   }
 }
 
@@ -2133,7 +2136,29 @@ function renderDayBudget(){
 
 // tasks
 let tasks=JSON.parse(localStorage.getItem('couple_tasks_v1')||'[]');
-function saveTasksData(){try{localStorage.setItem('couple_tasks_v1',JSON.stringify(tasks));}catch(e){}}
+// Загрузить задачи с сервера
+function fetchTasks(){
+  fetch(API+'/collections/tasks',{headers:{'x-token':SERVER_TOKEN}})
+    .then(r=>r.json())
+    .then(data=>{
+      if(Array.isArray(data)&&data.length>0){
+        tasks=data;
+        try{localStorage.setItem('couple_tasks_v1',JSON.stringify(tasks));}catch(e){}
+        renderTasks();
+      }
+    })
+    .catch(()=>{});
+}
+
+function saveTasksData(){
+  try{localStorage.setItem('couple_tasks_v1',JSON.stringify(tasks));}catch(e){}
+  // Синхронизировать на сервер
+  fetch(API+'/collections/tasks',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-token':SERVER_TOKEN},
+    body:JSON.stringify(tasks)
+  }).catch(()=>{});
+}
 let editingTaskIdx=-1;
 const WHEN_LBL={today:'сегодня',tomorrow:'завтра',week:'неделя',month:'месяц',none:'без срока'};
 const WHEN_DAYS={today:0,tomorrow:1,week:7,month:30,none:null};
@@ -2554,7 +2579,7 @@ setET('expense');
 updateSortUi();
 buildMonthSelectors();
 renderEntries();updateTodayCard();
-renderTasks();
+renderTasks();fetchTasks();
 initWhoAmI();
 
 // Принудительно загружаем данные при старте
