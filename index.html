@@ -208,8 +208,9 @@ window._earlyChooseUser = function(name) {
   <div class="scr on" id="s-money">
     <div class="hdr">
       <div class="htitle">Деньги</div>
-      <div class="hdr-right">
+      <div class="hdr-right" style="display:flex;align-items:center;gap:8px">
         <select class="month-sel-small" id="money-month-sel" onchange="renderEntries()"></select>
+        <button onclick="exportCSV()" style="font-size:13px;padding:5px 10px;border-radius:8px;border:1px solid var(--line2);background:rgba(255,247,250,.9);color:var(--text2);font-family:var(--mono);cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent">↓ CSV</button>
       </div>
     </div>
     <div class="toolbar">
@@ -3001,6 +3002,64 @@ if('serviceWorker' in navigator){
   }
   window.visualViewport.addEventListener('resize',onVV,{passive:true});
 })();
+
+// ====== Экспорт CSV ======
+function exportCSV(){
+  const selEl=document.getElementById('money-month-sel');
+  const selRaw=selEl?selEl.value:nowKey();
+  const isYear=selRaw&&selRaw.startsWith('year_');
+  const yearStr=isYear?selRaw.replace('year_',''):'';
+
+  // Фильтруем записи по выбранному периоду
+  const filtered=isYear
+    ?entries.filter(e=>e.date&&e.date.startsWith(yearStr))
+    :entries.filter(e=>e.date&&e.date.startsWith(selRaw));
+
+  if(!filtered.length){alert('Нет данных за выбранный период');return;}
+
+  // Сортируем по дате
+  const sorted=[...filtered].sort((a,b)=>a.date<b.date?-1:1);
+
+  // Заголовки
+  const headers=['Дата','Тип','Категория','Сумма','Кто','Комментарий','FC/VC'];
+
+  // Строки
+  const rows=sorted.map(e=>{
+    const type=e.type==='expense'?'Расход':'Доход';
+    const fcvc=e.type==='expense'?(isFcCat(e.cat)?'FC':'VC'):'';
+    // Экранируем запятые и кавычки
+    function esc(v){
+      const str=String(v||'');
+      return str.includes(',')||str.includes('"')||str.includes('
+')
+        ?'"'+str.replace(/"/g,'""')+'"'
+        :str;
+    }
+    return[e.date,type,esc(e.cat),e.amount,esc(e.who),esc(e.comment||''),fcvc].join(',');
+  });
+
+  // Итоговая строка
+  const totalExp=sorted.filter(e=>e.type==='expense').reduce((a,e)=>a+e.amount,0);
+  const totalInc=sorted.filter(e=>e.type==='income').reduce((a,e)=>a+e.amount,0);
+  rows.push('');
+  rows.push(',Итого расходы,,'+totalExp.toFixed(2)+',,,');
+  rows.push(',Итого доходы,,'+totalInc.toFixed(2)+',,,');
+  rows.push(',Баланс,,'+(totalInc-totalExp).toFixed(2)+',,,');
+
+  const csv='﻿'+headers.join(',')+'
+'+rows.join('
+');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  const period=isYear?yearStr:selRaw;
+  a.download='ea_budget_'+period+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 syncFromSheets();
 </script>
