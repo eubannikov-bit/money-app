@@ -2743,24 +2743,29 @@ if('serviceWorker' in navigator){
 }
 
 // Поднимать модалку при клавиатуре (iOS visualViewport)
-// Поднимать модалку при появлении клавиатуры через focus/blur на input
+// Поднимать все модалки при появлении клавиатуры (iOS)
 (function(){
-  function onFocusIn(e){
-    const inp=e.target;
-    if(!inp||(inp.tagName!=='INPUT'&&inp.tagName!=='TEXTAREA'&&inp.tagName!=='SELECT'))return;
-    const modal=inp.closest('.mbg.on .modal');
-    if(!modal)return;
-    // Скроллим modal чтобы input был виден, ждём пока клавиатура появится
-    setTimeout(function(){
-      inp.scrollIntoView({block:'center',behavior:'smooth'});
-    },350);
+  if(!window.visualViewport)return;
+  var _lastKb=0;
+  function onVV(){
+    var vv=window.visualViewport;
+    var kb=Math.max(0,window.innerHeight-vv.height);
+    if(Math.abs(kb-_lastKb)<5)return;
+    _lastKb=kb;
+    document.querySelectorAll('.mbg.on').forEach(function(mbg){
+      var modal=mbg.querySelector('.modal');
+      if(!modal)return;
+      if(kb>100){
+        modal.style.transition='none';
+        modal.style.transform='translate3d(0,-'+kb+'px,0)';
+      } else {
+        modal.style.transition='';
+        modal.style.transform='';
+      }
+    });
   }
-  function onFocusOut(e){
-    const modal=document.querySelector('.mbg.on .modal');
-    if(modal)modal.style.transform='';
-  }
-  document.addEventListener('focusin',onFocusIn,true);
-  document.addEventListener('focusout',onFocusOut,true);
+  window.visualViewport.addEventListener('resize',onVV,{passive:true});
+  window.visualViewport.addEventListener('scroll',onVV,{passive:true});
 })();
 
 syncFromSheets();
