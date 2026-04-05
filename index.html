@@ -2177,7 +2177,10 @@ function saveTasksData(){
     method:'POST',
     headers:{'Content-Type':'application/json','x-token':SERVER_TOKEN},
     body:JSON.stringify(tasks)
-  }).catch(()=>{});
+  }).then(r=>{
+    if(!r.ok)console.warn('tasks sync failed:',r.status);
+    else console.log('tasks synced ok, count:',tasks.length);
+  }).catch(e=>console.warn('tasks sync error:',e.message));
 }
 let editingTaskIdx=-1;
 const WHEN_LBL={today:'сегодня',tomorrow:'завтра',week:'неделя',month:'месяц',none:'без срока'};
@@ -2645,7 +2648,7 @@ function pieTooltipToggle(evt){
 })();
 
 // unregister SW
-if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>{if(!r.active||!r.active.scriptURL.includes('sw.js'))r.unregister();})).catch(()=>{});}
+if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>{if(!r.active||!r.active.scriptURL.includes('sw.js'))r.unregister();})).catch(()=>{});navigator.serviceWorker.register('/money-app/sw.js',{scope:'/money-app/',updateViaCache:'none'}).then(r=>{r.update();}).catch(()=>{});}
 
 syncFromSheets();
 </script>
