@@ -968,6 +968,7 @@ function closeM(n){
     // Сброс смещения от клавиатуры
     const modal=el.querySelector('.modal');
     if(modal){modal.style.marginBottom='';modal.style.transform='';}
+    el.style.bottom='';el.style.top='';
   }
   const idx=_modalStack.lastIndexOf(n);
   if(idx>=0)_modalStack.splice(idx,1);
@@ -2743,25 +2744,20 @@ if('serviceWorker' in navigator){
 }
 
 // Поднимать модалку при клавиатуре (iOS visualViewport)
-// Поднимать все модалки при появлении клавиатуры (iOS)
+// Поднимать все модалки при клавиатуре — через bottom на .mbg, не трогая transform
 (function(){
   if(!window.visualViewport)return;
   var _lastKb=0;
   function onVV(){
     var vv=window.visualViewport;
-    var kb=Math.max(0,window.innerHeight-vv.height);
-    if(Math.abs(kb-_lastKb)<5)return;
+    // Сдвиг = насколько уменьшился экран + позиция viewport
+    var kb=Math.round(window.innerHeight-vv.height-vv.offsetTop);
+    if(kb<0)kb=0;
+    if(Math.abs(kb-_lastKb)<4)return;
     _lastKb=kb;
     document.querySelectorAll('.mbg.on').forEach(function(mbg){
-      var modal=mbg.querySelector('.modal');
-      if(!modal)return;
-      if(kb>100){
-        modal.style.transition='none';
-        modal.style.transform='translate3d(0,-'+kb+'px,0)';
-      } else {
-        modal.style.transition='';
-        modal.style.transform='';
-      }
+      mbg.style.bottom=kb>80?kb+'px':'';
+      mbg.style.top=kb>80?'-'+kb+'px':'';
     });
   }
   window.visualViewport.addEventListener('resize',onVV,{passive:true});
