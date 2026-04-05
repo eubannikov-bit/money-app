@@ -2746,10 +2746,10 @@ if('serviceWorker' in navigator){
 if(window.visualViewport){
   function _onVVChange(){
     const vv=window.visualViewport;
-    // На iOS высота visualViewport уменьшается на высоту клавиатуры
     const kb=window.innerHeight-vv.height;
     document.querySelectorAll('.mbg.on .modal').forEach(function(modal){
-      modal.style.transform=kb>50?'translate3d(0,-'+kb+'px,0)':'translate3d(0,0,0)';
+      // +50px запас на панель автозаполнения iOS над клавиатурой
+      modal.style.transform=kb>50?'translate3d(0,-'+(kb+50)+'px,0)':'translate3d(0,0,0)';
     });
   }
   window.visualViewport.addEventListener('resize',_onVVChange,{passive:true});
