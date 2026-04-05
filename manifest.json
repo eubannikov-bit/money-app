@@ -1,6 +1,6 @@
 {
   "name": "Евгений и Аннушка",
-  "short_name": "Бюджет",
+  "short_name": "Евгений и Аннушка",
   "start_url": "/money-app/",
   "scope": "/money-app/",
   "display": "standalone",
