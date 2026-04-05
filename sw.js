@@ -1,21 +1,3 @@
-// Сохранить pending task в IndexedDB (доступен из SW)
-function savePendingTask(taskId) {
-  return new Promise(function(resolve) {
-    const req = indexedDB.open('eadb', 1);
-    req.onupgradeneeded = function(e) {
-      e.target.result.createObjectStore('kv');
-    };
-    req.onsuccess = function(e) {
-      const db = e.target.result;
-      const tx = db.transaction('kv', 'readwrite');
-      tx.objectStore('kv').put(taskId, 'pendingTask');
-      tx.oncomplete = resolve;
-      tx.onerror = resolve;
-    };
-    req.onerror = resolve;
-  });
-}
-
 self.addEventListener('push', function(event) {
   let data = {};
   try { data = event.data.json(); } catch(e) { data = { title: 'Новая задача', body: '' }; }
@@ -37,19 +19,23 @@ self.addEventListener('notificationclick', function(event) {
   const taskId = event.notification.data && event.notification.data.taskId;
 
   event.waitUntil(
-    (taskId ? savePendingTask(taskId) : Promise.resolve()).then(function() {
-      return clients.matchAll({ type: 'window', includeUncontrolled: true });
-    }).then(function(clientList) {
-      // Приложение уже открыто — отправляем postMessage
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+      // Если приложение уже открыто в фоне — отправляем postMessage и фокусируем
       for (let i = 0; i < clientList.length; i++) {
         const c = clientList[i];
         if (c.url && c.url.includes('/money-app/') && 'focus' in c) {
           return c.focus().then(function() {
-            if (taskId) c.postMessage({ type: 'open_task', taskId: taskId });
+            // postMessage работает когда приложение уже открыто
+            if (taskId) {
+              setTimeout(function() {
+                c.postMessage({ type: 'open_task', taskId: taskId });
+              }, 300);
+            }
           });
         }
       }
-      // Открываем новое окно
+      // Приложение закрыто — открываем на вкладке задач
+      // iOS игнорирует параметры в URL, поэтому просто открываем приложение
       if (clients.openWindow) return clients.openWindow('/money-app/');
     })
   );
