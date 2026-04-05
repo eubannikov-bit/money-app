@@ -353,6 +353,17 @@ window._earlyChooseUser = function(name) {
     </div>
   </div>
 
+  <!-- Модалка детализации аналитики -->
+  <div class="mbg" id="m-anl-detail">
+    <div class="modal" style="max-height:88vh">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-size:17px;font-weight:600;color:var(--text)" id="anl-detail-title">Детализация</div>
+        <button onclick="closeM('anl-detail')" style="background:none;border:none;font-size:22px;color:var(--text3);cursor:pointer;padding:0 4px;line-height:1">×</button>
+      </div>
+      <div id="anl-detail-body"></div>
+    </div>
+  </div>
+
   <div class="mbg" id="m-add-wish">
     <div class="modal">
       <div class="modal-title" id="wish-modal-title">Новое желание</div>
@@ -1525,7 +1536,6 @@ function renderAnalytics(selMonth,prevMonth,filtered,prevFiltered,expTotal,catTo
   const sorted=EXP_CATS.map(c=>({c,v:catTotals[c]||0})).sort((a,b)=>b.v-a.v).filter(x=>x.v>0).slice(0,3);
 
   // biggest growth / drop
-  const prevCatTotals={};prevFiltered.filter(e=>e.type==='expense').forEach(e=>{prevCatTotals[e.cat]=(prevCatTotals[e.cat]||0)+e.amount;});
   let maxGrowCat='',maxGrowPct=-Infinity,maxDropCat='',maxDropPct=Infinity;
   EXP_CATS.forEach(c=>{
     const cur=catTotals[c]||0,prev=prevCatTotals[c]||0;
@@ -1535,11 +1545,21 @@ function renderAnalytics(selMonth,prevMonth,filtered,prevFiltered,expTotal,catTo
     if(p<maxDropPct){maxDropPct=p;maxDropCat=c;}
   });
 
-  function anl(lbl,val,sub,cls){
-    return`<div class="anl-item${cls?' '+cls:''}">
+  // Сохраняем контекст для детализации
+  const prevCatTotals={};prevFiltered.filter(e=>e.type==='expense').forEach(e=>{prevCatTotals[e.cat]=(prevCatTotals[e.cat]||0)+e.amount;});
+  _anlCtx={selMonth,prevMonth,filtered,prevFiltered,expTotal,prevExpTotal,incTotal,prevIncTotal,
+    catTotals,prevCatTotals,monthBudgetCats,fcFact,vcFact,
+    avgPerDay,forecast,forecastBalance,daysElapsed,daysInMonth,
+    isCurrentMonth,balance,prevBalance,mandatoryPct,discPct};
+
+  function anl(lbl,val,sub,cls,detailKey){
+    const click=detailKey?`onclick="openAnlDetail('${detailKey}')"`:'';
+    const cursor=detailKey?'cursor:pointer':'';
+    return`<div class="anl-item${cls?' '+cls:''}" ${click} style="${cursor}">
       <div class="lbl">${lbl}</div>
       <div class="val">${val}</div>
       ${sub?`<div class="sub">${sub}</div>`:''}
+      ${detailKey?`<div style="font-size:10px;color:var(--accent);margin-top:4px;font-family:var(--mono)">подробнее →</div>`:''}
     </div>`;
   }
 
@@ -1550,14 +1570,14 @@ function renderAnalytics(selMonth,prevMonth,filtered,prevFiltered,expTotal,catTo
     el.innerHTML=`<div class="anl-card">
       <div class="anl-title">аналитика${isYearMode?' года':' месяца'}</div>
       <div class="anl-grid">
-        ${anl('расходы к прошл. периоду',fmt(expChg)!==null?fmt(expChg):'—',prevExpTotal?prevExpTotal.toLocaleString('ru')+' ₽ ранее':null,expChg!==null?(expChg>0?'neg':'pos'):'')}
-        ${anl('доходы к прошл. периоду',fmt(incChg)!==null?fmt(incChg):'—',prevIncTotal?prevIncTotal.toLocaleString('ru')+' ₽ ранее':null,incChg!==null?(incChg>0?'pos':'neg'):'')}
-        ${anl('баланс к прошл. периоду',fmt(balChg)!==null?fmt(balChg):'—',null,balChg!==null?(balChg>0?'pos':'neg'):'')}
-        ${anl('обязательные расходы',mandatoryPct+'%','от всех расходов','')}
-        ${anl('необязательные расходы',discPct+'%','от всех расходов','')}
-        ${anl('средний расход в день',avgPerDay.toLocaleString('ru')+' ₽',daysElapsed+' дн. данных','')}
-        ${isCurrentMonth?anl('прогноз расходов',forecast.toLocaleString('ru')+' ₽','до конца месяца',forecast>expTotal?'neg':''):''}
-        ${isCurrentMonth?anl('прогноз баланса',(forecastBalance>=0?'+':'')+forecastBalance.toLocaleString('ru')+' ₽','к концу месяца',forecastBalance>=0?'pos':'neg'):''}
+        ${anl('расходы к прошл. периоду',fmt(expChg)!==null?fmt(expChg):'—',prevExpTotal?prevExpTotal.toLocaleString('ru')+' ₽ ранее':null,expChg!==null?(expChg>0?'neg':'pos'):'','exp_vs_prev')}
+        ${anl('доходы к прошл. периоду',fmt(incChg)!==null?fmt(incChg):'—',prevIncTotal?prevIncTotal.toLocaleString('ru')+' ₽ ранее':null,incChg!==null?(incChg>0?'pos':'neg'):'','inc_vs_prev')}
+        ${anl('баланс к прошл. периоду',fmt(balChg)!==null?fmt(balChg):'—',null,balChg!==null?(balChg>0?'pos':'neg'):'','balance_vs_prev')}
+        ${anl('обязательные расходы',mandatoryPct+'%','от всех расходов','','fc_detail')}
+        ${anl('необязательные расходы',discPct+'%','от всех расходов','','vc_detail')}
+        ${anl('средний расход в день',avgPerDay.toLocaleString('ru')+' ₽',daysElapsed+' дн. данных','','avg_day')}
+        ${isCurrentMonth?anl('прогноз расходов',forecast.toLocaleString('ru')+' ₽','до конца месяца',forecast>expTotal?'neg':'','forecast_exp'):''}
+        ${isCurrentMonth?anl('прогноз баланса',(forecastBalance>=0?'+':'')+forecastBalance.toLocaleString('ru')+' ₽','к концу месяца',forecastBalance>=0?'pos':'neg','forecast_bal'):''}
       </div>
       ${maxGrowCat?`<div style="margin-top:8px;font-size:13px;color:var(--red)">↑ Рост: ${maxGrowCat} (+${maxGrowPct}%)</div>`:''}
       ${maxDropCat&&maxDropCat!==maxGrowCat?`<div style="margin-top:4px;font-size:13px;color:var(--green)">↓ Снижение: ${maxDropCat} (${maxDropPct}%)</div>`:''}
@@ -1697,6 +1717,225 @@ function setAnlUser(u){
   if(sel)sel.value=u;
   renderBudgetAnalytics();
 }
+// ====== Детализация карточек аналитики ======
+let _anlCtx={}; // контекст последнего рендера аналитики
+
+function openAnlDetail(key){
+  const c=_anlCtx;
+  if(!c.selMonth)return;
+  const body=document.getElementById('anl-detail-body');
+  const title=document.getElementById('anl-detail-title');
+  if(!body||!title)return;
+
+  function r(v){return v?v.toLocaleString('ru')+' ₽':'—';}
+  function pctBar(fact,plan){
+    if(!plan)return'';
+    const p=Math.min(Math.round(fact/plan*100),200);
+    const over=fact>plan;
+    return`<div style="height:4px;background:var(--bg3);border-radius:2px;margin:4px 0 8px"><div style="height:4px;border-radius:2px;background:${over?'var(--red)':'var(--accent)'};width:${Math.min(p,100)}%"></div></div>`;
+  }
+  function tip(text){
+    return`<div style="background:linear-gradient(135deg,rgba(215,142,168,.08),rgba(215,142,168,.14));border:1px solid var(--line2);border-radius:10px;padding:10px 12px;margin-top:10px;font-size:13px;color:var(--text2);line-height:1.5">💡 ${text}</div>`;
+  }
+  function row(lbl,val,sub,color){
+    return`<div style="display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line)">
+      <div style="font-size:14px;color:var(--text2);flex:1;padding-right:8px">${lbl}</div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:15px;font-weight:500;font-family:var(--mono);color:${color||'var(--text)'}">${val}</div>
+        ${sub?`<div style="font-size:11px;color:var(--text3)">${sub}</div>`:''}
+      </div>
+    </div>`;
+  }
+
+  const {filtered,prevFiltered,expTotal,prevExpTotal,incTotal,prevIncTotal,
+    catTotals,prevCatTotals,monthBudgetCats,fcFact,vcFact,
+    avgPerDay,forecast,forecastBalance,daysElapsed,daysInMonth,
+    isCurrentMonth,balance,prevBalance,mandatoryPct,discPct}=c;
+
+  let html='';
+
+  if(key==='exp_vs_prev'){
+    title.textContent='Расходы: сравнение';
+    // Топ изменений по категориям
+    const changes=EXP_CATS.map(cat=>{
+      const cur=catTotals[cat]||0,prev=prevCatTotals[cat]||0;
+      return{cat,cur,prev,diff:cur-prev,pct:prev?Math.round((cur-prev)/prev*100):null};
+    }).filter(x=>x.cur>0||x.prev>0).sort((a,b)=>Math.abs(b.diff)-Math.abs(a.diff));
+
+    html+=`<div style="font-size:13px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">СРАВНЕНИЕ ПО КАТЕГОРИЯМ</div>`;
+    changes.slice(0,8).forEach(({cat,cur,prev,diff,pct})=>{
+      const color=diff>0?'var(--red)':diff<0?'var(--green)':'var(--text)';
+      const sign=diff>0?'+':'';
+      html+=row(cat,r(cur),prev?`было ${r(prev)} · ${sign}${r(diff)}`:r(cur),color);
+    });
+    const grew=changes.filter(x=>x.diff>0&&x.pct!==null).sort((a,b)=>b.pct-a.pct);
+    const fell=changes.filter(x=>x.diff<0&&x.pct!==null).sort((a,b)=>a.pct-b.pct);
+    if(grew.length) html+=tip(`Больше всего выросли: <b>${grew[0].cat}</b> (+${grew[0].pct}%). Посмотри можно ли сократить эту статью.`);
+    if(fell.length) html+=tip(`Молодцы! <b>${fell[0].cat}</b> снизились на ${Math.abs(fell[0].pct)}% по сравнению с прошлым периодом.`);
+  }
+  else if(key==='inc_vs_prev'){
+    title.textContent='Доходы: сравнение';
+    html+=`<div style="font-size:13px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">ПО ИСТОЧНИКАМ</div>`;
+    const incCatsCur={},incCatsPrev={};
+    filtered.filter(e=>e.type==='income').forEach(e=>{incCatsCur[e.cat]=(incCatsCur[e.cat]||0)+e.amount;});
+    prevFiltered.filter(e=>e.type==='income').forEach(e=>{incCatsPrev[e.cat]=(incCatsPrev[e.cat]||0)+e.amount;});
+    const allInc=[...new Set([...Object.keys(incCatsCur),...Object.keys(incCatsPrev)])];
+    allInc.sort((a,b)=>(incCatsCur[b]||0)-(incCatsCur[a]||0)).forEach(cat=>{
+      const cur=incCatsCur[cat]||0,prev=incCatsPrev[cat]||0,diff=cur-prev;
+      const color=diff>=0?'var(--green)':'var(--red)';
+      html+=row(cat,r(cur),prev?`было ${r(prev)}`:null,color);
+    });
+    html+=`<div style="height:1px;background:var(--line);margin:10px 0"></div>`;
+    html+=row('Итого сейчас',r(incTotal),null,'var(--green)');
+    html+=row('Итого ранее',r(prevIncTotal),null,'var(--text3)');
+    const diff=incTotal-prevIncTotal;
+    if(diff<0) html+=tip(`Доходы снизились на ${r(Math.abs(diff))}. Постарайся компенсировать сокращением переменных расходов.`);
+    else html+=tip(`Доходы выросли на ${r(diff)}! Хорошее время пополнить финансовую подушку или закрыть цель быстрее.`);
+  }
+  else if(key==='balance_vs_prev'){
+    title.textContent='Баланс: детализация';
+    html+=`<div style="font-size:13px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">ТЕКУЩИЙ ПЕРИОД</div>`;
+    html+=row('Доходы',r(incTotal),null,'var(--green)');
+    html+=row('Расходы',r(expTotal),null,'var(--red)');
+    html+=row('Баланс',r(balance),null,balance>=0?'var(--green)':'var(--red)');
+    html+=`<div style="font-size:13px;color:var(--text3);margin:12px 0 8px;font-family:var(--mono)">ПРОШЛЫЙ ПЕРИОД</div>`;
+    html+=row('Доходы',r(prevIncTotal),null,'var(--green)');
+    html+=row('Расходы',r(prevExpTotal),null,'var(--red)');
+    html+=row('Баланс',r(prevBalance),null,prevBalance>=0?'var(--green)':'var(--red)');
+    const trend=balance-prevBalance;
+    html+=`<div style="font-size:13px;color:var(--text3);margin:12px 0 8px;font-family:var(--mono)">ТРЕНД</div>`;
+    html+=row('Изменение',r(Math.abs(trend)),trend>=0?'баланс улучшился':'баланс ухудшился',trend>=0?'var(--green)':'var(--red)');
+    if(balance<0) html+=tip(`Расходы превышают доходы. Чтобы выйти в ноль нужно сократить расходы ещё на ${r(Math.abs(balance))} или увеличить доходы.`);
+    else html+=tip(`Баланс положительный! Направь излишек ${r(balance)} на цели или сбережения.`);
+  }
+  else if(key==='fc_detail'){
+    title.textContent='Обязательные расходы';
+    html+=`<div style="font-size:13px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">FC КАТЕГОРИИ</div>`;
+    EXP_CATS.filter(c=>isFcCat(c)).forEach(cat=>{
+      const fact=catTotals[cat]||0;
+      const plan=monthBudgetCats[cat]||0;
+      if(!fact&&!plan)return;
+      html+=`<div style="padding:8px 0;border-bottom:1px solid var(--line)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div style="font-size:14px;color:var(--text2)">${cat}</div>
+          <div style="font-size:15px;font-weight:500;font-family:var(--mono);color:${fact>plan&&plan?'var(--red)':'var(--text)'}">${r(fact)}</div>
+        </div>
+        ${plan?`<div style="font-size:11px;color:var(--text3)">план ${r(plan)} · ${plan?Math.round(fact/plan*100):0}%</div>`:
+          '<div style="font-size:11px;color:var(--text3)">без плана</div>'}
+        ${pctBar(fact,plan)}
+      </div>`;
+    });
+    html+=`<div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:600">
+      <span>Итого FC</span><span style="font-family:var(--mono)">${r(fcFact)}</span>
+    </div>`;
+    html+=tip(`Обязательные расходы составляют ${mandatoryPct}% от всех. Эти расходы сложнее всего сократить — но стоит проверить подписки и кредиты на предмет оптимизации.`);
+  }
+  else if(key==='vc_detail'){
+    title.textContent='Переменные расходы';
+    html+=`<div style="font-size:13px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">VC КАТЕГОРИИ</div>`;
+    EXP_CATS.filter(c=>isVcCat(c)).forEach(cat=>{
+      const fact=catTotals[cat]||0;
+      const plan=monthBudgetCats[cat]||0;
+      if(!fact&&!plan)return;
+      const over=plan&&fact>plan;
+      html+=`<div style="padding:8px 0;border-bottom:1px solid var(--line)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div style="font-size:14px;color:var(--text2)">${cat}</div>
+          <div style="font-size:15px;font-weight:500;font-family:var(--mono);color:${over?'var(--red)':'var(--text)'}">${r(fact)}</div>
+        </div>
+        ${plan?`<div style="font-size:11px;color:var(--text3)">план ${r(plan)} · ${Math.round(fact/plan*100)}%${over?' ⚠️ перерасход':''}</div>`:
+          '<div style="font-size:11px;color:var(--text3)">без плана</div>'}
+        ${pctBar(fact,plan)}
+      </div>`;
+    });
+    const vcPlan=EXP_CATS.filter(c=>isVcCat(c)).reduce((a,c)=>a+(monthBudgetCats[c]||0),0);
+    html+=`<div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:600">
+      <span>Итого VC</span><span style="font-family:var(--mono)">${r(vcFact)}</span>
+    </div>`;
+    const overCats=EXP_CATS.filter(c=>isVcCat(c)&&(catTotals[c]||0)>(monthBudgetCats[c]||0)&&monthBudgetCats[c]);
+    if(overCats.length) html+=tip(`Перерасход в ${overCats.length} категори${overCats.length===1?'и':'ях'}: ${overCats.join(', ')}. Сосредоточься на них до конца месяца.`);
+    else if(vcFact<vcPlan) html+=tip(`Ты в рамках бюджета! Осталось ${r(vcPlan-vcFact)} переменного бюджета.`);
+  }
+  else if(key==='avg_day'){
+    title.textContent='Расходы по дням';
+    // Группируем VC расходы по дням
+    const byDay={};
+    filtered.filter(e=>e.type==='expense'&&isVcCat(e.cat)).forEach(e=>{
+      byDay[e.date]=(byDay[e.date]||0)+e.amount;
+    });
+    const days=Object.keys(byDay).sort();
+    const maxDay=days.reduce((m,d)=>byDay[d]>byDay[m]?d:m,days[0]||'');
+    const minDay=days.reduce((m,d)=>byDay[d]<byDay[m]?d:m,days[0]||'');
+    html+=`<div style="font-size:13px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">ПЕРЕМЕННЫЕ РАСХОДЫ ПО ДНЯМ</div>`;
+    html+=row('Средний в день',r(avgPerDay),daysElapsed+' дн. данных','var(--text)');
+    if(maxDay) html+=row('Самый дорогой',r(byDay[maxDay]),maxDay,'var(--red)');
+    if(minDay&&minDay!==maxDay) html+=row('Самый дешёвый',r(byDay[minDay]),minDay,'var(--green)');
+    html+=`<div style="font-size:13px;color:var(--text3);margin:12px 0 6px;font-family:var(--mono)">ПО ДНЯМ</div>`;
+    days.slice(-10).forEach(d=>{
+      const v=byDay[d];
+      const w=Math.min(Math.round(v/avgPerDay*50),100);
+      html+=`<div style="display:flex;align-items:center;gap:8px;padding:4px 0">
+        <div style="font-size:12px;color:var(--text3);font-family:var(--mono);width:38px">${d.slice(5)}</div>
+        <div style="flex:1;height:6px;background:var(--bg3);border-radius:3px">
+          <div style="height:6px;border-radius:3px;background:${v>avgPerDay?'var(--red)':'var(--accent)'};width:${w}%"></div>
+        </div>
+        <div style="font-size:12px;font-family:var(--mono);color:var(--text);width:70px;text-align:right">${r(v)}</div>
+      </div>`;
+    });
+    if(avgPerDay>0){
+      const norm=Math.round(vcFact/daysInMonth);
+      html+=tip(`При текущем темпе ${r(avgPerDay)}/день к концу месяца переменные расходы составят ${r(avgPerDay*daysInMonth)}. Норма для бюджета: ${r(norm)}/день.`);
+    }
+  }
+  else if(key==='forecast_exp'){
+    title.textContent='Прогноз расходов';
+    const daysLeft=daysInMonth-daysElapsed;
+    const vcPlan=EXP_CATS.filter(c=>isVcCat(c)).reduce((a,c)=>a+(monthBudgetCats[c]||0),0);
+    html+=`<div style="font-size:13px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">КАК СЧИТАЕТСЯ</div>`;
+    html+=row('Средний расход/день',r(avgPerDay),'переменные (VC)','var(--text)');
+    html+=row('Осталось дней',daysLeft+'','до конца месяца','var(--text)');
+    html+=row('Прогноз VC',r(forecast),'средний × дней в месяце','var(--red)');
+    html+=`<div style="font-size:13px;color:var(--text3);margin:12px 0 8px;font-family:var(--mono)">СЦЕНАРИИ</div>`;
+    const scen=[0.7,0.85,1,1.15].forEach(k=>{
+      const sc=Math.round(avgPerDay*k*daysInMonth);
+      html+=row(k<1?`−${Math.round((1-k)*100)}% трат`:k>1?`+${Math.round((k-1)*100)}% трат`:'текущий темп',r(sc),
+        sc<vcPlan?'в рамках плана':'превысит план',sc<vcPlan?'var(--green)':'var(--red)');
+    });
+    if(vcPlan>0){
+      const safePerDay=Math.round((vcPlan-vcFact)/daysLeft);
+      html+=tip(`Чтобы уложиться в план (${r(vcPlan)}), можно тратить не более ${r(safePerDay)}/день до конца месяца.`);
+    } else {
+      html+=tip(`Добавь план расходов в разделе "План" чтобы видеть сценарии относительно бюджета.`);
+    }
+  }
+  else if(key==='forecast_bal'){
+    title.textContent='Прогноз баланса';
+    const vcPlan=EXP_CATS.filter(c=>isVcCat(c)).reduce((a,c)=>a+(monthBudgetCats[c]||0),0);
+    const incPlan=INC_CATS.reduce((a,c)=>a+(monthBudgetCats[c]||0),0);
+    html+=`<div style="font-size:13px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">ФОРМУЛА ПРОГНОЗА</div>`;
+    html+=row('Доходы факт',r(incTotal),null,'var(--green)');
+    html+=row('FC расходы факт',r(fcFact),'уже потрачено','var(--red)');
+    html+=row('Прогноз VC',r(forecast),'средний темп × дней','var(--red)');
+    html+=`<div style="height:1px;background:var(--accent);margin:8px 0;opacity:.3"></div>`;
+    html+=row('Прогноз баланса',r(Math.abs(forecastBalance)),forecastBalance>=0?'ожидается профицит':'ожидается дефицит',
+      forecastBalance>=0?'var(--green)':'var(--red)');
+    if(forecastBalance<0){
+      const needReduce=Math.abs(forecastBalance);
+      const daysLeft=daysInMonth-daysElapsed;
+      const dailyCut=daysLeft>0?Math.round(needReduce/daysLeft):needReduce;
+      html+=`<div style="font-size:13px;color:var(--text3);margin:12px 0 8px;font-family:var(--mono)">ЧТО СДЕЛАТЬ</div>`;
+      html+=row('Нужно сократить',r(needReduce),'переменных расходов','var(--red)');
+      html+=row('Или экономить',r(dailyCut)+'/день','оставшиеся '+daysLeft+' дн.','var(--accent)');
+      html+=tip(`Чтобы выйти в ноль — сократи переменные расходы на ${r(needReduce)}. Начни с категорий где уже есть перерасход.`);
+    } else {
+      html+=tip(`Прогноз положительный! Ожидается профицит ${r(forecastBalance)}. Направь его на цели или сбережения.`);
+    }
+  }
+
+  body.innerHTML=html||'<div class="empty">нет данных</div>';
+  openM('anl-detail');
+}
+
 function renderBudgetAnalytics(){
   const selEl=document.getElementById('budget-month-sel');
   const selRaw=selEl?selEl.value:nowKey();
