@@ -61,6 +61,7 @@ body{font-family:var(--font);display:flex;justify-content:center;align-items:str
 .mbg{display:none;position:absolute;inset:0;background:rgba(165,122,139,.22);align-items:flex-end;z-index:30;transition:background .2s}
 .mbg.on{display:flex}
 .modal{background:rgba(255,248,250,.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:24px 24px 0 0;padding:20px 20px calc(var(--safe-bot) + 20px);width:100%;max-height:94vh;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid rgba(235,204,215,.7);box-shadow:0 -8px 30px rgba(215,142,168,.12);transform:translate3d(0,20px,0);transition:transform .3s cubic-bezier(.32,.72,0,1);will-change:transform}
+#m-view-task .modal{overflow-y:visible;max-height:none;padding-bottom:calc(var(--safe-bot) + 28px)}
 .mbg.on .modal{transform:translate3d(0,0,0)}
 .modal-title{font-size:17px;font-weight:600;color:var(--text);margin-bottom:16px;letter-spacing:-.02em}
 .flabel{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;font-family:var(--mono)}
@@ -325,6 +326,18 @@ window._earlyChooseUser = function(name) {
       <div class="frow"><label class="flabel">Кому</label><select id="tk-who"><option value="Евгений">Евгению 🐗</option><option value="Аннушка">Аннушке 🐘</option></select></div>
       <div class="frow"><label class="flabel">Когда</label><select id="tk-when"><option value="today">сегодня</option><option value="tomorrow">завтра</option><option value="week">эта неделя</option><option value="month">этот месяц</option><option value="none">без срока</option></select></div>
       <div class="brow"><button class="btn-cancel" onclick="closeM('add-task')">Отмена</button><button id="btn-del-task" style="display:none;background:none;border:1px solid #F09595;border-radius:8px;padding:11px 14px;cursor:pointer;font-family:var(--font);font-size:15px;color:#d94f6e" onclick="deleteTask()">удалить</button><button class="btn-save" onclick="saveTask()">Сохранить</button></div>
+    </div>
+  </div>
+
+  <!-- Модалка просмотра задачи (read-only) -->
+  <div class="mbg" id="m-view-task">
+    <div class="modal" style="padding-bottom:calc(var(--safe-bot) + 28px)">
+      <div style="width:36px;height:4px;background:var(--line2);border-radius:2px;margin:0 auto 18px"></div>
+      <div style="font-size:19px;font-weight:600;color:var(--text);line-height:1.35;margin-bottom:16px;word-break:break-word" id="vtk-name"></div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="font-size:14px;color:var(--text2);background:var(--bg3);border-radius:8px;padding:6px 12px" id="vtk-who"></div>
+        <div style="font-size:14px;color:var(--text2);background:var(--bg3);border-radius:8px;padding:6px 12px" id="vtk-when"></div>
+      </div>
     </div>
   </div>
 
@@ -2258,6 +2271,20 @@ function openEditTask(idx){
   document.getElementById('tk-when').value=t.when||'none';
   openM('add-task');
 }
+
+function openViewTask(idx){
+  if(idx<0||idx>=tasks.length)return;
+  const t=tasks[idx];
+  const WHEN_FULL={today:'сегодня',tomorrow:'завтра',week:'эта неделя',month:'этот месяц',none:''};
+  const whoLbl=t.who==='Евгений'?'🐗 Евгению':'🐘 Аннушке';
+  const whenLbl=WHEN_FULL[t.when]||'';
+  document.getElementById('vtk-name').textContent=t.name||'';
+  document.getElementById('vtk-who').textContent=whoLbl;
+  const whenEl=document.getElementById('vtk-when');
+  if(whenLbl){whenEl.textContent=whenLbl;whenEl.style.display='';}
+  else{whenEl.style.display='none';}
+  openM('view-task');
+}
 function deleteTask(){
   if(editingTaskIdx<0)return;
   tasks.splice(editingTaskIdx,1);editingTaskIdx=-1;
@@ -2338,7 +2365,7 @@ function renderTasks(){
     const grp=taskDateLabel(t);
     if(grp!==lastGroup){
       lastGroup=grp;
-      html+=`<div style="font-size:13px;color:var(--text3);font-family:var(--mono);padding:10px 14px 4px;letter-spacing:.02em">${grp}</div>`;
+      html+=`<div style="font-size:12px;color:#c47a96;font-family:var(--mono);padding:12px 14px 4px;letter-spacing:.07em;text-transform:uppercase;font-weight:500">${grp}</div>`;
     }
     const ovd=taskOverdue(t);
     const whenLbl=t.when&&t.when!=='none'?WHEN_LBL[t.when]:'';
@@ -2354,7 +2381,7 @@ function renderTasks(){
         <div style="width:22px;height:22px;border-radius:50%;border:1.5px solid ${t.done?'var(--accent)':'var(--line2)'};cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:${t.done?'var(--accent)':'transparent'};touch-action:manipulation" onclick="toggleTask(${t._i},event)">
           ${t.done?'<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}
         </div>
-        <div style="flex:1;min-width:0" onclick="openEditTask(${t._i})">
+        <div style="flex:1;min-width:0" onclick="openViewTask(${t._i})">
           <div style="font-size:15px;color:${t.done?'var(--text3)':'var(--text)'};${t.done?'text-decoration:line-through':''};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
           ${sub?`<div style="font-size:13px;color:var(--text3);font-family:var(--mono);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sub}</div>`:''}
         </div>
@@ -2710,7 +2737,7 @@ if('serviceWorker' in navigator){
     window.addEventListener('load',()=>{
       setTimeout(()=>{
         const idx=tasks.findIndex(t=>t.id===taskParam);
-        if(idx>=0){switchScreen('tasks');setTimeout(()=>openEditTask(idx),400);}
+        if(idx>=0){switchScreen('tasks');setTimeout(()=>openViewTask(idx),400);}
       },800);
     });
   }
