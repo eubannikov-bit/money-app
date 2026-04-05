@@ -320,9 +320,9 @@ window._earlyChooseUser = function(name) {
   </div>
 
   <div class="mbg" id="m-add-task">
-    <div class="modal">
+    <div class="modal" id="modal-add-task">
       <div class="modal-title" id="task-modal-title">Новая задача</div>
-      <div class="frow"><label class="flabel">Задача</label><textarea id="tk-name" placeholder="что нужно сделать?" rows="2" style="resize:none;line-height:1.4"></textarea></div>
+      <div class="frow"><label class="flabel">Задача</label><input type="text" id="tk-name" placeholder="что нужно сделать?" autocomplete="off"></div>
       <div class="frow"><label class="flabel">Кому</label><select id="tk-who"><option value="Евгений">Евгению 🐗</option><option value="Аннушка">Аннушке 🐘</option></select></div>
       <div class="frow"><label class="flabel">Когда</label><select id="tk-when"><option value="today">сегодня</option><option value="tomorrow">завтра</option><option value="week">эта неделя</option><option value="month">этот месяц</option><option value="none">без срока</option></select></div>
       <div class="brow"><button class="btn-cancel" onclick="closeM('add-task')">Отмена</button><button id="btn-del-task" style="display:none;background:none;border:1px solid #F09595;border-radius:8px;padding:11px 14px;cursor:pointer;font-family:var(--font);font-size:15px;color:#d94f6e" onclick="deleteTask()">удалить</button><button class="btn-save" onclick="saveTask()">Сохранить</button></div>
@@ -967,7 +967,7 @@ function closeM(n){
     el.classList.remove('on');
     // Сброс смещения от клавиатуры
     const modal=el.querySelector('.modal');
-    if(modal)modal.style.marginBottom='';
+    if(modal){modal.style.marginBottom='';modal.style.transform='';}
   }
   const idx=_modalStack.lastIndexOf(n);
   if(idx>=0)_modalStack.splice(idx,1);
@@ -2264,7 +2264,6 @@ function openNewTask(){
   document.getElementById('tk-who').value=opposite;
   document.getElementById('tk-when').value='none';
   openM('add-task');
-  setTimeout(()=>document.getElementById('tk-name').focus(),120);
 }
 function openEditTask(idx){
   const t=tasks[idx];editingTaskIdx=idx;
@@ -2747,14 +2746,13 @@ if('serviceWorker' in navigator){
 if(window.visualViewport){
   function _onVVChange(){
     const vv=window.visualViewport;
-    // Смещение клавиатуры = разница между innerHeight и высотой видимой области
-    const kb=Math.max(0,window.innerHeight-vv.height-vv.pageTop);
+    // На iOS высота visualViewport уменьшается на высоту клавиатуры
+    const kb=window.innerHeight-vv.height;
     document.querySelectorAll('.mbg.on .modal').forEach(function(modal){
-      modal.style.marginBottom=kb>10?kb+'px':'';
+      modal.style.transform=kb>50?'translate3d(0,-'+kb+'px,0)':'translate3d(0,0,0)';
     });
   }
   window.visualViewport.addEventListener('resize',_onVVChange,{passive:true});
-  window.visualViewport.addEventListener('scroll',_onVVChange,{passive:true});
 }
 
 syncFromSheets();
