@@ -2743,25 +2743,24 @@ if('serviceWorker' in navigator){
   });
 }
 
-// Поднимать модалку при клавиатуре (iOS visualViewport)
-// Поднимать все модалки при клавиатуре — через bottom на .mbg, не трогая transform
+// Поднимать все модалки при клавиатуре
 (function(){
   if(!window.visualViewport)return;
   var _lastKb=0;
+  var wrap=document.querySelector('.wrap');
   function onVV(){
     var vv=window.visualViewport;
-    // Сдвиг = насколько уменьшился экран + позиция viewport
-    var kb=Math.round(window.innerHeight-vv.height-vv.offsetTop);
+    var kb=Math.round(window.innerHeight-vv.height);
     if(kb<0)kb=0;
     if(Math.abs(kb-_lastKb)<4)return;
     _lastKb=kb;
-    document.querySelectorAll('.mbg.on').forEach(function(mbg){
-      mbg.style.bottom=kb>80?kb+'px':'';
-      mbg.style.top=kb>80?'-'+kb+'px':'';
-    });
+    // Двигаем весь .wrap вверх — все модалки внутри него поднимаются
+    if(wrap){
+      wrap.style.transform=kb>80?'translateY(-'+kb+'px)':'';
+      wrap.style.marginBottom=kb>80?kb+'px':'';
+    }
   }
   window.visualViewport.addEventListener('resize',onVV,{passive:true});
-  window.visualViewport.addEventListener('scroll',onVV,{passive:true});
 })();
 
 syncFromSheets();
