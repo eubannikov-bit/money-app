@@ -2171,6 +2171,8 @@ function renderDayBudget(){
 
 // tasks
 let tasks=JSON.parse(localStorage.getItem('couple_tasks_v1')||'[]');
+// Добавить createdAt к задачам у которых его нет (миграция)
+tasks.forEach(t=>{if(!t.createdAt)t.createdAt=new Date().toISOString();});
 // Загрузить задачи с сервера
 function fetchTasks(){
   fetch(API+'/tasks',{headers:{'x-token':SERVER_TOKEN}})
@@ -2305,11 +2307,27 @@ function renderTasks(){
     return 0;
   });
 
+  // Группировка по дате постановки (createdAt)
+  const MONTHS_SHORT_RU=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  function taskDateLabel(t){
+    const d=new Date(t.createdAt||Date.now());
+    const today=new Date();const yesterday=new Date(today);yesterday.setDate(today.getDate()-1);
+    if(d.toDateString()===today.toDateString())return'сегодня';
+    if(d.toDateString()===yesterday.toDateString())return'вчера';
+    return d.getDate()+' '+MONTHS_SHORT_RU[d.getMonth()];
+  }
+
   let html='';
+  let lastGroup='';
   sorted.forEach(t=>{
+    const grp=taskDateLabel(t);
+    if(grp!==lastGroup){
+      lastGroup=grp;
+      html+=`<div style="font-size:13px;color:var(--text3);font-family:var(--mono);padding:10px 14px 4px;letter-spacing:.02em">${grp}</div>`;
+    }
     const ovd=taskOverdue(t);
     const whenLbl=t.when&&t.when!=='none'?WHEN_LBL[t.when]:'';
-    const whoLbl=t.who==='both'?'оба 🐗🐘':t.who==='Евгений'?'🐗 Евгений':'🐘 Аннушка';
+    const whoLbl=t.who==='Евгений'?'🐗 Евгений':'🐘 Аннушка';
     const sub=[whoLbl,whenLbl].filter(Boolean).join(' · ');
     const borderStyle=ovd?'border-left:3px solid #ffb3b3':'';
     html+=`<div class="swipe-wrap" data-tkidx="${t._i}" style="${borderStyle}">
