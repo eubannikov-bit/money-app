@@ -2721,35 +2721,51 @@ if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then
 // Открыть задачу по id (из push или postMessage)
 function openTaskById(taskId){
   if(!taskId)return;
+  fetchTasks();
   setTimeout(()=>{
-    fetchTasks();
-    setTimeout(()=>{
-      const idx=tasks.findIndex(t=>t.id===taskId);
-      switchScreen('tasks');
-      if(idx>=0)setTimeout(()=>openViewTask(idx),300);
-    },700);
-  },0);
+    const idx=tasks.findIndex(t=>t.id===taskId);
+    switchScreen('tasks');
+    if(idx>=0)setTimeout(()=>openViewTask(idx),250);
+  },800);
 }
 
-// Обработчик push-тапа — открыть конкретную задачу
+// Прочитать pendingTask из IndexedDB (сохранено SW при тапе на push)
+function readAndClearPendingTask(){
+  return new Promise(function(resolve){
+    try{
+      const req=indexedDB.open('eadb',1);
+      req.onupgradeneeded=function(e){e.target.result.createObjectStore('kv');};
+      req.onsuccess=function(e){
+        const db=e.target.result;
+        const tx=db.transaction('kv','readwrite');
+        const store=tx.objectStore('kv');
+        const get=store.get('pendingTask');
+        get.onsuccess=function(){
+          const val=get.result;
+          if(val)store.delete('pendingTask');
+          resolve(val||null);
+        };
+        get.onerror=function(){resolve(null);};
+      };
+      req.onerror=function(){resolve(null);};
+    }catch(e){resolve(null);}
+  });
+}
+
+// Обработчик push-тапа
 if('serviceWorker' in navigator){
-  // Приложение уже открыто — получаем postMessage от SW
+  // Приложение уже открыто — postMessage от SW
   navigator.serviceWorker.addEventListener('message',function(event){
     if(event.data&&event.data.type==='open_task'){
       openTaskById(event.data.taskId);
     }
   });
-  // Приложение открыто заново через push — читаем hash #task=ID
-  function checkPushHash(){
-    const hash=window.location.hash;
-    if(hash&&hash.startsWith('#task=')){
-      const taskId=decodeURIComponent(hash.slice(6));
-      history.replaceState(null,'',window.location.pathname+window.location.search);
-      openTaskById(taskId);
-    }
-  }
-  setTimeout(checkPushHash,1200);
-  window.addEventListener('hashchange',checkPushHash);
+  // Приложение открыто заново — читаем pendingTask из IndexedDB
+  setTimeout(function(){
+    readAndClearPendingTask().then(function(taskId){
+      if(taskId)openTaskById(taskId);
+    });
+  },1000);
 }
 
 syncFromSheets();
