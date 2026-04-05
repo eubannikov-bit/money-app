@@ -827,6 +827,18 @@ function connectWebSocket(){
   }catch(e){}
 }
 
+// Polling задач каждые 30 секунд (fallback для iOS где WS может убиваться)
+let _tasksPollTimer=null;
+function startTasksPolling(){
+  if(_tasksPollTimer)clearInterval(_tasksPollTimer);
+  _tasksPollTimer=setInterval(()=>{
+    // Только если WS не подключён
+    if(!_ws||_ws.readyState!==WebSocket.OPEN){
+      fetchTasks();
+    }
+  },30000);
+}
+
 function handleServerEvent(msg){
   const {event,data}=msg;
   if(event==='entry_added'){
@@ -852,8 +864,14 @@ function handleServerEvent(msg){
   } else if(event==='budget_updated'&&data?.monthKey&&data?.cats){
     setBudgetForMonth(data.monthKey,data.cats);renderBudget();
   } else if(event==='tasks_updated'){
-    // Кто-то обновил задачи — загружаем актуальный список
-    fetchTasks();
+    // Используем данные прямо из события (быстро) или запрашиваем сервер
+    if(data&&Array.isArray(data)&&data.length>0){
+      tasks=data;
+      try{localStorage.setItem('couple_tasks_v1',JSON.stringify(tasks));}catch(e){}
+      renderTasks();
+    } else {
+      fetchTasks();
+    }
   }
 }
 
@@ -2161,7 +2179,7 @@ function fetchTasks(){
   fetch(API+'/tasks',{headers:{'x-token':SERVER_TOKEN}})
     .then(r=>r.json())
     .then(data=>{
-      if(Array.isArray(data)&&data.length>0){
+      if(Array.isArray(data)){
         tasks=data;
         try{localStorage.setItem('couple_tasks_v1',JSON.stringify(tasks));}catch(e){}
         renderTasks();
@@ -2602,7 +2620,7 @@ setET('expense');
 updateSortUi();
 buildMonthSelectors();
 renderEntries();updateTodayCard();
-renderTasks();fetchTasks();
+renderTasks();fetchTasks();startTasksPolling();
 initWhoAmI();
 
 // Принудительно загружаем данные при старте
