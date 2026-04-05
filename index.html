@@ -1536,6 +1536,7 @@ function renderAnalytics(selMonth,prevMonth,filtered,prevFiltered,expTotal,catTo
   const sorted=EXP_CATS.map(c=>({c,v:catTotals[c]||0})).sort((a,b)=>b.v-a.v).filter(x=>x.v>0).slice(0,3);
 
   // biggest growth / drop
+  const prevCatTotals={};prevFiltered.filter(e=>e.type==='expense').forEach(e=>{prevCatTotals[e.cat]=(prevCatTotals[e.cat]||0)+e.amount;});
   let maxGrowCat='',maxGrowPct=-Infinity,maxDropCat='',maxDropPct=Infinity;
   EXP_CATS.forEach(c=>{
     const cur=catTotals[c]||0,prev=prevCatTotals[c]||0;
@@ -1546,7 +1547,6 @@ function renderAnalytics(selMonth,prevMonth,filtered,prevFiltered,expTotal,catTo
   });
 
   // Сохраняем контекст для детализации
-  const prevCatTotals={};prevFiltered.filter(e=>e.type==='expense').forEach(e=>{prevCatTotals[e.cat]=(prevCatTotals[e.cat]||0)+e.amount;});
   _anlCtx={selMonth,prevMonth,filtered,prevFiltered,expTotal,prevExpTotal,incTotal,prevIncTotal,
     catTotals,prevCatTotals,monthBudgetCats,fcFact,vcFact,
     avgPerDay,forecast,forecastBalance,daysElapsed,daysInMonth,
