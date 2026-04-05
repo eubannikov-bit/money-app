@@ -322,10 +322,8 @@ window._earlyChooseUser = function(name) {
     <div class="modal">
       <div class="modal-title" id="task-modal-title">Новая задача</div>
       <div class="frow"><label class="flabel">Задача</label><input type="text" id="tk-name" placeholder="что нужно сделать?"></div>
-      <div class="frow"><label class="flabel">Кому</label><select id="tk-who"><option value="Евгений">Евгению 🐗</option><option value="Аннушка">Аннушке 🐘</option><option value="both">обоим</option></select></div>
+      <div class="frow"><label class="flabel">Кому</label><select id="tk-who"><option value="Евгений">Евгению 🐗</option><option value="Аннушка">Аннушке 🐘</option></select></div>
       <div class="frow"><label class="flabel">Когда</label><select id="tk-when"><option value="today">сегодня</option><option value="tomorrow">завтра</option><option value="week">эта неделя</option><option value="month">этот месяц</option><option value="none">без срока</option></select></div>
-      <div class="frow"><label class="flabel">Комментарий</label><input type="text" id="tk-note" placeholder="уточнение..."></div>
-      <div class="frow" id="tk-status-row" style="display:none"><label class="flabel">Статус</label><select id="tk-done-sel"><option value="0">Открыта</option><option value="1">Выполнена</option></select></div>
       <div class="brow"><button class="btn-cancel" onclick="closeM('add-task')">Отмена</button><button id="btn-del-task" style="display:none;background:none;border:1px solid #F09595;border-radius:8px;padding:11px 14px;cursor:pointer;font-family:var(--font);font-size:15px;color:#d94f6e" onclick="deleteTask()">удалить</button><button class="btn-save" onclick="saveTask()">Сохранить</button></div>
     </div>
   </div>
@@ -2224,10 +2222,10 @@ function openNewTask(){
   document.getElementById('task-modal-title').textContent='Новая задача';
   document.getElementById('btn-del-task').style.display='none';
   document.getElementById('tk-name').value='';
-  document.getElementById('tk-who').value=whoAmI||'Евгений';
+  // По умолчанию — противоположный партнёр
+  const opposite=whoAmI==='Евгений'?'Аннушка':'Евгений';
+  document.getElementById('tk-who').value=opposite;
   document.getElementById('tk-when').value='none';
-  document.getElementById('tk-note').value='';
-  const sr=document.getElementById('tk-status-row');if(sr)sr.style.display='none';
   openM('add-task');
   setTimeout(()=>document.getElementById('tk-name').focus(),120);
 }
@@ -2238,9 +2236,6 @@ function openEditTask(idx){
   document.getElementById('tk-name').value=t.name||'';
   document.getElementById('tk-who').value=t.who||'Евгений';
   document.getElementById('tk-when').value=t.when||'none';
-  document.getElementById('tk-note').value=t.note||'';
-  const sr=document.getElementById('tk-status-row');if(sr)sr.style.display='';
-  const ds=document.getElementById('tk-done-sel');if(ds)ds.value=t.done?'1':'0';
   openM('add-task');
 }
 function deleteTask(){
@@ -2253,21 +2248,16 @@ function saveTask(){
   const name=document.getElementById('tk-name').value.trim();
   const who=document.getElementById('tk-who').value;
   const when=document.getElementById('tk-when').value;
-  const note=document.getElementById('tk-note').value.trim();
-  const doneEl=document.getElementById('tk-done-sel');
-  const done=doneEl?doneEl.value==='1':false;
   if(!name)return;
   if(editingTaskIdx>=0){
     const prev=tasks[editingTaskIdx];
     const prevWho=prev.who;
-    Object.assign(tasks[editingTaskIdx],{name,who,when,note,done});
-    // Push при смене адресата
-    if(who!==prevWho&&who!=='both')sendTaskPush(who,name);
+    Object.assign(tasks[editingTaskIdx],{name,who,when});
+    if(who!==prevWho)sendTaskPush(who,name,tasks[editingTaskIdx].id);
   } else {
-    const task={id:'tk_'+Date.now(),name,who,when,note,done:false,createdAt:new Date().toISOString()};
+    const task={id:'tk_'+Date.now(),name,who,when,done:false,createdAt:new Date().toISOString()};
     tasks.unshift(task);
-    // Push новой задачи
-    if(who!=='both'&&who!==whoAmI)sendTaskPush(who,name);
+    if(who!==whoAmI)sendTaskPush(who,name,task.id);
   }
   editingTaskIdx=-1;
   document.getElementById('btn-del-task').style.display='none';
@@ -2275,15 +2265,16 @@ function saveTask(){
 }
 
 // Push-уведомления для задач
-function sendTaskPush(toWho,taskName){
+function sendTaskPush(toWho,taskName,taskId){
   try{
     fetch(API+'/push',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-token':SERVER_TOKEN},
       body:JSON.stringify({
         to:toWho,
-        title:'Новая задача от '+(whoAmI||'партнёра'),
-        body:taskName
+        title:'Новая задача от '+(whoAmI==='Евгений'?'Евгения':whoAmI==='Аннушка'?'Аннушки':'партнёра'),
+        body:taskName,
+        taskId:taskId||''
       })
     }).catch(()=>{});
   }catch(e){}
@@ -2319,7 +2310,7 @@ function renderTasks(){
     const ovd=taskOverdue(t);
     const whenLbl=t.when&&t.when!=='none'?WHEN_LBL[t.when]:'';
     const whoLbl=t.who==='both'?'оба 🐗🐘':t.who==='Евгений'?'🐗 Евгений':'🐘 Аннушка';
-    const sub=[whoLbl,whenLbl,t.note].filter(Boolean).join(' · ');
+    const sub=[whoLbl,whenLbl].filter(Boolean).join(' · ');
     const borderStyle=ovd?'border-left:3px solid #ffb3b3':'';
     html+=`<div class="swipe-wrap" data-tkidx="${t._i}" style="${borderStyle}">
       <div class="swipe-actions">
@@ -2666,6 +2657,31 @@ function pieTooltipToggle(evt){
 
 // unregister SW
 if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>{if(!r.active||!r.active.scriptURL.includes('sw.js'))r.unregister();})).catch(()=>{});navigator.serviceWorker.register('/money-app/sw.js',{scope:'/money-app/',updateViaCache:'none'}).then(r=>{r.update();}).catch(()=>{});}
+
+// Обработчик push-тапа — открыть конкретную задачу
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message', function(event){
+    if(event.data&&event.data.type==='open_task'&&event.data.taskId){
+      const idx=tasks.findIndex(t=>t.id===event.data.taskId);
+      if(idx>=0){
+        // Переключиться на вкладку задач и открыть задачу
+        switchScreen('tasks');
+        setTimeout(()=>openEditTask(idx),300);
+      }
+    }
+  });
+  // Проверить параметр ?task= при открытии через push
+  const urlParams=new URLSearchParams(window.location.search);
+  const taskParam=urlParams.get('task');
+  if(taskParam){
+    window.addEventListener('load',()=>{
+      setTimeout(()=>{
+        const idx=tasks.findIndex(t=>t.id===taskParam);
+        if(idx>=0){switchScreen('tasks');setTimeout(()=>openEditTask(idx),400);}
+      },800);
+    });
+  }
+}
 
 syncFromSheets();
 </script>
