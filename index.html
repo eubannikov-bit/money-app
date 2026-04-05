@@ -279,7 +279,10 @@ window._earlyChooseUser = function(name) {
   </div>
 
   <div class="scr" id="s-tasks">
-    <div class="hdr"><div class="htitle">Задачи</div></div>
+    <div class="hdr">
+      <div class="htitle">Задачи</div>
+      <button id="push-btn" onclick="requestPushManually()" style="display:none;font-size:13px;padding:4px 10px;border-radius:8px;border:1px solid var(--line2);background:transparent;color:var(--accent);font-family:var(--font);cursor:pointer">&#128276; уведомления</button>
+    </div>
     <div class="body">
       <div class="stats">
         <div class="stat"><div class="stat-lbl">открытых</div><div class="stat-val" id="t-open">0</div></div>
@@ -500,35 +503,52 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
+async function _doRegisterPush(who) {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+  const reg = await navigator.serviceWorker.register('/money-app/sw.js', { scope: '/money-app/' });
+  await navigator.serviceWorker.ready;
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') return false;
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) {
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+  }
+  await fetch(API + '/push/subscribe', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'x-token': SERVER_TOKEN},
+    body: JSON.stringify({ who, sub })
+  });
+  const btn=document.getElementById('push-btn');
+  if(btn)btn.style.display='none';
+  return true;
+}
+
+async function requestPushManually() {
+  if (!whoAmI) return;
+  try {
+    const ok = await _doRegisterPush(whoAmI);
+    const btn = document.getElementById('push-btn');
+    if (ok && btn) { btn.textContent = 'включено'; setTimeout(() => { btn.style.display='none'; }, 2000); }
+  } catch(e) {
+    alert('Не удалось: ' + e.message);
+  }
+}
+
 async function registerPush(who) {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
   try {
-    // Регистрируем SW
-    const reg = await navigator.serviceWorker.register('/money-app/sw.js', { scope: '/money-app/' });
-    await navigator.serviceWorker.ready;
-
-    // Запрашиваем разрешение
-    const perm = await Notification.requestPermission();
-    if (perm !== 'granted') return;
-
-    // Подписываемся
-    let sub = await reg.pushManager.getSubscription();
-    if (!sub) {
-      sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-      });
+    const ok = await _doRegisterPush(who);
+    if (!ok) {
+      const btn = document.getElementById('push-btn');
+      if (btn) btn.style.display = '';
     }
-
-    // Отправляем подписку на сервер
-    await fetch(API + '/push/subscribe', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json', 'x-token': SERVER_TOKEN},
-      body: JSON.stringify({ who, sub })
-    });
-    console.log('Push registered for', who);
   } catch(e) {
-    console.warn('Push registration failed:', e);
+    console.warn('Push failed:', e.message);
+    const btn = document.getElementById('push-btn');
+    if (btn) btn.style.display = '';
   }
 }
 
@@ -2138,7 +2158,7 @@ function renderDayBudget(){
 let tasks=JSON.parse(localStorage.getItem('couple_tasks_v1')||'[]');
 // Загрузить задачи с сервера
 function fetchTasks(){
-  fetch(API+'/collections/tasks',{headers:{'x-token':SERVER_TOKEN}})
+  fetch(API+'/tasks',{headers:{'x-token':SERVER_TOKEN}})
     .then(r=>r.json())
     .then(data=>{
       if(Array.isArray(data)&&data.length>0){
@@ -2153,7 +2173,7 @@ function fetchTasks(){
 function saveTasksData(){
   try{localStorage.setItem('couple_tasks_v1',JSON.stringify(tasks));}catch(e){}
   // Синхронизировать на сервер
-  fetch(API+'/collections/tasks',{
+  fetch(API+'/tasks',{
     method:'POST',
     headers:{'Content-Type':'application/json','x-token':SERVER_TOKEN},
     body:JSON.stringify(tasks)
