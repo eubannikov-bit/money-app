@@ -795,6 +795,8 @@ async function syncFromServer(){
   // Получаем текущий выбранный месяц
   const selEl=document.getElementById('money-month-sel');
   const monthKey=(selEl&&selEl.value&&!selEl.value.startsWith('year_'))?selEl.value:nowKey();
+  // Сбрасываем кэш текущего месяца чтобы получить свежие данные
+  _loadedMonths.delete(monthKey);
   try{
     const r=await fetch(API+'/sync?month='+monthKey,{
       headers:{'x-token':SERVER_TOKEN}
@@ -1132,24 +1134,21 @@ function fetchEntriesForMonth(monthKey){
   fetch(API+'/entries?month='+monthKey,{headers:{'x-token':SERVER_TOKEN}})
     .then(r=>r.json())
     .then(newEntries=>{
-      if(!newEntries||!newEntries.length)return;
-      const existingIds=new Set(entries.map(e=>e.id));
-      let changed=false;
-      newEntries.forEach(e=>{
-        if(!existingIds.has(e.id)){
-          entries.push({...e,synced:true});
-          changed=true;
-        }
-      });
-      // Если подгрузились новые данные (например, за прошлый месяц),
-      // нужно перестроить интерфейс и выпадающий список
-      if(changed){
-        saveData();
-        buildMonthSelectors();
-        renderEntries();
-        renderBudget();
-        updateTodayCard();
-      }
+      if(!newEntries)return;
+      // Несинхронизированные локальные записи этого месяца (добавлены офлайн)
+      const unsynced=entries.filter(e=>e.synced===false&&e.date&&e.date.startsWith(monthKey));
+      // Записи других месяцев не трогаем
+      const otherMonths=entries.filter(e=>!e.date||!e.date.startsWith(monthKey));
+      // Полностью заменяем записи этого месяца данными с сервера
+      const serverEntries=newEntries.map(e=>({...e,synced:true}));
+      entries=[...otherMonths,...serverEntries,...unsynced];
+      // Попробуем отправить офлайн-записи
+      unsynced.forEach(e=>sendToSheets(e));
+      saveData();
+      buildMonthSelectors();
+      renderEntries();
+      renderBudget();
+      updateTodayCard();
     })
     .catch(()=>{_loadedMonths.delete(monthKey);}); // retry on error
 }
