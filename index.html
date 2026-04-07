@@ -3013,30 +3013,113 @@ function exportCSV(){
     :entries.filter(e=>e.date&&e.date.startsWith(selRaw));
   if(!filtered.length){alert('Нет данных за выбранный период');return;}
   const sorted=[...filtered].sort((a,b)=>a.date<b.date?-1:1);
-  const headers=['Дата','Тип','Категория','Сумма','Кто','Комментарий','FC/VC'];
+  const period=isYear?yearStr:selRaw;
+
   function esc(v){
     const str=String(v||'');
     return (str.includes(',')||str.includes('"')||str.includes('\n'))
-      ?'"'+str.replace(/"/g,'""')+'"'
-      :str;
+      ?'"'+str.replace(/"/g,'""')+'"':str;
   }
-  const rows=sorted.map(e=>{
+
+  // ── БЛОК 1: Фактические операции ──
+  const lines=[];
+  lines.push('ФАКТИЧЕСКИЕ ОПЕРАЦИИ — '+period);
+  lines.push('Дата,Тип,Категория,Сумма факт,Кто,Комментарий,FC/VC');
+  sorted.forEach(e=>{
     const type=e.type==='expense'?'Расход':'Доход';
     const fcvc=e.type==='expense'?(isFcCat(e.cat)?'FC':'VC'):'';
-    return[e.date,type,esc(e.cat),e.amount,esc(e.who),esc(e.comment||''),fcvc].join(',');
+    lines.push([e.date,type,esc(e.cat),e.amount,esc(e.who),esc(e.comment||''),fcvc].join(','));
   });
-  const totalExp=sorted.filter(e=>e.type==='expense').reduce((a,e)=>a+e.amount,0);
-  const totalInc=sorted.filter(e=>e.type==='income').reduce((a,e)=>a+e.amount,0);
-  rows.push('');
-  rows.push(',Итого расходы,,'+totalExp.toFixed(2)+',,,');
-  rows.push(',Итого доходы,,'+totalInc.toFixed(2)+',,,');
-  rows.push(',Баланс,,'+(totalInc-totalExp).toFixed(2)+',,,');
-  const csv='\uFEFF'+headers.join(',')+'\n'+rows.join('\n');
+  const totalExpFact=sorted.filter(e=>e.type==='expense').reduce((a,e)=>a+e.amount,0);
+  const totalIncFact=sorted.filter(e=>e.type==='income').reduce((a,e)=>a+e.amount,0);
+  lines.push('');
+  lines.push(',ИТОГО расходы (факт),,'+totalExpFact.toFixed(2)+',,, ');
+  lines.push(',ИТОГО доходы (факт),,'+totalIncFact.toFixed(2)+',,, ');
+  lines.push(',БАЛАНС факт,,'+(totalIncFact-totalExpFact).toFixed(2)+',,, ');
+  lines.push('');
+  lines.push('');
+
+  // ── БЛОК 2: План по категориям ──
+  // Получаем план — для года суммируем по месяцам, для месяца берём конкретный
+  function getPlanCats(){
+    if(isYear){
+      const cur=nowKey();
+      const agg={};
+      for(let mi=1;mi<=12;mi++){
+        const mk=yearStr+'-'+String(mi).padStart(2,'0');
+        if(mk>cur)break;
+        const mc=budget.monthly[mk]||{};
+        Object.keys(mc).forEach(c=>{agg[c]=(agg[c]||0)+(mc[c]||0);});
+      }
+      return agg;
+    }
+    return getBudgetForMonthOrCurrent(selRaw);
+  }
+  const planCats=getPlanCats();
+
+  // Факт по категориям
+  const factByCat={};
+  sorted.filter(e=>e.type==='expense').forEach(e=>{
+    factByCat[e.cat]=(factByCat[e.cat]||0)+e.amount;
+  });
+  const factIncByCat={};
+  sorted.filter(e=>e.type==='income').forEach(e=>{
+    factIncByCat[e.cat]=(factIncByCat[e.cat]||0)+e.amount;
+  });
+
+  lines.push('ПЛАН-ФАКТ АНАЛИЗ — '+period);
+  lines.push('Категория,Тип,FC/VC,План,Факт,Отклонение,Отклонение %');
+
+  // Расходы
+  const allExpCats=[...new Set([...EXP_CATS,...Object.keys(factByCat)])];
+  allExpCats.forEach(cat=>{
+    const plan=planCats[cat]||0;
+    const fact=factByCat[cat]||0;
+    if(!plan&&!fact)return;
+    const diff=fact-plan;
+    const diffPct=plan?Math.round(diff/plan*100):null;
+    const fcvc=isFcCat(cat)?'FC':'VC';
+    lines.push([
+      esc(cat),'Расход',fcvc,
+      plan.toFixed(2),fact.toFixed(2),
+      diff.toFixed(2),
+      diffPct!==null?(diffPct>=0?'+':'')+diffPct+'%':''
+    ].join(','));
+  });
+
+  // Итого расходы
+  const totalExpPlan=EXP_CATS.reduce((a,c)=>a+(planCats[c]||0),0);
+  const totalFcPlan=EXP_CATS.filter(c=>isFcCat(c)).reduce((a,c)=>a+(planCats[c]||0),0);
+  const totalVcPlan=EXP_CATS.filter(c=>isVcCat(c)).reduce((a,c)=>a+(planCats[c]||0),0);
+  const totalFcFact=sorted.filter(e=>e.type==='expense'&&isFcCat(e.cat)).reduce((a,e)=>a+e.amount,0);
+  const totalVcFact=sorted.filter(e=>e.type==='expense'&&isVcCat(e.cat)).reduce((a,e)=>a+e.amount,0);
+  lines.push('');
+  lines.push('ИТОГО FC (обязательные),Расход,FC,'+totalFcPlan.toFixed(2)+','+totalFcFact.toFixed(2)+','+(totalFcFact-totalFcPlan).toFixed(2)+','+(totalFcPlan?Math.round((totalFcFact-totalFcPlan)/totalFcPlan*100)+'%':''));
+  lines.push('ИТОГО VC (переменные),Расход,VC,'+totalVcPlan.toFixed(2)+','+totalVcFact.toFixed(2)+','+(totalVcFact-totalVcPlan).toFixed(2)+','+(totalVcPlan?Math.round((totalVcFact-totalVcPlan)/totalVcPlan*100)+'%':''));
+  lines.push('ИТОГО расходы,,,' +totalExpPlan.toFixed(2)+','+totalExpFact.toFixed(2)+','+(totalExpFact-totalExpPlan).toFixed(2)+','+(totalExpPlan?Math.round((totalExpFact-totalExpPlan)/totalExpPlan*100)+'%':''));
+  lines.push('');
+
+  // Доходы
+  const allIncCats=[...new Set([...INC_CATS,...Object.keys(factIncByCat)])];
+  allIncCats.forEach(cat=>{
+    const plan=planCats[cat]||0;
+    const fact=factIncByCat[cat]||0;
+    if(!plan&&!fact)return;
+    const diff=fact-plan;
+    const diffPct=plan?Math.round(diff/plan*100):null;
+    lines.push([esc(cat),'Доход','',plan.toFixed(2),fact.toFixed(2),diff.toFixed(2),diffPct!==null?(diffPct>=0?'+':'')+diffPct+'%':''].join(','));
+  });
+  const totalIncPlan=INC_CATS.reduce((a,c)=>a+(planCats[c]||0),0);
+  lines.push('');
+  lines.push('ИТОГО доходы,,,'+totalIncPlan.toFixed(2)+','+totalIncFact.toFixed(2)+','+(totalIncFact-totalIncPlan).toFixed(2)+','+(totalIncPlan?Math.round((totalIncFact-totalIncPlan)/totalIncPlan*100)+'%':''));
+  lines.push('');
+  lines.push('БАЛАНС,,,'+( totalIncPlan-totalExpPlan).toFixed(2)+','+(totalIncFact-totalExpFact).toFixed(2)+','+(( totalIncFact-totalExpFact)-(totalIncPlan-totalExpPlan)).toFixed(2)+',' );
+
+  const csv='\uFEFF'+lines.join('\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   a.href=url;
-  const period=isYear?yearStr:selRaw;
   a.download='ea_budget_'+period+'.csv';
   document.body.appendChild(a);
   a.click();
