@@ -211,6 +211,7 @@ window._earlyChooseUser = function(name) {
       <div class="hdr-right" style="display:flex;align-items:center;gap:8px">
         <select class="month-sel-small" id="money-month-sel" onchange="renderEntries()"></select>
         <button onclick="exportCSV()" style="font-size:13px;padding:5px 10px;border-radius:8px;border:1px solid var(--line2);background:rgba(255,247,250,.9);color:var(--text2);font-family:var(--mono);cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent">↓ CSV</button>
+        <button onclick="exportExcel()" style="font-size:13px;padding:5px 10px;border-radius:8px;border:1px solid var(--accent);background:rgba(215,142,168,.08);color:var(--accent);font-family:var(--mono);cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent">↓ Excel</button>
       </div>
     </div>
     <div class="toolbar">
@@ -3125,6 +3126,189 @@ function exportCSV(){
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+// ====== Экспорт Excel (SheetJS) ======
+function exportExcel(){
+  // Подгружаем SheetJS если ещё не загружен
+  if(typeof XLSX==='undefined'){
+    const script=document.createElement('script');
+    script.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    script.onload=()=>_buildExcel();
+    script.onerror=()=>alert('Не удалось загрузить библиотеку Excel. Проверьте интернет.');
+    document.head.appendChild(script);
+  } else {
+    _buildExcel();
+  }
+}
+
+function _buildExcel(){
+  const selEl=document.getElementById('money-month-sel');
+  const selRaw=selEl?selEl.value:nowKey();
+  const isYear=selRaw&&selRaw.startsWith('year_');
+  const yearStr=isYear?selRaw.replace('year_',''):'';
+  const period=isYear?yearStr:selRaw;
+  const filtered=isYear
+    ?entries.filter(e=>e.date&&e.date.startsWith(yearStr))
+    :entries.filter(e=>e.date&&e.date.startsWith(selRaw));
+  if(!filtered.length){alert('Нет данных за выбранный период');return;}
+
+  // Вспомогательные функции
+  function getPlanCats(){
+    if(isYear){
+      const cur=nowKey();const agg={};
+      for(let mi=1;mi<=12;mi++){
+        const mk=yearStr+'-'+String(mi).padStart(2,'0');
+        if(mk>cur)break;
+        const mc=budget.monthly[mk]||{};
+        Object.keys(mc).forEach(c=>{agg[c]=(agg[c]||0)+(mc[c]||0);});
+      }
+      return agg;
+    }
+    return getBudgetForMonthOrCurrent(selRaw);
+  }
+  const planCats=getPlanCats();
+  const sorted=[...filtered].sort((a,b)=>a.date<b.date?-1:1);
+
+  // Факт по категориям
+  const factExp={},factInc={};
+  filtered.filter(e=>e.type==='expense').forEach(e=>{factExp[e.cat]=(factExp[e.cat]||0)+e.amount;});
+  filtered.filter(e=>e.type==='income').forEach(e=>{factInc[e.cat]=(factInc[e.cat]||0)+e.amount;});
+  const totalExpFact=Object.values(factExp).reduce((a,v)=>a+v,0);
+  const totalIncFact=Object.values(factInc).reduce((a,v)=>a+v,0);
+  const totalExpPlan=EXP_CATS.reduce((a,c)=>a+(planCats[c]||0),0);
+  const totalIncPlan=INC_CATS.reduce((a,c)=>a+(planCats[c]||0),0);
+  const fcFact=filtered.filter(e=>e.type==='expense'&&isFcCat(e.cat)).reduce((a,e)=>a+e.amount,0);
+  const vcFact=filtered.filter(e=>e.type==='expense'&&isVcCat(e.cat)).reduce((a,e)=>a+e.amount,0);
+  const fcPlan=EXP_CATS.filter(c=>isFcCat(c)).reduce((a,c)=>a+(planCats[c]||0),0);
+  const vcPlan=EXP_CATS.filter(c=>isVcCat(c)).reduce((a,c)=>a+(planCats[c]||0),0);
+
+  // По дням
+  const byDay={};
+  filtered.filter(e=>e.type==='expense').forEach(e=>{byDay[e.date]=(byDay[e.date]||0)+e.amount;});
+
+  // По людям
+  const expE=filtered.filter(e=>e.type==='expense'&&e.who==='Евгений').reduce((a,e)=>a+e.amount,0);
+  const expA=filtered.filter(e=>e.type==='expense'&&e.who==='Аннушка').reduce((a,e)=>a+e.amount,0);
+  const incE=filtered.filter(e=>e.type==='income'&&e.who==='Евгений').reduce((a,e)=>a+e.amount,0);
+  const incA=filtered.filter(e=>e.type==='income'&&e.who==='Аннушка').reduce((a,e)=>a+e.amount,0);
+
+  const daysArr=Object.keys(byDay).sort();
+  const avgDay=daysArr.length>0?Math.round(vcFact/daysArr.length):0;
+
+  const wb=XLSX.utils.book_new();
+
+  // ── ЛИСТ 1: ДАШБОРД ──
+  const dash=[
+    ['ФИНАНСОВЫЙ ДАШБОРД — '+period,'','','','',''],
+    ['','','','','',''],
+    ['ИТОГИ ПЕРИОДА','','','','',''],
+    ['Показатель','Факт','План','Отклонение','Отклонение %',''],
+    ['Доходы',totalIncFact,totalIncPlan,totalIncFact-totalIncPlan,totalIncPlan?((totalIncFact-totalIncPlan)/totalIncPlan):''],
+    ['Расходы',totalExpFact,totalExpPlan,totalExpFact-totalExpPlan,totalExpPlan?((totalExpFact-totalExpPlan)/totalExpPlan):''],
+    ['  в т.ч. FC (обязательные)',fcFact,fcPlan,fcFact-fcPlan,fcPlan?((fcFact-fcPlan)/fcPlan):''],
+    ['  в т.ч. VC (переменные)',vcFact,vcPlan,vcFact-vcPlan,vcPlan?((vcFact-vcPlan)/vcPlan):''],
+    ['Баланс',totalIncFact-totalExpFact,totalIncPlan-totalExpPlan,(totalIncFact-totalExpFact)-(totalIncPlan-totalExpPlan),''],
+    ['','','','','',''],
+    ['РАСПРЕДЕЛЕНИЕ ПО ЛЮДЯМ','','','','',''],
+    ['','Евгений','Аннушка','Итого','',''],
+    ['Расходы',expE,expA,expE+expA,'',''],
+    ['Доходы',incE,incA,incE+incA,'',''],
+    ['Баланс',incE-expE,incA-expA,(incE+incA)-(expE+expA),'',''],
+    ['','','','','',''],
+    ['FC / VC СТРУКТУРА','','','','',''],
+    ['','Факт','План','Доля от расходов','',''],
+    ['FC (обязательные)',fcFact,fcPlan,totalExpFact>0?fcFact/totalExpFact:'',''],
+    ['VC (переменные)',vcFact,vcPlan,totalExpFact>0?vcFact/totalExpFact:'',''],
+    ['','','','','',''],
+    ['СРЕДНИЙ РАСХОД В ДЕНЬ (VC)','','','','',''],
+    ['Среднее в день',avgDay,'','','',''],
+    ['Дней с данными',daysArr.length,'','','',''],
+    ['','','','','',''],
+    ['РЕКОМЕНДАЦИИ','','','','',''],
+  ];
+
+  // Рекомендации
+  const recs=[];
+  if(totalExpFact>totalExpPlan&&totalExpPlan>0) recs.push('⚠️ Расходы превысили план на '+Math.round((totalExpFact-totalExpPlan)).toLocaleString('ru')+' ₽ ('+Math.round((totalExpFact-totalExpPlan)/totalExpPlan*100)+'%). Сосредоточься на сокращении VC.');
+  else if(totalExpPlan>0) recs.push('✅ Расходы в рамках плана. Экономия '+Math.round(totalExpPlan-totalExpFact).toLocaleString('ru')+' ₽.');
+  if(totalIncFact<totalIncPlan&&totalIncPlan>0) recs.push('⚠️ Доходы ниже плана на '+Math.round(totalIncPlan-totalIncFact).toLocaleString('ru')+' ₽.');
+  const overBudgetCats=EXP_CATS.filter(c=>isVcCat(c)&&(factExp[c]||0)>(planCats[c]||0)&&planCats[c]);
+  if(overBudgetCats.length) recs.push('📌 Перерасход по категориям: '+overBudgetCats.slice(0,3).join(', ')+'.');
+  const topCat=EXP_CATS.map(c=>({c,v:factExp[c]||0})).sort((a,b)=>b.v-a.v)[0];
+  if(topCat&&topCat.v>0) recs.push('🏆 Топ расход: '+topCat.c+' — '+topCat.v.toLocaleString('ru')+' ₽ ('+Math.round(topCat.v/totalExpFact*100)+'% всех расходов).');
+  if(totalIncFact-totalExpFact<0) recs.push('🔴 Баланс отрицательный. Нужно сократить расходы на '+Math.round(Math.abs(totalIncFact-totalExpFact)).toLocaleString('ru')+' ₽ или увеличить доходы.');
+  else recs.push('🟢 Баланс положительный '+Math.round(totalIncFact-totalExpFact).toLocaleString('ru')+' ₽. Направь на цели или сбережения.');
+  recs.forEach(r=>dash.push([r,'','','','','']));
+
+  const wsDash=XLSX.utils.aoa_to_sheet(dash);
+  // Ширина колонок
+  wsDash['!cols']=[{wch:40},{wch:16},{wch:16},{wch:16},{wch:14},{wch:10}];
+  XLSX.utils.book_append_sheet(wb,wsDash,'Дашборд');
+
+  // ── ЛИСТ 2: ПЛАН-ФАКТ ──
+  const pf=[['ПЛАН-ФАКТ АНАЛИЗ — '+period],[''],
+    ['Категория','Тип','FC/VC','План','Факт','Отклонение','Отклонение %']];
+  EXP_CATS.forEach(cat=>{
+    const plan=planCats[cat]||0,fact=factExp[cat]||0;
+    if(!plan&&!fact)return;
+    pf.push([cat,'Расход',isFcCat(cat)?'FC':'VC',plan,fact,fact-plan,plan?(fact-plan)/plan:'']);
+  });
+  Object.keys(factExp).filter(c=>!EXP_CATS.includes(c)).forEach(cat=>{
+    pf.push([cat,'Расход','VC',0,factExp[cat],factExp[cat],'']);
+  });
+  pf.push(['','','','','','','']);
+  pf.push(['ИТОГО расходы','','',totalExpPlan,totalExpFact,totalExpFact-totalExpPlan,totalExpPlan?(totalExpFact-totalExpPlan)/totalExpPlan:'']);
+  pf.push(['  FC','',' ',fcPlan,fcFact,fcFact-fcPlan,fcPlan?(fcFact-fcPlan)/fcPlan:'']);
+  pf.push(['  VC','','',vcPlan,vcFact,vcFact-vcPlan,vcPlan?(vcFact-vcPlan)/vcPlan:'']);
+  pf.push(['','','','','','','']);
+  INC_CATS.forEach(cat=>{
+    const plan=planCats[cat]||0,fact=factInc[cat]||0;
+    if(!plan&&!fact)return;
+    pf.push([cat,'Доход','',plan,fact,fact-plan,plan?(fact-plan)/plan:'']);
+  });
+  pf.push(['ИТОГО доходы','','',totalIncPlan,totalIncFact,totalIncFact-totalIncPlan,totalIncPlan?(totalIncFact-totalIncPlan)/totalIncPlan:'']);
+  pf.push(['','','','','','','']);
+  pf.push(['БАЛАНС','','',totalIncPlan-totalExpPlan,totalIncFact-totalExpFact,(totalIncFact-totalExpFact)-(totalIncPlan-totalExpPlan),'']);
+
+  const wsPF=XLSX.utils.aoa_to_sheet(pf);
+  wsPF['!cols']=[{wch:38},{wch:10},{wch:8},{wch:14},{wch:14},{wch:14},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,wsPF,'План-Факт');
+
+  // ── ЛИСТ 3: ОПЕРАЦИИ ──
+  const ops=[['ОПЕРАЦИИ — '+period],[''],
+    ['Дата','Тип','Категория','Сумма','Кто','Комментарий','FC/VC']];
+  sorted.forEach(e=>{
+    ops.push([e.date,e.type==='expense'?'Расход':'Доход',e.cat,e.amount,e.who,e.comment||'',e.type==='expense'?(isFcCat(e.cat)?'FC':'VC'):'']);
+  });
+  ops.push(['','','','','','','']);
+  ops.push(['Итого расходов','','',totalExpFact,'','','']);
+  ops.push(['Итого доходов','','',totalIncFact,'','','']);
+  ops.push(['Баланс','','',totalIncFact-totalExpFact,'','','']);
+
+  const wsOps=XLSX.utils.aoa_to_sheet(ops);
+  wsOps['!cols']=[{wch:12},{wch:10},{wch:35},{wch:14},{wch:12},{wch:20},{wch:6}];
+  XLSX.utils.book_append_sheet(wb,wsOps,'Операции');
+
+  // ── ЛИСТ 4: ПО ДНЯМ ──
+  const dayRows=[['РАСХОДЫ ПО ДНЯМ — '+period],[''],
+    ['Дата','Сумма расходов','vs среднее']];
+  daysArr.forEach(d=>{
+    dayRows.push([d,byDay[d],avgDay>0?(byDay[d]-avgDay)/avgDay:'']);
+  });
+  dayRows.push(['','','']);
+  dayRows.push(['Среднее в день',avgDay,'']);
+  const maxDay=daysArr.reduce((m,d)=>byDay[d]>byDay[m]?d:m,daysArr[0]||'');
+  const minDay=daysArr.reduce((m,d)=>byDay[d]<byDay[m]?d:m,daysArr[0]||'');
+  if(maxDay)dayRows.push(['Самый дорогой день',maxDay+': '+byDay[maxDay].toLocaleString('ru')+' ₽','']);
+  if(minDay&&minDay!==maxDay)dayRows.push(['Самый дешёвый день',minDay+': '+byDay[minDay].toLocaleString('ru')+' ₽','']);
+
+  const wsDays=XLSX.utils.aoa_to_sheet(dayRows);
+  wsDays['!cols']=[{wch:14},{wch:18},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,wsDays,'По дням');
+
+  // Скачиваем
+  XLSX.writeFile(wb,'ea_budget_'+period+'.xlsx');
 }
 
 syncFromSheets();
