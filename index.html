@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -132,29 +133,31 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .breakdown-row{display:flex;align-items:center;gap:8px;padding:6px 0}
 .hdr-right{display:flex;align-items:center;gap:8px}
 .month-sel-small{font-size:15px;padding:4px 28px 4px 10px;border-radius:8px;border:1px solid var(--line2);background:rgba(255,247,250,.9);color:var(--text);font-family:var(--font);-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3l3 4 3-4' fill='none' stroke='%23c09aa7' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+.btn-dl{font-size:15px;padding:4px 10px;border-radius:8px;border:1px solid var(--line2);background:rgba(255,247,250,.9);color:var(--text2);font-family:var(--font);cursor:pointer;-webkit-tap-highlight-color:transparent;-webkit-appearance:none;height:calc(1em + 8px + 2px);display:inline-flex;align-items:center}
+.btn-del-inline{background:none;border:1px solid rgba(217,79,110,.35);border-radius:8px;padding:11px 14px;cursor:pointer;font-family:var(--font);font-size:15px;color:var(--red)}
 .fab{position:fixed;right:28px;bottom:calc(var(--safe-bot) + 108px);z-index:25;width:54px;height:54px;border-radius:50%;background:rgba(215,142,168,.88);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;line-height:1;font-family:var(--font);box-shadow:0 6px 20px rgba(215,142,168,.42),0 2px 8px rgba(215,142,168,.22);-webkit-tap-highlight-color:transparent;transition:transform .1s cubic-bezier(.25,.46,.45,.94);will-change:transform;transform:translateZ(0)}
 .fab:active{transform:scale3d(.94,.94,1);transition:transform .1s cubic-bezier(.25,.46,.45,.94)}
 .thumb-list{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .thumb-list img{width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
 
 /* goals */
-.goal-card{background:rgba(255,246,249,.9);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:8px;cursor:pointer}
-.goal-progress-bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin:8px 0 4px}
-.goal-progress-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .4s cubic-bezier(.25,.46,.45,.94);will-change:width}
+.goal-card{background:rgba(255,246,249,.9);border:1px solid var(–line);border-radius:16px;padding:14px;margin-bottom:8px;cursor:pointer}
+.goal-progress-bar{height:6px;background:var(–bg3);border-radius:3px;overflow:hidden;margin:8px 0 4px}
+.goal-progress-fill{height:100%;background:var(–accent);border-radius:3px;transition:width .4s cubic-bezier(.25,.46,.45,.94);will-change:width}
 .goal-detail-view{display:none}
 .goal-detail-view.on{display:block}
 
 .anl-selects-row{display:flex;gap:8px;margin-bottom:10px}
-.anl-select{flex:1;font-family:var(--font);font-size:13px;background:rgba(255,247,250,.9);border:1px solid var(--line2);color:var(--text);border-radius:8px;padding:7px 28px 7px 10px;outline:none;-webkit-appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3l3 4 3-4' fill='none' stroke='%23c09aa7' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+.anl-select{flex:1;font-family:var(–font);font-size:13px;background:rgba(255,247,250,.9);border:1px solid var(–line2);color:var(–text);border-radius:8px;padding:7px 28px 7px 10px;outline:none;-webkit-appearance:none;cursor:pointer;background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘10’ height=‘10’ viewBox=‘0 0 10 10’%3E%3Cpath d=‘M2 3l3 4 3-4’ fill=‘none’ stroke=’%23c09aa7’ stroke-width=‘1.3’ stroke-linecap=‘round’/%3E%3C/svg%3E”);background-repeat:no-repeat;background-position:right 8px center}
 .anl-user-filter{display:none}
 .anl-compare-filter{display:none}
 .anl-user-btn,.anl-compare-btn{display:none}
 
 /* day budget modal */
-.day-stat-row{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line)}
+.day-stat-row{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid var(–line)}
 .day-stat-row:last-child{border-bottom:none}
-.day-stat-lbl{font-size:11px;color:var(--text3);font-family:var(--mono);letter-spacing:.02em}
-.day-stat-val{font-size:15px;font-weight:500;font-family:var(--mono);color:var(--text)}
+.day-stat-lbl{font-size:11px;color:var(–text3);font-family:var(–mono);letter-spacing:.02em}
+.day-stat-val{font-size:15px;font-weight:500;font-family:var(–mono);color:var(–text)}
 .day-status-ok{color:#2a9d78}
 .day-status-warn{color:#b07030}
 .day-status-danger{color:#d94f6e}
@@ -164,14 +167,14 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .body{scroll-behavior:auto} /* авто быстрее чем smooth на iOS */
 
 /* onboarding */
-.onboard-screen{position:fixed;inset:0;background:linear-gradient(180deg,#fff8fb 0%,#ffeef4 100%);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 32px;font-family:var(--font)}
+.onboard-screen{position:fixed;inset:0;background:linear-gradient(180deg,#fff8fb 0%,#ffeef4 100%);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 32px;font-family:var(–font)}
 .onboard-screen.hidden{display:none}
-.onboard-title{font-size:22px;font-weight:600;color:var(--text);letter-spacing:-.03em;margin-bottom:40px;text-align:center}
+.onboard-title{font-size:22px;font-weight:600;color:var(–text);letter-spacing:-.03em;margin-bottom:40px;text-align:center}
 .onboard-row{display:flex;gap:16px;width:100%}
-.onboard-btn{flex:1;padding:20px 12px;border-radius:18px;border:1.5px solid var(--line2);background:rgba(255,246,249,.95);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--font);transition:border-color .15s,background .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;pointer-events:auto;position:relative;z-index:1001;-webkit-appearance:none;appearance:none}
-.onboard-btn:active{background:var(--bg3);border-color:var(--accent)}
+.onboard-btn{flex:1;padding:20px 12px;border-radius:18px;border:1.5px solid var(–line2);background:rgba(255,246,249,.95);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(–font);transition:border-color .15s,background .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;pointer-events:auto;position:relative;z-index:1001;-webkit-appearance:none;appearance:none}
+.onboard-btn:active{background:var(–bg3);border-color:var(–accent)}
 .onboard-btn-emoji{font-size:40px;line-height:1}
-.onboard-btn-name{font-size:15px;font-weight:600;color:var(--text)}
+.onboard-btn-name{font-size:15px;font-weight:600;color:var(–text)}
 
 </style>
 <script>
@@ -203,14 +206,12 @@ window._earlyChooseUser = function(name) {
     </div>
   </div>
 
-
-
   <div class="scr on" id="s-money">
     <div class="hdr">
       <div class="htitle">Деньги</div>
       <div class="hdr-right" style="display:flex;align-items:center;gap:8px">
         <select class="month-sel-small" id="money-month-sel" onchange="renderEntries()"></select>
-        <button onclick="exportExcel()" title="Скачать Excel" style="font-size:15px;padding:4px 10px;border-radius:8px;border:1px solid var(--line2);background:rgba(255,247,250,.9);color:var(--text);font-family:var(--font);cursor:pointer;-webkit-tap-highlight-color:transparent;line-height:1">⬇︎</button>
+        <button onclick="exportExcel()" title="Скачать Excel" class="btn-dl">↓</button>
       </div>
     </div>
     <div class="toolbar">
@@ -233,8 +234,11 @@ window._earlyChooseUser = function(name) {
       </div>
       <div id="breakdown-block" style="display:none;margin-bottom:8px"></div>
 
-      <div class="card-flush"><div id="entries-list"><div class="empty">нет записей</div></div></div>
-    </div>
+```
+  <div class="card-flush"><div id="entries-list"><div class="empty">нет записей</div></div></div>
+</div>
+```
+
   </div>
 
   <div class="scr" id="s-budget">
@@ -305,7 +309,7 @@ window._earlyChooseUser = function(name) {
     <div class="body"><div id="wishes-list"></div></div>
   </div>
 
-  <button class="fab" id="fab-btn" onclick="fabAction()" aria-label="Добавить">+</button>
+<button class="fab" id="fab-btn" onclick="fabAction()" aria-label="Добавить">+</button>
 
   <div class="mbg" id="m-add-entry">
     <div class="modal">
@@ -316,7 +320,7 @@ window._earlyChooseUser = function(name) {
       <div class="frow"><label class="flabel">Сумма, ₽</label><input type="number" id="e-amt" placeholder="0" inputmode="decimal"></div>
       <div class="frow"><label class="flabel">Комментарий</label><input type="text" id="e-cmt" placeholder="Необязательно"></div>
       <div class="frow"><label class="flabel">Кто</label><select id="e-who"><option value="Евгений">Евгений</option><option value="Аннушка">Аннушка</option></select></div>
-      <div class="brow"><button class="btn-cancel" onclick="closeM('add-entry')">Отмена</button><button id="btn-del-entry" style="display:none;background:none;border:1px solid #F09595;border-radius:8px;padding:11px 14px;cursor:pointer;font-family:var(--font);font-size:15px;color:#d94f6e" onclick="deleteEntry()">Удалить</button><button id="btn-sv-e" class="btn-save" onclick="addEntry()">Сохранить</button></div>
+      <div class="brow"><button class="btn-cancel" onclick="closeM('add-entry')">Отмена</button><button id="btn-del-entry" class="btn-del-inline" style="display:none" onclick="deleteEntry()">Удалить</button><button id="btn-sv-e" class="btn-save" onclick="addEntry()">Сохранить</button></div>
     </div>
   </div>
 
@@ -326,11 +330,12 @@ window._earlyChooseUser = function(name) {
       <div class="frow"><label class="flabel">Задача</label><input type="text" id="tk-name" placeholder="что нужно сделать?" autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false"></div>
       <div class="frow"><label class="flabel">Кому</label><select id="tk-who"><option value="Евгений">Евгению 🐗</option><option value="Аннушка">Аннушке 🐘</option></select></div>
       <div class="frow"><label class="flabel">Когда</label><select id="tk-when"><option value="today">сегодня</option><option value="tomorrow">завтра</option><option value="week">эта неделя</option><option value="month">этот месяц</option><option value="none">без срока</option></select></div>
-      <div class="brow"><button class="btn-cancel" onclick="closeM('add-task')">Отмена</button><button id="btn-del-task" style="display:none;background:none;border:1px solid #F09595;border-radius:8px;padding:11px 14px;cursor:pointer;font-family:var(--font);font-size:15px;color:#d94f6e" onclick="deleteTask()">удалить</button><button class="btn-save" onclick="saveTask()">Сохранить</button></div>
+      <div class="brow"><button class="btn-cancel" onclick="closeM('add-task')">Отмена</button><button id="btn-del-task" class="btn-del-inline" style="display:none" onclick="deleteTask()">удалить</button><button class="btn-save" onclick="saveTask()">Сохранить</button></div>
     </div>
   </div>
 
   <!-- Модалка просмотра задачи (read-only) -->
+
   <div class="mbg" id="m-view-task">
     <div class="modal" style="padding-bottom:calc(var(--safe-bot) + 28px)">
       <div style="width:36px;height:4px;background:var(--line2);border-radius:2px;margin:0 auto 18px"></div>
@@ -350,11 +355,12 @@ window._earlyChooseUser = function(name) {
       <div class="frow"><label class="flabel">Даты</label><input type="text" id="tr-dates" placeholder="май 2026"></div>
       <div class="frow"><label class="flabel">Ссылка</label><input type="url" id="tr-link" placeholder="https://..."></div>
       <div class="frow"><label class="flabel">Заметка</label><textarea id="tr-note" placeholder="идеи, отели, контакты..."></textarea></div>
-      <div class="brow"><button class="btn-cancel" onclick="closeM('add-trip')">Отмена</button><button id="btn-del-trip" style="display:none;background:none;border:1px solid #F09595;border-radius:8px;padding:11px 14px;cursor:pointer;font-family:var(--font);font-size:15px;color:#d94f6e" onclick="deleteTrip()">Удалить</button><button class="btn-save" onclick="addTrip()">Сохранить</button></div>
+      <div class="brow"><button class="btn-cancel" onclick="closeM('add-trip')">Отмена</button><button id="btn-del-trip" class="btn-del-inline" style="display:none" onclick="deleteTrip()">Удалить</button><button class="btn-save" onclick="addTrip()">Сохранить</button></div>
     </div>
   </div>
 
   <!-- Модалка детализации аналитики -->
+
   <div class="mbg" id="m-anl-detail">
     <div class="modal" style="max-height:88vh">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -373,7 +379,7 @@ window._earlyChooseUser = function(name) {
       <div class="frow"><label class="flabel">Ссылка</label><input type="url" id="ws-link" placeholder="https://..."></div>
       <div class="frow"><label class="flabel">Заметка</label><textarea id="ws-note" placeholder="размер, цвет, детали..."></textarea></div>
       <div class="frow"><label class="flabel">Цена, ₽</label><input type="number" id="ws-price" placeholder="0" inputmode="decimal"></div>
-      <div class="brow"><button class="btn-cancel" onclick="closeM('add-wish')">Отмена</button><button id="btn-del-wish" style="display:none;background:none;border:1px solid #F09595;border-radius:8px;padding:11px 14px;cursor:pointer;font-family:var(--font);font-size:15px;color:#d94f6e" onclick="deleteWish()">Удалить</button><button class="btn-save" onclick="addWish()">Сохранить</button></div>
+      <div class="brow"><button class="btn-cancel" onclick="closeM('add-wish')">Отмена</button><button id="btn-del-wish" class="btn-del-inline" style="display:none" onclick="deleteWish()">Удалить</button><button class="btn-save" onclick="addWish()">Сохранить</button></div>
     </div>
   </div>
 
@@ -448,13 +454,11 @@ window._earlyChooseUser = function(name) {
       <div id="gl-months-hint" style="font-size:13px;color:var(--text3);font-family:var(--mono);margin-bottom:10px"></div>
       <div class="brow">
         <button class="btn-cancel" onclick="closeM('add-goal')">Отмена</button>
-        <button id="btn-del-goal" style="display:none;background:none;border:1px solid #F09595;border-radius:8px;padding:11px 14px;cursor:pointer;font-family:var(--font);font-size:15px;color:#d94f6e" onclick="deleteGoal()">Удалить</button>
+        <button id="btn-del-goal" class="btn-del-inline" style="display:none" onclick="deleteGoal()">Удалить</button>
         <button class="btn-save" onclick="saveGoal()">Сохранить</button>
       </div>
     </div>
   </div>
-
-
 
   <div class="mbg" id="m-goal-detail">
     <div class="modal">
@@ -2609,7 +2613,7 @@ function renderTasks(){
     const grp=taskDateLabel(t);
     if(grp!==lastGroup){
       lastGroup=grp;
-      html+=`<div style="font-size:12px;color:#c47a96;font-family:var(--mono);padding:12px 14px 4px;letter-spacing:.07em;text-transform:uppercase;font-weight:500">${grp}</div>`;
+      html+=`<div style="font-size:var(--f-micro);color:var(--accent);font-family:var(--mono);padding:12px 14px 4px;letter-spacing:.07em;text-transform:uppercase;font-weight:500;opacity:.85">${grp}</div>`;
     }
     const ovd=taskOverdue(t);
     const whenLbl=t.when&&t.when!=='none'?WHEN_LBL[t.when]:'';
@@ -3368,5 +3372,6 @@ function _buildExcel(){
 
 syncFromSheets();
 </script>
+
 </body>
 </html>
