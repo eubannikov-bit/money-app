@@ -2722,7 +2722,7 @@ function renderTasks(){
     // Дедлайн: сегодня/завтра — словами, иначе ГГГГ/ММ/ДД
     let whenLbl='';
     if(!t.when||t.when==='none'){
-      whenLbl='∞';
+      whenLbl='<span style="font-size:17px;font-family:var(--mono);letter-spacing:-.05em;transform:scaleX(1.4);display:inline-block;line-height:1">∞</span>';
     } else {
       const dl=taskDeadline(t);
       if(dl){
