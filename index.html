@@ -2616,15 +2616,16 @@ function saveTask(){
 }
 
 // Push-уведомления для задач
-function sendTaskPush(toWho,taskName,taskId){
+function sendTaskPush(toWho,body,taskId,title){
+  const from=whoAmI==='Евгений'?'Евгения':whoAmI==='Аннушка'?'Аннушки':'партнёра';
   try{
     fetch(API+'/push',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-token':SERVER_TOKEN},
       body:JSON.stringify({
         to:toWho,
-        title:'Новая задача от '+(whoAmI==='Евгений'?'Евгения':whoAmI==='Аннушка'?'Аннушки':'партнёра'),
-        body:taskName,
+        title:title||('Новая задача от '+from),
+        body:body,
         taskId:taskId||''
       })
     }).catch(()=>{});
@@ -2956,11 +2957,11 @@ function addWish(){
   if(isEdit){wishes[editingWishIdx]=obj;}else{wishes.unshift(obj);}
   // Push уведомления партнёру
   if(!isEdit){
-    sendTaskPush(partner,`У ${whoAmI||'партнёра'} новое желание ✨ ${name}`);
+    sendTaskPush(partner,name,'',`У ${whoAmI==='Евгений'?'Евгения':'Аннушки'} новое желание ✨`);
   } else if(prev&&(prev.name!==obj.name||prev.link!==obj.link||prev.img!==obj.img||prev.note!==obj.note)){
     const actor=whoAmI||'партнёр';
     const verb=actor==='Аннушка'?'обновила':'обновил';
-    sendTaskPush(partner,`${actor} ${verb} желание: ${name} 📝`);
+    sendTaskPush(partner,name,'',`${actor} ${verb} желание 📝`);
   }
   editingWishIdx=-1;
   document.getElementById('wish-modal-title').textContent='новое желание';
