@@ -890,9 +890,9 @@ let _tasksPollTimer=null;
 function startTasksPolling(){
   if(_tasksPollTimer)clearInterval(_tasksPollTimer);
   _tasksPollTimer=setInterval(()=>{
-    // Только если WS не подключён
     if(!_ws||_ws.readyState!==WebSocket.OPEN){
       fetchTasks();
+      fetchWishes();
     }
   },30000);
 }
@@ -922,13 +922,20 @@ function handleServerEvent(msg){
   } else if(event==='budget_updated'&&data?.monthKey&&data?.cats){
     setBudgetForMonth(data.monthKey,data.cats);renderBudget();
   } else if(event==='tasks_updated'){
-    // Используем данные прямо из события (быстро) или запрашиваем сервер
     if(data&&Array.isArray(data)&&data.length>0){
       tasks=data;
       try{localStorage.setItem('couple_tasks_v1',JSON.stringify(tasks));}catch(e){}
       renderTasks();
     } else {
       fetchTasks();
+    }
+  } else if(event==='wishes_updated'){
+    if(data&&Array.isArray(data)){
+      wishes=data;
+      saveData();
+      renderWishes();
+    } else {
+      fetchWishes();
     }
   }
 }
@@ -2507,6 +2514,25 @@ function saveTasksData(){
     else console.log('tasks synced ok, count:',tasks.length);
   }).catch(e=>console.warn('tasks sync error:',e.message));
 }
+
+function saveWishesData(){
+  saveData();
+  fetch(API+'/wishes',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-token':SERVER_TOKEN},
+    body:JSON.stringify(wishes)
+  }).catch(()=>{});
+}
+
+function fetchWishes(){
+  fetch(API+'/wishes',{headers:{'x-token':SERVER_TOKEN}})
+    .then(r=>r.json())
+    .then(data=>{
+      if(Array.isArray(data)&&data.length>0){
+        wishes=data;saveData();renderWishes();
+      }
+    }).catch(()=>{});
+}
 let editingTaskIdx=-1;
 const WHEN_LBL={today:'сегодня',tomorrow:'завтра',week:'неделя',month:'месяц',none:'без срока'};
 const WHEN_DAYS={today:0,tomorrow:1,week:7,month:30,none:null};
@@ -2771,7 +2797,7 @@ function deleteWish(){
   wishes.splice(editingWishIdx,1);editingWishIdx=-1;
   document.getElementById('wish-modal-title').textContent='новое желание';
   document.getElementById('btn-del-wish').style.display='none';
-  closeM('add-wish');saveData();renderWishes();
+  closeM('add-wish');saveWishesData();renderWishes();
 }
 // ===== Wish: парсинг ссылки =====
 let _wishParseTimer=null;
@@ -2939,9 +2965,9 @@ function addWish(){
   editingWishIdx=-1;
   document.getElementById('wish-modal-title').textContent='новое желание';
   document.getElementById('btn-del-wish').style.display='none';
-  closeM('add-wish');saveData();renderWishes();
+  closeM('add-wish');saveWishesData();renderWishes();
 }
-function toggleReserved(i,ev){ev.stopPropagation();wishes[i].reserved=!wishes[i].reserved;saveData();renderWishes();}
+function toggleReserved(i,ev){ev.stopPropagation();wishes[i].reserved=!wishes[i].reserved;saveWishesData();renderWishes();}
 function renderWishes(){
   const filtered=wishes.filter(w=>wishTab==='all'||w.who===wishTab)
     .sort((a,b)=>(a.reserved?1:-1)-(b.reserved?1:-1));
@@ -3144,7 +3170,7 @@ setET('expense');
 updateSortUi();
 buildMonthSelectors();
 renderEntries();updateTodayCard();
-cleanDoneTasks();renderTasks();fetchTasks();startTasksPolling();
+cleanDoneTasks();renderTasks();fetchTasks();fetchWishes();startTasksPolling();
 initWhoAmI();
 
 // Принудительно загружаем данные при старте
