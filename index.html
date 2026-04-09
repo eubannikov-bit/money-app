@@ -191,6 +191,22 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .wish-unseen{border-left:3px solid var(--accent) !important;background:rgba(215,142,168,.07) !important}
 .wish-unseen .wish-new-dot{display:flex !important}
 .wish-new-dot{display:none;width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-left:4px;align-self:center}
+
+/* wish photos */
+.ws-photo-thumb{width:72px;height:72px;border-radius:10px;object-fit:cover;flex-shrink:0;cursor:pointer;border:1px solid var(--line)}
+.ws-photo-add{width:72px;height:72px;border-radius:10px;border:1.5px dashed var(--line2);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;background:rgba(255,247,250,.6);color:var(--accent);font-size:24px;font-weight:300}
+.ws-photo-wrap{position:relative;flex-shrink:0}
+.ws-photo-del{position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--red);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:2}
+/* carousel */
+.carousel-bg{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.carousel-img{max-width:95vw;max-height:78vh;border-radius:12px;object-fit:contain;touch-action:pan-y}
+.carousel-close{position:absolute;top:calc(env(safe-area-inset-top)+14px);right:18px;background:none;border:none;color:#fff;font-size:28px;cursor:pointer;z-index:10;padding:4px}
+.carousel-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.18);border:none;color:#fff;font-size:22px;cursor:pointer;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center}
+.carousel-nav.prev{left:12px}
+.carousel-nav.next{right:12px}
+.carousel-dots{display:flex;gap:6px;margin-top:14px}
+.carousel-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4);transition:background .2s}
+.carousel-dot.on{background:#fff}
 </style>
 <script>
 // Инлайн — доступно до загрузки основного скрипта
@@ -260,7 +276,7 @@ window._earlyChooseUser = function(name) {
       <div class="htitle">Бюджет</div>
       <div class="hdr-right">
         <select class="month-sel-small" id="budget-month-sel" onchange="renderBudget()"></select>
-        <button class="btn-text" onclick="openBudgetModal()">План</button>
+        <button onclick="openBudgetModal()" style="height:34px;padding:0 12px;border:1px solid var(--line2);border-radius:8px;background:rgba(255,247,250,.9);color:var(--text2);font-size:15px;font-family:var(--font);cursor:pointer;box-sizing:border-box">план</button>
       </div>
     </div>
     <div class="body">
@@ -301,6 +317,10 @@ window._earlyChooseUser = function(name) {
   <div class="scr" id="s-tasks">
     <div class="hdr">
       <div class="htitle">Задачи</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="push-btn" onclick="requestPushManually()" style="display:none;height:34px;padding:0 10px;border-radius:8px;border:1px solid var(--line2);background:transparent;color:var(--accent);font-family:var(--font);font-size:15px;cursor:pointer;box-sizing:border-box">&#128276;</button>
+        <button onclick="exportTasks()" class="btn-dl" title="Скачать Excel"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v8M3.5 7l3.5 4 3.5-4" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><line x1="2" y1="13" x2="12" y2="13" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+      </div>
     </div>
     <div class="body">
       <div class="stats">
@@ -318,7 +338,10 @@ window._earlyChooseUser = function(name) {
   </div>
 
   <div class="scr" id="s-wish">
-    <div class="hdr"><div class="htitle">Хочу</div></div>
+    <div class="hdr">
+      <div class="htitle">Хочу</div>
+      <button onclick="exportWishes()" class="btn-dl" title="Скачать Excel"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v8M3.5 7l3.5 4 3.5-4" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><line x1="2" y1="13" x2="12" y2="13" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+    </div>
     <div class="toolbar"><div class="tabs-row"><button class="tab on" id="wt-all" onclick="switchWT('all')">все</button><button class="tab" id="wt-me" onclick="switchWT('me')">Евгений</button><button class="tab" id="wt-them" onclick="switchWT('them')">Аннушка</button></div></div>
     <div class="body"><div id="wishes-list"></div></div>
   </div>
@@ -386,22 +409,19 @@ window._earlyChooseUser = function(name) {
   <div class="mbg" id="m-add-wish">
     <div class="modal">
       <div class="modal-title" id="wish-modal-title">Новое желание</div>
-      <!-- Ссылка с кнопкой вставить -->
       <div class="frow">
         <label class="flabel">Ссылка</label>
-        <div class="wish-link-row" style="width:100%">
-          <input type="url" id="ws-link" placeholder="Вставьте ссылку..." style="width:100%;padding-right:36px" oninput="onWishLinkInput(this.value)">
-          <button class="wish-link-paste" onclick="pasteWishLink()" title="Вставить из буфера">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="5" y="1" width="6" height="3" rx="1" stroke="var(--accent)" stroke-width="1.2"/><rect x="2" y="3" width="12" height="12" rx="2" stroke="var(--accent)" stroke-width="1.2"/><line x1="5" y1="7" x2="11" y2="7" stroke="var(--accent)" stroke-width="1.2" stroke-linecap="round"/><line x1="5" y1="10" x2="9" y2="10" stroke="var(--accent)" stroke-width="1.2" stroke-linecap="round"/></svg>
+        <div style="display:flex;gap:6px;width:100%">
+          <input type="url" id="ws-link" placeholder="Вставьте ссылку..." style="flex:1;min-width:0">
+          <button onclick="pasteWishLink()" title="Вставить" style="width:34px;height:34px;flex-shrink:0;border:1px solid var(--line2);border-radius:8px;background:rgba(255,247,250,.9);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="5" y="1" width="6" height="3" rx="1" stroke="var(--accent)" stroke-width="1.3"/><rect x="2" y="3" width="12" height="12" rx="2" stroke="var(--accent)" stroke-width="1.3"/><line x1="5" y1="7.5" x2="11" y2="7.5" stroke="var(--accent)" stroke-width="1.3" stroke-linecap="round"/><line x1="5" y1="10.5" x2="9" y2="10.5" stroke="var(--accent)" stroke-width="1.3" stroke-linecap="round"/></svg>
+          </button>
+          <button onclick="document.getElementById('ws-link').value=''" title="Очистить" style="width:34px;height:34px;flex-shrink:0;border:1px solid var(--line2);border-radius:8px;background:rgba(255,247,250,.9);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="2" y1="2" x2="11" y2="11" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round"/><line x1="11" y1="2" x2="2" y2="11" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round"/></svg>
           </button>
         </div>
       </div>
-      <!-- Фото + Название в одну строку -->
       <div style="display:flex;gap:12px;align-items:flex-start;padding:4px 0 0">
-        <div class="wish-img-box" id="ws-img-box" onclick="pickWishImage()">
-          <svg id="ws-img-placeholder" width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="var(--text3)" stroke-width="1.3"/><circle cx="8.5" cy="8.5" r="1.5" stroke="var(--text3)" stroke-width="1.3"/><path d="M3 16l5-5 4 4 3-3 4 4" stroke="var(--text3)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <img id="ws-img-preview" src="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:9px">
-        </div>
         <div style="flex:1;display:flex;flex-direction:column;gap:8px">
           <div id="ws-name-wrap" style="position:relative">
             <input type="text" id="ws-name" placeholder="Название" style="width:100%">
@@ -410,9 +430,15 @@ window._earlyChooseUser = function(name) {
           <div class="frow" style="padding:0;margin:0"><label class="flabel">Чьё</label><select id="ws-who" style="flex:1"><option value="me">Евгения</option><option value="them">Аннушки</option></select></div>
         </div>
       </div>
+      <!-- Фото — ряд превью + кнопка добавить -->
+      <div style="margin-top:10px">
+        <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch" id="ws-photos-row">
+          <!-- заполняется JS -->
+        </div>
+      </div>
       <div class="frow" style="margin-top:8px"><label class="flabel">Заметка</label><textarea id="ws-note" placeholder="размер, цвет, детали..."></textarea></div>
       <input type="hidden" id="ws-img-url" value="">
-      <div class="brow"><button class="btn-cancel" onclick="closeM('add-wish')">Отмена</button><button id="btn-del-wish" class="btn-del-inline" style="display:none" onclick="deleteWish()">Удалить</button><button class="btn-save" onclick="addWish()">Сохранить</button></div>
+      <div class="brow"><button class="btn-cancel" onclick="closeM('add-wish')">Отмена</button><button class="btn-save" onclick="addWish()">Сохранить</button></div>
     </div>
   </div>
 
@@ -2794,13 +2820,9 @@ function openEditWish(idx){
   document.getElementById('ws-who').value=w.who||'me';
   document.getElementById('ws-link').value=w.link||'';
   document.getElementById('ws-note').value=w.note||'';
-  document.getElementById('ws-img-url').value=w.img||'';
-  if(w.img){
-    const preview=document.getElementById('ws-img-preview');
-    const placeholder=document.getElementById('ws-img-placeholder');
-    if(preview){preview.src=w.img;preview.style.display='';}
-    if(placeholder)placeholder.style.display='none';
-  }
+  _wishEditImgs=w.imgs&&w.imgs.length?[...w.imgs]:(w.img?[w.img]:[]);
+  document.getElementById('ws-img-url').value=_wishEditImgs[0]||'';
+  renderWishPhotos();
   openM('add-wish');
 }
 function deleteWish(){
@@ -2943,25 +2965,28 @@ function pickWishImage(){
   inp.click();
 }
 function _openWishModal(){
-  const imgBox=document.getElementById('ws-img-box');
-  const preview=document.getElementById('ws-img-preview');
-  const placeholder=document.getElementById('ws-img-placeholder');
-  if(imgBox)imgBox.classList.remove('loading');
-  if(preview){preview.src='';preview.style.display='none';}
-  if(placeholder)placeholder.style.display='';
+  _wishEditImgs=[];
   document.getElementById('ws-img-url').value='';
-  document.getElementById('ws-name-skel').style.display='none';
-  const nameInp=document.getElementById('ws-name');
-  if(nameInp)nameInp.style.opacity='1';
+  const skel=document.getElementById('ws-name-skel');if(skel)skel.style.display='none';
+  const nameInp=document.getElementById('ws-name');if(nameInp)nameInp.style.opacity='1';
+  renderWishPhotos();
 }
 
 function addWish(){
   const name=document.getElementById('ws-name').value.trim();
   if(!name)return;
-  const imgUrl=document.getElementById('ws-img-url').value||'';
-  const isChanged=editingWishIdx>=0&&(()=>{const p=wishes[editingWishIdx];return p.name!==name||p.link!==(document.getElementById('ws-link').value.trim())||p.img!==imgUrl||p.note!==(document.getElementById('ws-note').value.trim());})();
-  const obj={id:(editingWishIdx>=0?wishes[editingWishIdx].id:null)||'loc_w_'+Date.now(),name,who:document.getElementById('ws-who').value,link:document.getElementById('ws-link').value.trim(),note:document.getElementById('ws-note').value.trim(),img:imgUrl,reserved:editingWishIdx>=0?wishes[editingWishIdx].reserved:false,
-    // Флаги «видел» — при создании/изменении только автор уже видел
+  const imgs=_wishEditImgs.slice();
+  const link=document.getElementById('ws-link').value.trim();
+  const note=document.getElementById('ws-note').value.trim();
+  const who=document.getElementById('ws-who').value;
+  const isChanged=editingWishIdx>=0&&(()=>{const p=wishes[editingWishIdx];return p.name!==name||p.link!==link||JSON.stringify(p.imgs||[p.img||''])!==JSON.stringify(imgs)||p.note!==note;})();
+  const obj={
+    id:(editingWishIdx>=0?wishes[editingWishIdx].id:null)||'loc_w_'+Date.now(),
+    name,who,link,note,
+    img:imgs[0]||'',imgs,
+    reserved:editingWishIdx>=0?wishes[editingWishIdx].reserved:false,
+    doneAt:editingWishIdx>=0?wishes[editingWishIdx].doneAt:null,
+    updatedAt:Date.now(),
     updatedBy:whoAmI||'',
     seenBy:editingWishIdx<0||isChanged?[whoAmI||'']:(wishes[editingWishIdx].seenBy||[whoAmI||''])
   };
@@ -2976,41 +3001,179 @@ function addWish(){
     sendTaskPush(partner,name,'',`${actor} ${verb} желание 📝`);
   }
   editingWishIdx=-1;
-  document.getElementById('wish-modal-title').textContent='новое желание';
-  document.getElementById('btn-del-wish').style.display='none';
   closeM('add-wish');saveWishesData();renderWishes();
 }
-function toggleReserved(i,ev){ev.stopPropagation();wishes[i].reserved=!wishes[i].reserved;saveWishesData();renderWishes();}
+function toggleReserved(i,ev){ev.stopPropagation();wishes[i].reserved=!wishes[i].reserved;wishes[i].doneAt=wishes[i].reserved?new Date().toISOString():null;saveWishesData();renderWishes();}
+// ===== Wish: мультифото =====
+let _wishEditImgs=[];
+
+function renderWishPhotos(){
+  const row=document.getElementById('ws-photos-row');
+  if(!row)return;
+  let html=_wishEditImgs.map((img,i)=>`
+    <div class="ws-photo-wrap">
+      <img class="ws-photo-thumb" src="${img}" onclick="openWishCarouselEdit(${i})">
+      <button class="ws-photo-del" onclick="_wishEditImgs.splice(${i},1);renderWishPhotos()">
+        <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><line x1="1" y1="1" x2="7" y2="7" stroke="white" stroke-width="1.4" stroke-linecap="round"/><line x1="7" y1="1" x2="1" y2="7" stroke="white" stroke-width="1.4" stroke-linecap="round"/></svg>
+      </button>
+    </div>`).join('');
+  html+=`<div class="ws-photo-add" onclick="addWishPhoto()">+</div>`;
+  row.innerHTML=html;
+  // обновить hidden
+  document.getElementById('ws-img-url').value=_wishEditImgs[0]||'';
+}
+
+function addWishPhoto(){
+  const inp=document.createElement('input');
+  inp.type='file';inp.accept='image/*';inp.multiple=true;
+  inp.onchange=e=>{
+    Array.from(e.target.files).forEach(file=>{
+      const r=new FileReader();
+      r.onload=ev=>{_wishEditImgs.push(ev.target.result);renderWishPhotos();};
+      r.readAsDataURL(file);
+    });
+  };
+  inp.click();
+}
+
+// Карусель для просмотра
+let _carouselImgs=[],_carouselIdx=0;
+function openWishCarousel(wishIdx,startIdx,ev){
+  if(ev)ev.stopPropagation();
+  const w=wishes[wishIdx];
+  _carouselImgs=w.imgs&&w.imgs.length?w.imgs:(w.img?[w.img]:[]);
+  if(!_carouselImgs.length)return;
+  _carouselIdx=startIdx||0;
+  renderCarousel();
+}
+function openWishCarouselEdit(idx){
+  _carouselImgs=_wishEditImgs;
+  _carouselIdx=idx;
+  renderCarousel();
+}
+function renderCarousel(){
+  const existing=document.getElementById('wish-carousel');
+  if(existing)existing.remove();
+  const div=document.createElement('div');
+  div.className='carousel-bg';div.id='wish-carousel';
+  div.innerHTML=`
+    <button class="carousel-close" onclick="closeCarousel()">×</button>
+    <img class="carousel-img" src="${_carouselImgs[_carouselIdx]}" id="carousel-img">
+    ${_carouselImgs.length>1?`<button class="carousel-nav prev" onclick="carouselStep(-1)">‹</button><button class="carousel-nav next" onclick="carouselStep(1)">›</button>`:''}
+    <div class="carousel-dots">${_carouselImgs.map((_,i)=>`<div class="carousel-dot${i===_carouselIdx?' on':''}"></div>`).join('')}</div>`;
+  // Свайп
+  let tx=0;
+  div.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;},{passive:true});
+  div.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>40)carouselStep(dx<0?1:-1);});
+  div.onclick=e=>{if(e.target===div)closeCarousel();};
+  document.body.appendChild(div);
+}
+function carouselStep(d){
+  _carouselIdx=(_carouselIdx+d+_carouselImgs.length)%_carouselImgs.length;
+  renderCarousel();
+}
+function closeCarousel(){const c=document.getElementById('wish-carousel');if(c)c.remove();}
+
+// ===== Экспорт задач в Excel =====
+function exportTasks(){
+  if(typeof XLSX==='undefined'){
+    const s2=document.createElement('script');
+    s2.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s2.onload=exportTasks;document.head.appendChild(s2);return;
+  }
+  const WHEN={'today':'сегодня','tomorrow':'завтра','week':'неделя','month':'месяц','none':'без срока'};
+  const rows=[['Задача','Кому','Когда','Комментарий','Статус','Создана']];
+  tasks.forEach(t=>{rows.push([t.name,t.who,WHEN[t.when]||'',t.note||'',t.done?'выполнена':'открыта',t.createdAt?new Date(t.createdAt).toLocaleDateString('ru'):'']);});
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:40},{wch:14},{wch:14},{wch:30},{wch:12},{wch:12}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Задачи');
+  XLSX.writeFile(wb,'tasks_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ===== Экспорт желаний в Excel =====
+function exportWishes(){
+  if(typeof XLSX==='undefined'){
+    const s2=document.createElement('script');
+    s2.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s2.onload=exportWishes;document.head.appendChild(s2);return;
+  }
+  const rows=[['Название','Чьё','Ссылка','Заметка','Статус']];
+  wishes.forEach(w=>{rows.push([w.name,w.who==='me'?'Евгений':'Аннушка',w.link||'',w.note||'',w.reserved?'выполнено':'хочу']);});
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:40},{wch:14},{wch:40},{wch:30},{wch:12}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Желания');
+  XLSX.writeFile(wb,'wishes_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+function cleanDoneWishes(){
+  const now=new Date();
+  const today=now.toDateString();
+  wishes=wishes.filter(w=>{
+    if(!w.reserved)return true;
+    if(!w.doneAt)return true;
+    return new Date(w.doneAt).toDateString()===today;
+  });
+}
+
 function renderWishes(){
+  cleanDoneWishes();
   const filtered=wishes.filter(w=>wishTab==='all'||w.who===wishTab)
-    .sort((a,b)=>(a.reserved?1:-1)-(b.reserved?1:-1));
+    .sort((a,b)=>{
+      if(a.reserved!==b.reserved)return a.reserved?1:-1;
+      return(b.updatedAt||b.id||0)>(a.updatedAt||a.id||0)?1:-1;
+    });
   const el=document.getElementById('wishes-list');
   if(!filtered.length){el.innerHTML='<div class="empty">список желаний пуст</div>';return;}
-  el.innerHTML=filtered.map(w=>{
+  let html='';
+  filtered.forEach(w=>{
     const ri=wishes.indexOf(w);
-    const imgHtml=w.img
-      ?`<img src="${w.img}" style="width:100%;height:100%;object-fit:cover;border-radius:9px">`
-      :`<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="var(--line2)" stroke-width="1.3"/><circle cx="8.5" cy="8.5" r="1.5" stroke="var(--line2)" stroke-width="1.3"/><path d="M3 16l5-5 4 4 3-3 4 4" stroke="var(--line2)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    const imgs=w.imgs&&w.imgs.length?w.imgs:(w.img?[w.img]:[]);
+    const firstImg=imgs[0]||'';
+    const imgHtml=firstImg
+      ?`<img src="${firstImg}" style="width:100%;height:100%;object-fit:cover;border-radius:9px" onclick="openWishCarousel(${ri},0,event)">`
+      :`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="var(--line2)" stroke-width="1.3"/><circle cx="8.5" cy="8.5" r="1.5" stroke="var(--line2)" stroke-width="1.3"/><path d="M3 16l5-5 4 4 3-3 4 4" stroke="var(--line2)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     const isUnseen=whoAmI&&w.updatedBy&&w.updatedBy!==whoAmI&&!(w.seenBy||[]).includes(whoAmI);
-    return`<div class="card-flush${isUnseen?' wish-unseen':''}" style="transition:opacity .25s,border-left .3s,background .3s;${w.reserved?'opacity:.5':''}" onclick="openEditWish(${ri})">
-      <div style="display:flex;gap:12px;padding:12px 14px;align-items:center">
-        <div class="wish-check${w.reserved?' done':''}" onclick="toggleReserved(${ri},event)">
-          ${w.reserved?'<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}
-        </div>
-        <div class="wish-img-box" style="width:64px;height:64px;flex-shrink:0">${imgHtml}</div>
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px">
-            <span style="font-size:15px;font-weight:500;color:var(--text);${w.reserved?'text-decoration:line-through;color:var(--text3)':''};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:calc(100% - 70px)">${w.name}</span><span class="wish-new-dot"></span>
-            <span class="chip" style="margin-left:6px;flex-shrink:0">${w.who==='me'?'Евгений':'Аннушка'}</span>
+    html+=`<div class="swipe-wrap${isUnseen?' wish-unseen':''}" data-widx="${ri}" style="${w.reserved?'opacity:.5':''}">
+      <div class="swipe-actions">
+        <button class="swipe-btn edit" data-waction="edit" data-widx="${ri}">править</button>
+        <button class="swipe-btn delete" data-waction="delete" data-widx="${ri}">удалить</button>
+      </div>
+      <div class="swipe-content">
+        <div class="row-item" style="align-items:center;gap:12px">
+          <div class="wish-check${w.reserved?' done':''}" onclick="toggleReserved(${ri},event)">
+            ${w.reserved?'<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}
           </div>
-          ${w.note?`<div style="font-size:13px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px">${w.note}</div>`:''}
-          ${w.link?`<a href="${w.link}" class="link-chip" target="_blank" onclick="event.stopPropagation()">→ ссылка</a>`:''}
+          <div class="wish-img-box" style="width:52px;height:52px;flex-shrink:0">${imgHtml}${imgs.length>1?`<div style="position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,.45);color:#fff;font-size:9px;border-radius:4px;padding:1px 4px">${imgs.length}</div>`:''}</div>
+          <div style="flex:1;min-width:0" onclick="openEditWish(${ri})">
+            <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
+              <span style="font-size:15px;font-weight:500;color:${w.reserved?'var(--text3)':'var(--text)'};${w.reserved?'text-decoration:line-through':''}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${w.name}</span>
+              <span class="wish-new-dot"></span>
+            </div>
+            <div style="font-size:13px;color:var(--text3);font-family:var(--mono)">${w.who==='me'?'🐗 Евгений':'🐘 Аннушка'}${w.note?` · ${w.note}`:''}</div>
+          </div>
         </div>
       </div>
     </div>`;
-  }).join('');
+  });
+  el.innerHTML=html;
+  // Свайпы
+  el.querySelectorAll('.swipe-wrap').forEach(wrap=>{
+    let sx=0,cx=0;
+    const cont=wrap.querySelector('.swipe-content');
+    if(!cont)return;
+    wrap.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;cx=sx;},{passive:true});
+    wrap.addEventListener('touchmove',e=>{cx=e.touches[0].clientX;const dx=cx-sx;if(dx<0)cont.style.transform=`translate3d(${Math.max(dx,-140)}px,0,0)`;},{passive:true});
+    wrap.addEventListener('touchend',()=>{const dx=cx-sx;cont.style.transform='';el.querySelectorAll('.swipe-wrap.swiped').forEach(w=>{if(w!==wrap)w.classList.remove('swiped');});if(dx<-55)wrap.classList.add('swiped');else if(dx>35)wrap.classList.remove('swiped');});
+  });
+  el.querySelectorAll('[data-waction]').forEach(btn=>{
+    btn.onclick=function(ev){
+      ev.stopPropagation();
+      const idx=parseInt(this.getAttribute('data-widx'),10);
+      if(this.getAttribute('data-waction')==='edit')openEditWish(idx);
+      else{wishes.splice(idx,1);saveWishesData();renderWishes();}
+    };
+  });
 }
-
 
 function getAvatar(who, size){
   const s=size||24;
