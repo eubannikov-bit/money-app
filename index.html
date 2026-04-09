@@ -2721,7 +2721,9 @@ function renderTasks(){
     const ovd=taskOverdue(t);
     // Дедлайн: сегодня/завтра — словами, иначе ГГГГ/ММ/ДД
     let whenLbl='';
-    if(t.when&&t.when!=='none'){
+    if(!t.when||t.when==='none'){
+      whenLbl='∞';
+    } else {
       const dl=taskDeadline(t);
       if(dl){
         const diff=Math.round((dl-new Date())/(1000*60*60*24));
@@ -3121,10 +3123,15 @@ function renderCarousel(){
     <img class="carousel-img" src="${_carouselImgs[_carouselIdx]}" id="carousel-img">
     ${_carouselImgs.length>1?`<button class="carousel-nav prev" onclick="carouselStep(-1)">‹</button><button class="carousel-nav next" onclick="carouselStep(1)">›</button>`:''}
     <div class="carousel-dots">${_carouselImgs.map((_,i)=>`<div class="carousel-dot${i===_carouselIdx?' on':''}"></div>`).join('')}</div>`;
-  // Свайп
-  let tx=0;
-  div.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;},{passive:true});
-  div.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>40)carouselStep(dx<0?1:-1);});
+  // Свайп: горизонталь — переключение фото, вертикаль вниз — закрыть
+  let tx=0,ty=0;
+  div.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:true});
+  div.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-tx;
+    const dy=e.changedTouches[0].clientY-ty;
+    if(Math.abs(dy)>Math.abs(dx)&&dy>60){closeCarousel();return;}  // свайп вниз — закрыть
+    if(Math.abs(dx)>40)carouselStep(dx<0?1:-1);                      // свайп влево/вправо — фото
+  });
   div.onclick=e=>{if(e.target===div)closeCarousel();};
   document.body.appendChild(div);
 }
