@@ -369,6 +369,7 @@ window._earlyChooseUser = function(name) {
     </div>
   </div>
 
+  <!-- Модалка просмотра задачи (read-only) -->
   <div class="mbg" id="m-view-task">
     <div class="modal" style="padding-bottom:calc(var(--safe-bot) + 28px)">
       <div style="width:36px;height:4px;background:var(--line2);border-radius:2px;margin:0 auto 18px"></div>
@@ -392,6 +393,7 @@ window._earlyChooseUser = function(name) {
     </div>
   </div>
 
+  <!-- Модалка детализации аналитики -->
   <div class="mbg" id="m-anl-detail">
     <div class="modal" style="max-height:88vh">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -402,16 +404,22 @@ window._earlyChooseUser = function(name) {
     </div>
   </div>
 
+  <!-- Просмотр желания -->
   <div class="mbg" id="m-view-wish">
     <div class="modal">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <div style="font-size:17px;font-weight:600;color:var(--text)" id="vw-title"></div>
         <button onclick="closeM('view-wish')" style="background:none;border:none;font-size:24px;color:var(--text3);cursor:pointer;padding:0;line-height:1">×</button>
       </div>
+      <!-- фото-ряд -->
       <div id="vw-photos" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch;margin-bottom:12px"></div>
+      <!-- кому + дата -->
       <div id="vw-meta" style="font-size:13px;color:var(--text3);font-family:var(--mono);margin-bottom:10px"></div>
+      <!-- заметка -->
       <div id="vw-note" style="font-size:15px;color:var(--text2);margin-bottom:10px;line-height:1.5;white-space:pre-wrap"></div>
+      <!-- ссылка -->
       <div id="vw-link" style="margin-bottom:14px"></div>
+      <!-- кнопки -->
       <div class="brow">
         <button class="btn-cancel" onclick="closeM('view-wish')">Закрыть</button>
         <button id="vw-edit-btn" class="btn-save" onclick="openEditFromView()" style="display:none">Изменить</button>
@@ -422,12 +430,17 @@ window._earlyChooseUser = function(name) {
     <div class="modal">
       <div class="modal-title" id="wish-modal-title">Новое желание</div>
 
+      <!-- Название -->
       <div class="frow"><label class="flabel">Название</label><input type="text" id="ws-name" placeholder="что хочется?"></div>
+      <!-- Заметка -->
       <div class="frow"><label class="flabel">Заметка</label><textarea id="ws-note" placeholder="размер, цвет, детали..."></textarea></div>
+      <!-- скрытое поле чьё — заполняется автоматически = whoAmI -->
       <select id="ws-who" style="display:none"><option value="me">Евгения</option><option value="them">Аннушки</option></select>
+      <!-- Фото — ряд превью + кнопка добавить -->
       <div style="margin-top:2px">
         <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch" id="ws-photos-row"></div>
       </div>
+      <!-- Ссылка — только через кнопки вставить/очистить -->
       <div class="frow" style="margin-top:8px">
         <label class="flabel">Ссылка</label>
         <div style="display:flex;gap:6px">
@@ -1799,7 +1812,7 @@ function openAnlDetail(key){
   if(!c.selMonth)return;
   const body=document.getElementById('anl-detail-body');
   const title=document.getElementById('anl-detail-title');
-  if(!body||title)return;
+  if(!body||!title)return;
 
   function r(v){return v?v.toLocaleString('ru')+' ₽':'—';}
   function pctBar(fact,plan){
@@ -2688,10 +2701,13 @@ function renderTasks(){
   });
 
   // Группировка по дате постановки (createdAt)
-  const MONTHS_RU_TASKS=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  const MONTHS_SHORT_RU=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
   function taskDateLabel(t){
     const d=new Date(t.createdAt||Date.now());
-    return d.getDate()+' '+MONTHS_RU_TASKS[d.getMonth()];
+    const today=new Date();const yesterday=new Date(today);yesterday.setDate(today.getDate()-1);
+    if(d.toDateString()===today.toDateString())return'сегодня';
+    if(d.toDateString()===yesterday.toDateString())return'вчера';
+    return d.getDate()+' '+MONTHS_SHORT_RU[d.getMonth()];
   }
 
   let html='';
@@ -3201,8 +3217,8 @@ function renderWishes(){
   const mn=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
   dateGroups.forEach(d=>{
     if(d){
-      const dt=new Date(d);
-      const lbl=`${dt.getDate()} ${mn[dt.getMonth()]}`;
+      const dt=new Date(d);const today=new Date().toDateString();const yest=new Date(Date.now()-86400000).toDateString();
+      const lbl=d===today?'сегодня':d===yest?'вчера':`${dt.getDate()} ${mn[dt.getMonth()]}`;
       html+=`<div class="date-sep">${lbl}</div>`;
     }
     dateMap[d].forEach(({w,origIdx:ri})=>{
@@ -3319,4 +3335,568 @@ function showStatDetailFor(who){
   const catTotals={};
   filtered.forEach(e=>{catTotals[e.cat]=(catTotals[e.cat]||0)+(e.amount||0);});
   const total=filtered.reduce((s,e)=>s+(e.amount||0),0);
-  const CATS=statDetailType==='expense'?EXP_CATS:INC_CATS
+  const CATS=statDetailType==='expense'?EXP_CATS:INC_CATS;
+  const labels=[],data=[],colors=[];
+  CATS.forEach((c,i)=>{if(catTotals[c]>0){labels.push(c);data.push(catTotals[c]);colors.push(CAT_COLORS[i%CAT_COLORS.length]);}});
+  Object.keys(catTotals).forEach(c=>{if(!CATS.includes(c)&&catTotals[c]>0){labels.push(c);data.push(catTotals[c]);colors.push('#bbb');}});
+  if(typeof Chart!=='undefined'){
+    const ctx=document.getElementById('stat-detail-chart').getContext('2d');
+    if(statDetailChart)statDetailChart.destroy();
+    if(data.length){
+      statDetailChart=new Chart(ctx,{
+        type:'doughnut',
+        data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:2,borderColor:'rgba(255,246,249,.9)'}]},
+        options:{responsive:false,cutout:'60%',plugins:{legend:{display:false},tooltip:{enabled:false}},animation:{duration:300}}
+      });
+    }
+  }
+  const leg=document.getElementById('stat-detail-legend');
+  if(!data.length){leg.innerHTML='<div class="empty">нет данных</div>';return;}
+  leg.innerHTML=labels.map((l,i)=>{
+    const p=total?Math.round(data[i]/total*100):0;
+    const catEnts=catMap[l]||[];
+    return`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer;-webkit-tap-highlight-color:transparent" onclick="sdOpenCat('${l.replace(/'/g,"\'")}',JSON.parse(decodeURIComponent('${encodeURIComponent(JSON.stringify(catEnts))}')))" class="bud-row">
+      <div style="width:8px;height:8px;border-radius:50%;background:${colors[i]};flex-shrink:0"></div>
+      <span style="font-size:13px;color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l}</span>
+      <span style="font-size:13px;font-family:var(--mono);color:var(--text);flex-shrink:0">${data[i].toLocaleString('ru')} ₽</span>
+      <span style="font-size:11px;color:var(--text3);font-family:var(--mono);flex-shrink:0;min-width:32px;text-align:right">${p}%</span>
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0"><path d="M4 2l4 4-4 4" stroke="var(--text3)" stroke-width="1.2" stroke-linecap="round"/></svg>
+    </div>`;
+  }).join('');
+  // Итого под списком
+  if(total>0){
+    leg.innerHTML+=`<div style="display:flex;justify-content:space-between;padding:10px 0 2px;font-size:13px;font-weight:500;color:var(--text)">
+      <span>Итого</span>
+      <span style="font-family:var(--mono)">${total.toLocaleString('ru')} ₽</span>
+    </div>`;
+  }
+}
+// modal close on bg click
+document.addEventListener('click',function(e){
+  const bg=e.target.closest('.mbg');
+  if(bg&&e.target===bg)closeTopModal();
+});
+
+// свайп вниз для закрытия любой модалки
+(function(){
+  let startY=0,startX=0,modal=null,origTransform='';
+  const THRESHOLD=80; // px свайпа вниз для закрытия
+
+  document.addEventListener('touchstart',function(e){
+    const m=e.target.closest('.modal');
+    if(!m)return;
+    // не перехватывать если скролл не в самом верху
+    if(m.scrollTop>4)return;
+    startY=e.touches[0].clientY;
+    startX=e.touches[0].clientX;
+    modal=m;
+    origTransform=m.style.transform||'';
+  },{passive:true});
+
+  document.addEventListener('touchmove',function(e){
+    if(!modal)return;
+    if(modal.scrollTop>4){modal=null;return;}
+    const dy=e.touches[0].clientY-startY;
+    const dx=e.touches[0].clientX-startX;
+    // только вертикальный свайп вниз
+    if(dy<0||Math.abs(dx)>Math.abs(dy)){modal=null;return;}
+    // двигаем модалку вслед за пальцем
+    modal.style.transition='none';
+    modal.style.transform=`translate3d(0,${Math.min(dy,220)}px,0)`;
+    // затемняем фон пропорционально
+    const bg=modal.closest('.mbg');
+    if(bg){const op=Math.max(0,0.22*(1-dy/250));bg.style.background=`rgba(165,122,139,${op})`;}
+  },{passive:true});
+
+  document.addEventListener('touchend',function(e){
+    if(!modal)return;
+    const dy=e.changedTouches[0].clientY-startY;
+    const bg=modal.closest('.mbg');
+    if(dy>=THRESHOLD){
+      // закрыть — сдвигаем вниз и скрываем
+      modal.style.transition='transform .28s cubic-bezier(.4,0,.2,1)';
+      modal.style.transform='translate3d(0,100%,0)';
+      setTimeout(()=>{
+        // Используем closeTopModal для правильной навигации
+        modal.style.transform='';
+        modal.style.transition='';
+        if(bg)bg.style.background='';
+        closeTopModal();
+        modal=null;
+      },260);
+    } else {
+      // вернуть на место
+      modal.style.transition='transform .22s cubic-bezier(.4,0,.2,1)';
+      modal.style.transform='translate3d(0,0,0)';
+      if(bg)bg.style.background='';
+      setTimeout(()=>{
+        if(modal){modal.style.transform='';modal.style.transition='';}
+        modal=null;
+      },220);
+    }
+  },{passive:true});
+})();
+
+
+// init
+document.getElementById('e-date').value=localDateStr();
+setET('expense');
+updateSortUi();
+buildMonthSelectors();
+renderEntries();updateTodayCard();
+cleanDoneTasks();renderTasks();fetchTasks();fetchWishes();startTasksPolling();
+initWhoAmI();
+
+// Принудительно загружаем данные при старте
+(function(){
+  const selEl=document.getElementById('money-month-sel');
+  const mk=selEl?selEl.value:nowKey();
+  if(mk&&!mk.startsWith('year_')) fetchEntriesForMonth(mk);
+  
+  // Фоновая подгрузка последних 3 месяцев.
+  // Это нужно, чтобы разорвать замкнутый круг: если локальный кэш пуст,
+  // приложение подтянет старые операции за прошлые 3 месяца (например, март и февраль),
+  // добавит их в кэш, и нужные месяцы автоматически появятся в выпадающем списке!
+  let tempMk = nowKey();
+  for(let i=0; i<3; i++){
+    tempMk = getPrevMonthKey(tempMk);
+    fetchEntriesForMonth(tempMk);
+  }
+})();
+
+renderTrips();
+renderWishes();
+// goals rendered via renderBudget
+
+
+function pieTooltipToggle(evt){
+  const tt=document.getElementById('pie-tooltip');
+  if(tt)tt.classList.remove('on');
+}
+// init budget avatars
+(function(){
+  const ae=document.getElementById('bud-av-e');
+  const aa=document.getElementById('bud-av-a');
+  if(ae)ae.innerHTML=getAvatar('Евгений',22);
+  if(aa)aa.innerHTML=getAvatar('Аннушка',22);
+})();
+
+// Chart.js
+(function(){
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js';
+  s.onload=function(){if(document.getElementById('s-budget').classList.contains('on'))renderBudget();};
+  document.head.appendChild(s);
+})();
+
+// unregister SW
+if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>{if(!r.active||!r.active.scriptURL.includes('sw.js'))r.unregister();})).catch(()=>{});navigator.serviceWorker.register('/money-app/sw.js',{scope:'/money-app/',updateViaCache:'none'}).then(r=>{r.update();}).catch(()=>{});}
+
+// Открыть задачу по id
+function openTaskById(taskId){
+  if(!taskId)return;
+  fetchTasks();
+  setTimeout(function(){
+    const idx=tasks.findIndex(function(t){return t.id===taskId;});
+    switchScreen('tasks');
+    if(idx>=0)setTimeout(function(){openViewTask(idx);},250);
+  },800);
+}
+
+// Обработчик postMessage от SW (работает когда приложение открыто в фоне)
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message',function(event){
+    if(event.data&&event.data.type==='open_task'&&event.data.taskId){
+      openTaskById(event.data.taskId);
+    }
+  });
+}
+
+// Поднимать все модалки при клавиатуре
+(function(){
+  if(!window.visualViewport)return;
+  var _lastKb=0;
+  var wrap=document.querySelector('.wrap');
+  function onVV(){
+    var vv=window.visualViewport;
+    var kb=Math.round(window.innerHeight-vv.height);
+    if(kb<0)kb=0;
+    if(Math.abs(kb-_lastKb)<4)return;
+    _lastKb=kb;
+    // Двигаем весь .wrap вверх — все модалки внутри него поднимаются
+    if(wrap){
+      wrap.style.transform=kb>80?'translateY(-'+kb+'px)':'';
+      wrap.style.marginBottom=kb>80?kb+'px':'';
+    }
+  }
+  window.visualViewport.addEventListener('resize',onVV,{passive:true});
+})();
+
+
+
+// ====== Экспорт Excel ======
+function exportExcel(){
+  if(typeof XLSX==='undefined'){
+    const sc=document.createElement('script');
+    sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    sc.onload=()=>_buildExcel();
+    sc.onerror=()=>alert('Нет интернета для загрузки библиотеки Excel');
+    document.head.appendChild(sc);
+  } else { _buildExcel(); }
+}
+
+function _buildExcel(){
+  const selEl=document.getElementById('money-month-sel');
+  const selRaw=selEl?selEl.value:nowKey();
+  const isYear=selRaw&&selRaw.startsWith('year_');
+  const yearStr=isYear?selRaw.replace('year_',''):'';
+  const period=isYear?yearStr:selRaw;
+  const filtered=isYear
+    ?entries.filter(e=>e.date&&e.date.startsWith(yearStr))
+    :entries.filter(e=>e.date&&e.date.startsWith(selRaw));
+  if(!filtered.length){alert('Нет данных за выбранный период');return;}
+
+  // ── Вычисляем план ──
+  function getPlanCats(){
+    if(!isYear) return getBudgetForMonthOrCurrent(selRaw);
+    const cur=nowKey(),agg={};
+    for(let mi=1;mi<=12;mi++){
+      const mk=yearStr+'-'+String(mi).padStart(2,'0');
+      if(mk>cur)break;
+      const mc=budget.monthly[mk]||{};
+      Object.keys(mc).forEach(c=>{agg[c]=(agg[c]||0)+(mc[c]||0);});
+    }
+    return agg;
+  }
+  const planCats=getPlanCats();
+  const sorted=[...filtered].sort((a,b)=>a.date<b.date?-1:1);
+
+  // Агрегаты
+  const factExp={},factInc={};
+  filtered.filter(e=>e.type==='expense').forEach(e=>{factExp[e.cat]=(factExp[e.cat]||0)+e.amount;});
+  filtered.filter(e=>e.type==='income').forEach(e=>{factInc[e.cat]=(factInc[e.cat]||0)+e.amount;});
+  const byDay={},byWhoExp={Евгений:0,Аннушка:0},byWhoInc={Евгений:0,Аннушка:0};
+  filtered.filter(e=>e.type==='expense').forEach(e=>{
+    byDay[e.date]=(byDay[e.date]||0)+e.amount;
+    byWhoExp[e.who]=(byWhoExp[e.who]||0)+e.amount;
+  });
+  filtered.filter(e=>e.type==='income').forEach(e=>{
+    byWhoInc[e.who]=(byWhoInc[e.who]||0)+e.amount;
+  });
+
+  const totalExpFact=Object.values(factExp).reduce((a,v)=>a+v,0);
+  const totalIncFact=Object.values(factInc).reduce((a,v)=>a+v,0);
+  const totalExpPlan=EXP_CATS.reduce((a,c)=>a+(planCats[c]||0),0);
+  const totalIncPlan=INC_CATS.reduce((a,c)=>a+(planCats[c]||0),0);
+  const fcFact=filtered.filter(e=>e.type==='expense'&&isFcCat(e.cat)).reduce((a,e)=>a+e.amount,0);
+  const vcFact=filtered.filter(e=>e.type==='expense'&&isVcCat(e.cat)).reduce((a,e)=>a+e.amount,0);
+  const fcPlan=EXP_CATS.filter(c=>isFcCat(c)).reduce((a,c)=>a+(planCats[c]||0),0);
+  const vcPlan=EXP_CATS.filter(c=>isVcCat(c)).reduce((a,c)=>a+(planCats[c]||0),0);
+  const daysArr=Object.keys(byDay).sort();
+  const avgDay=daysArr.length>0?Math.round(vcFact/daysArr.length):0;
+
+  // ── Стили ──
+  const wb=XLSX.utils.book_new();
+  const S={
+    hdr:{font:{bold:true,sz:11,name:'Arial'},fill:{fgColor:{rgb:'D78EA8'}},font2:{color:{rgb:'FFFFFF'},bold:true,sz:11,name:'Arial'},alignment:{horizontal:'center',vertical:'center'},border:{bottom:{style:'thin',color:{rgb:'C07090'}}}},
+    title:{font:{bold:true,sz:14,name:'Arial',color:{rgb:'1A1018'}}},
+    section:{font:{bold:true,sz:10,name:'Arial',color:{rgb:'7F6D73'}},fill:{fgColor:{rgb:'FFF1F5'}}},
+    num:{numFmt:'# ##0.00 "₽"',font:{name:'Arial',sz:10}},
+    pct:{numFmt:'0.0%',font:{name:'Arial',sz:10}},
+    neg:{numFmt:'# ##0.00 "₽"',font:{color:{rgb:'D94F6E'},name:'Arial',sz:10}},
+    pos:{numFmt:'# ##0.00 "₽"',font:{color:{rgb:'2A9D78'},name:'Arial',sz:10}},
+    warn:{font:{color:{rgb:'B07030'},name:'Arial',sz:10}},
+    label:{font:{name:'Arial',sz:10,color:{rgb:'1A1018'}}},
+    sublabel:{font:{name:'Arial',sz:10,color:{rgb:'7F6D73'}}},
+    bold:{font:{bold:true,name:'Arial',sz:10}},
+    boldNum:{numFmt:'# ##0.00 "₽"',font:{bold:true,name:'Arial',sz:10}},
+    boldPct:{numFmt:'0.0%',font:{bold:true,name:'Arial',sz:10}},
+  };
+
+  function cell(v,style){return{v,s:style,t:typeof v==='number'?'n':'s'};}
+  function ncell(v,style){return{v:v||0,s:style||S.num,t:'n'};}
+  function pctcell(v){return{v:v||0,s:S.pct,t:'n'};}
+
+  // ── ЛИСТ 1: ДАШБОРД ──
+  const ws1={};
+  const r1=(row,col,v,style)=>{
+    const addr=XLSX.utils.encode_cell({r:row,c:col});
+    ws1[addr]={v,s:style,t:typeof v==='number'?'n':'s'};
+  };
+  const rn=(row,col,v,style)=>{
+    const addr=XLSX.utils.encode_cell({r:row,c:col});
+    ws1[addr]={v:v||0,s:style||S.num,t:'n'};
+  };
+
+  let row=0;
+  // Заголовок
+  r1(row,0,'ФИНАНСОВЫЙ ОТЧЁТ — '+period,{font:{bold:true,sz:16,name:'Arial',color:{rgb:'D78EA8'}}});
+  row+=2;
+
+  // ── Блок 1: Итоги ──
+  r1(row,0,'ИТОГИ ПЕРИОДА',{font:{bold:true,sz:11,name:'Arial',color:{rgb:'7F6D73'}},fill:{fgColor:{rgb:'FFF1F5'}}});
+  r1(row,1,'',{fill:{fgColor:{rgb:'FFF1F5'}}});
+  r1(row,2,'',{fill:{fgColor:{rgb:'FFF1F5'}}});
+  r1(row,3,'',{fill:{fgColor:{rgb:'FFF1F5'}}});
+  r1(row,4,'',{fill:{fgColor:{rgb:'FFF1F5'}}});
+  row++;
+  // Заголовки колонок
+  ['Показатель','Факт, ₽','План, ₽','Отклонение, ₽','Отклонение, %'].forEach((h,i)=>{
+    r1(row,i,h,{font:{bold:true,sz:10,name:'Arial',color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'C07090'}},alignment:{horizontal:'center'}});
+  });
+  row++;
+
+  const summary=[
+    ['Доходы',totalIncFact,totalIncPlan],
+    ['Расходы',totalExpFact,totalExpPlan],
+    ['  FC — обязательные',fcFact,fcPlan],
+    ['  VC — переменные',vcFact,vcPlan],
+    ['Баланс',totalIncFact-totalExpFact,totalIncPlan-totalExpPlan],
+  ];
+  summary.forEach(([lbl,fact,plan])=>{
+    const diff=fact-plan;
+    const pct=plan?diff/plan:null;
+    const isBalance=lbl==='Баланс';
+    const diffStyle=isBalance?(diff>=0?S.pos:S.neg):(lbl.includes('Доход')?(diff>=0?S.pos:S.neg):(diff>0?S.neg:S.pos));
+    r1(row,0,lbl,lbl.startsWith('  ')?S.sublabel:S.bold);
+    rn(row,1,fact,lbl.includes('Доход')||isBalance?{numFmt:'# ##0.00 "₽"',font:{color:{rgb:'2A9D78'},name:'Arial',sz:10}}:(fact>plan&&plan?S.neg:S.num));
+    rn(row,2,plan,S.num);
+    rn(row,3,diff,diffStyle);
+    if(pct!==null) ws1[XLSX.utils.encode_cell({r:row,c:4})]={v:pct,s:S.pct,t:'n'};
+    else r1(row,4,'—',S.sublabel);
+    row++;
+  });
+  row++;
+
+  // ── Блок 2: По людям ──
+  r1(row,0,'РАСХОДЫ И ДОХОДЫ ПО ЛЮДЯМ',{font:{bold:true,sz:11,name:'Arial',color:{rgb:'7F6D73'}},fill:{fgColor:{rgb:'FFF1F5'}}});
+  row++;
+  ['',  'Евгений 🐗','Аннушка 🐘','Итого'].forEach((h,i)=>{
+    r1(row,i,h,{font:{bold:true,sz:10,name:'Arial',color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'C07090'}},alignment:{horizontal:'center'}});
+  });
+  row++;
+  [['Расходы',byWhoExp.Евгений||0,byWhoExp.Аннушка||0],
+   ['Доходы',byWhoInc.Евгений||0,byWhoInc.Аннушка||0],
+   ['Баланс',(byWhoInc.Евгений||0)-(byWhoExp.Евгений||0),(byWhoInc.Аннушка||0)-(byWhoExp.Аннушка||0)],
+  ].forEach(([lbl,ve,va])=>{
+    r1(row,0,lbl,S.label);
+    rn(row,1,ve,lbl==='Баланс'?(ve>=0?S.pos:S.neg):S.num);
+    rn(row,2,va,lbl==='Баланс'?(va>=0?S.pos:S.neg):S.num);
+    rn(row,3,ve+va,lbl==='Баланс'?(ve+va>=0?S.pos:S.neg):S.boldNum);
+    row++;
+  });
+  row++;
+
+  // ── Блок 3: FC/VC ──
+  r1(row,0,'СТРУКТУРА РАСХОДОВ FC / VC',{font:{bold:true,sz:11,name:'Arial',color:{rgb:'7F6D73'}},fill:{fgColor:{rgb:'FFF1F5'}}});
+  row++;
+  ['','Факт, ₽','План, ₽','Откл., ₽','Доля факт, %'].forEach((h,i)=>{
+    r1(row,i,h,{font:{bold:true,sz:10,name:'Arial',color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'C07090'}},alignment:{horizontal:'center'}});
+  });
+  row++;
+  [['FC — обязательные',fcFact,fcPlan,totalExpFact],
+   ['VC — переменные',vcFact,vcPlan,totalExpFact],
+  ].forEach(([lbl,fact,plan,total])=>{
+    r1(row,0,lbl,S.label);
+    rn(row,1,fact,S.num);
+    rn(row,2,plan,S.num);
+    rn(row,3,fact-plan,(fact-plan)>0?S.neg:S.pos);
+    ws1[XLSX.utils.encode_cell({r:row,c:4})]={v:total>0?fact/total:0,s:S.boldPct,t:'n'};
+    row++;
+  });
+  row++;
+
+  // ── Блок 4: Аналитика ──
+  r1(row,0,'АНАЛИТИКА',{font:{bold:true,sz:11,name:'Arial',color:{rgb:'7F6D73'}},fill:{fgColor:{rgb:'FFF1F5'}}});
+  row++;
+  const daysLeft=isYear?0:new Date(parseInt(selRaw.split('-')[0]),parseInt(selRaw.split('-')[1]),0).getDate()-daysArr.length;
+  const vcForecast=avgDay*new Date(parseInt(selRaw.split('-')[0]),parseInt(selRaw.split('-')[1]),0).getDate();
+  const forecastBal=totalIncFact-(vcForecast+fcFact);
+  [
+    ['Дней с данными',daysArr.length],
+    ['Средний расход в день (VC)',avgDay],
+    ...(daysLeft>0?[['Прогноз VC к концу месяца',vcForecast],['Прогноз баланса к концу',forecastBal]]:[] ),
+  ].forEach(([lbl,val])=>{
+    r1(row,0,lbl,S.sublabel);
+    rn(row,1,val,typeof val==='number'&&lbl.includes('баланс')?(val>=0?S.pos:S.neg):S.num);
+    row++;
+  });
+  row++;
+
+  // ── Блок 5: Рекомендации ──
+  r1(row,0,'РЕКОМЕНДАЦИИ',{font:{bold:true,sz:11,name:'Arial',color:{rgb:'7F6D73'}},fill:{fgColor:{rgb:'FFF1F5'}}});
+  row++;
+  const recs=[];
+  if(totalExpFact>totalExpPlan&&totalExpPlan>0) recs.push('⚠️  Расходы превысили план на '+Math.round(totalExpFact-totalExpPlan).toLocaleString('ru')+' ₽ ('+Math.round((totalExpFact-totalExpPlan)/totalExpPlan*100)+'%). Сократи переменные расходы.');
+  else if(totalExpPlan>0) recs.push('✅  Расходы в рамках плана. Экономия '+Math.round(totalExpPlan-totalExpFact).toLocaleString('ru')+' ₽.');
+  if(totalIncFact<totalIncPlan&&totalIncPlan>0) recs.push('⚠️  Доходы ниже плана на '+Math.round(totalIncPlan-totalIncFact).toLocaleString('ru')+' ₽.');
+  const overCats=EXP_CATS.filter(c=>isVcCat(c)&&(factExp[c]||0)>(planCats[c]||0)&&planCats[c]);
+  if(overCats.length) recs.push('📌  Перерасход VC: '+overCats.slice(0,3).join(', ')+'.');
+  const topCat=EXP_CATS.map(c=>({c,v:factExp[c]||0})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v)[0];
+  if(topCat) recs.push('🏆  Топ расход: '+topCat.c+' — '+Math.round(topCat.v).toLocaleString('ru')+' ₽ ('+Math.round(topCat.v/totalExpFact*100)+'% всех).');
+  if(totalIncFact-totalExpFact<0) recs.push('🔴  Баланс отрицательный. Нужно сократить ещё на '+Math.round(Math.abs(totalIncFact-totalExpFact)).toLocaleString('ru')+' ₽.');
+  else recs.push('🟢  Баланс положительный — '+Math.round(totalIncFact-totalExpFact).toLocaleString('ru')+' ₽. Направь на цели!');
+  if(daysLeft>0&&vcPlan>0){
+    const safeDay=Math.round((vcPlan-vcFact)/daysLeft);
+    recs.push('📅  До конца месяца '+daysLeft+' дн. Можно тратить ≤ '+safeDay.toLocaleString('ru')+' ₽/день (VC).');
+  }
+  recs.forEach(rec=>{
+    r1(row,0,rec,{font:{name:'Arial',sz:10,color:{rgb:rec.startsWith('✅')||rec.startsWith('🟢')?'2A9D78':rec.startsWith('⚠️')||rec.startsWith('🔴')?'D94F6E':'1A1018'}}});
+    row++;
+  });
+
+  ws1['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:row,c:5}});
+  ws1['!cols']=[{wch:38},{wch:16},{wch:16},{wch:16},{wch:14},{wch:10}];
+  ws1['!rows']=[];
+  for(let i=0;i<row;i++) ws1['!rows'].push({hpt:18});
+  XLSX.utils.book_append_sheet(wb,ws1,'📊 Дашборд');
+
+  // ── ЛИСТ 2: ПЛАН-ФАКТ ──
+  const ws2={};
+  const r2=(row,col,v,style)=>{ ws2[XLSX.utils.encode_cell({r:row,c:col})]={v,s:style,t:typeof v==='number'?'n':'s'};};
+  const rn2=(row,col,v,style)=>{ ws2[XLSX.utils.encode_cell({r:row,c:col})]={v:v||0,s:style||S.num,t:'n'};};
+  let r2row=0;
+  r2(r2row,0,'ПЛАН-ФАКТ ПО КАТЕГОРИЯМ — '+period,{font:{bold:true,sz:14,name:'Arial',color:{rgb:'D78EA8'}}});
+  r2row+=2;
+  ['Категория','Тип','FC/VC','План, ₽','Факт, ₽','Откл., ₽','Откл., %'].forEach((h,i)=>{
+    r2(r2row,i,h,{font:{bold:true,sz:10,name:'Arial',color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'C07090'}},alignment:{horizontal:'center'}});
+  });
+  r2row++;
+
+  // Расходы
+  r2(r2row,0,'РАСХОДЫ',{font:{bold:true,sz:10,name:'Arial',color:{rgb:'7F6D73'}},fill:{fgColor:{rgb:'FFF1F5'}}});
+  r2row++;
+  const allExpCats=[...new Set([...EXP_CATS,...Object.keys(factExp)])];
+  allExpCats.forEach(cat=>{
+    const plan=planCats[cat]||0,fact=factExp[cat]||0;
+    if(!plan&&!fact)return;
+    const diff=fact-plan;
+    const over=plan>0&&fact>plan;
+    r2(r2row,0,cat,S.label);
+    r2(r2row,1,'Расход',S.sublabel);
+    r2(r2row,2,isFcCat(cat)?'FC':'VC',{font:{name:'Arial',sz:10,color:{rgb:isFcCat(cat)?'C07090':'7F6D73'},bold:true}});
+    rn2(r2row,3,plan,S.num);
+    rn2(r2row,4,fact,over?S.neg:S.num);
+    rn2(r2row,5,diff,diff>0?S.neg:S.pos);
+    ws2[XLSX.utils.encode_cell({r:r2row,c:6})]={v:plan?diff/plan:0,s:S.pct,t:'n'};
+    r2row++;
+  });
+  // Итого расходы
+  r2(r2row,0,'ИТОГО расходы',S.boldNum);
+  rn2(r2row,3,totalExpPlan,S.boldNum);
+  rn2(r2row,4,totalExpFact,(totalExpFact>totalExpPlan&&totalExpPlan)?{numFmt:'# ##0.00 "₽"',font:{bold:true,color:{rgb:'D94F6E'},name:'Arial',sz:10}}:S.boldNum);
+  rn2(r2row,5,totalExpFact-totalExpPlan,(totalExpFact-totalExpPlan)>0?{numFmt:'# ##0.00 "₽"',font:{bold:true,color:{rgb:'D94F6E'},name:'Arial',sz:10}}:{numFmt:'# ##0.00 "₽"',font:{bold:true,color:{rgb:'2A9D78'},name:'Arial',sz:10}});
+  ws2[XLSX.utils.encode_cell({r:r2row,c:6})]={v:totalExpPlan?(totalExpFact-totalExpPlan)/totalExpPlan:0,s:S.boldPct,t:'n'};
+  r2row+=2;
+
+  // Доходы
+  r2(r2row,0,'ДОХОДЫ',{font:{bold:true,sz:10,name:'Arial',color:{rgb:'7F6D73'}},fill:{fgColor:{rgb:'FFF1F5'}}});
+  r2row++;
+  const allIncCats=[...new Set([...INC_CATS,...Object.keys(factInc)])];
+  allIncCats.forEach(cat=>{
+    const plan=planCats[cat]||0,fact=factInc[cat]||0;
+    if(!plan&&!fact)return;
+    const diff=fact-plan;
+    r2(r2row,0,cat,S.label);
+    r2(r2row,1,'Доход',S.sublabel);
+    r2(r2row,2,'',S.sublabel);
+    rn2(r2row,3,plan,S.num);
+    rn2(r2row,4,fact,S.pos);
+    rn2(r2row,5,diff,diff>=0?S.pos:S.neg);
+    ws2[XLSX.utils.encode_cell({r:r2row,c:6})]={v:plan?diff/plan:0,s:S.pct,t:'n'};
+    r2row++;
+  });
+  r2(r2row,0,'ИТОГО доходы',S.bold);
+  rn2(r2row,3,totalIncPlan,S.boldNum);
+  rn2(r2row,4,totalIncFact,S.pos);
+  rn2(r2row,5,totalIncFact-totalIncPlan,(totalIncFact-totalIncPlan)>=0?{numFmt:'# ##0.00 "₽"',font:{bold:true,color:{rgb:'2A9D78'},name:'Arial',sz:10}}:S.neg);
+  ws2[XLSX.utils.encode_cell({r:r2row,c:6})]={v:totalIncPlan?(totalIncFact-totalIncPlan)/totalIncPlan:0,s:S.boldPct,t:'n'};
+  r2row+=2;
+
+  // Баланс
+  const bal=totalIncFact-totalExpFact,balPlan=totalIncPlan-totalExpPlan;
+  r2(r2row,0,'БАЛАНС',S.bold);
+  rn2(r2row,3,balPlan,S.boldNum);
+  rn2(r2row,4,bal,bal>=0?{numFmt:'# ##0.00 "₽"',font:{bold:true,color:{rgb:'2A9D78'},name:'Arial',sz:10}}:{numFmt:'# ##0.00 "₽"',font:{bold:true,color:{rgb:'D94F6E'},name:'Arial',sz:10}});
+  rn2(r2row,5,bal-balPlan,(bal-balPlan)>=0?{numFmt:'# ##0.00 "₽"',font:{bold:true,color:{rgb:'2A9D78'},name:'Arial',sz:10}}:S.neg);
+
+  ws2['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:r2row+1,c:7}});
+  ws2['!cols']=[{wch:38},{wch:10},{wch:6},{wch:16},{wch:16},{wch:16},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,ws2,'📋 План-Факт');
+
+  // ── ЛИСТ 3: ПО ДНЯМ ──
+  const ws3={};
+  let r3=0;
+  ws3[XLSX.utils.encode_cell({r:r3,c:0})]={v:'РАСХОДЫ ПО ДНЯМ — '+period,s:{font:{bold:true,sz:14,name:'Arial',color:{rgb:'D78EA8'}}},t:'s'};
+  r3+=2;
+  ['Дата','Расходы, ₽','vs средний, %'].forEach((h,i)=>{
+    ws3[XLSX.utils.encode_cell({r:r3,c:i})]={v:h,s:{font:{bold:true,sz:10,name:'Arial',color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'C07090'}},alignment:{horizontal:'center'}},t:'s'};
+  });
+  r3++;
+  daysArr.forEach(d=>{
+    const v=byDay[d];
+    ws3[XLSX.utils.encode_cell({r:r3,c:0})]={v:d,s:S.label,t:'s'};
+    ws3[XLSX.utils.encode_cell({r:r3,c:1})]={v,s:v>avgDay*1.5?S.neg:S.num,t:'n'};
+    ws3[XLSX.utils.encode_cell({r:r3,c:2})]={v:avgDay>0?(v-avgDay)/avgDay:0,s:S.pct,t:'n'};
+    r3++;
+  });
+  r3++;
+  ws3[XLSX.utils.encode_cell({r:r3,c:0})]={v:'Среднее в день (VC)',s:S.bold,t:'s'};
+  ws3[XLSX.utils.encode_cell({r:r3,c:1})]={v:avgDay,s:S.boldNum,t:'n'};
+  r3++;
+  if(daysArr.length>0){
+    const maxD=daysArr.reduce((m,d)=>byDay[d]>byDay[m]?d:m,daysArr[0]);
+    const minD=daysArr.reduce((m,d)=>byDay[d]<byDay[m]?d:m,daysArr[0]);
+    ws3[XLSX.utils.encode_cell({r:r3,c:0})]={v:'Самый дорогой день',s:S.sublabel,t:'s'};
+    ws3[XLSX.utils.encode_cell({r:r3,c:1})]={v:maxD,s:S.label,t:'s'};
+    ws3[XLSX.utils.encode_cell({r:r3,c:2})]={v:byDay[maxD],s:S.neg,t:'n'};
+    r3++;
+    ws3[XLSX.utils.encode_cell({r:r3,c:0})]={v:'Самый дешёвый день',s:S.sublabel,t:'s'};
+    ws3[XLSX.utils.encode_cell({r:r3,c:1})]={v:minD,s:S.label,t:'s'};
+    ws3[XLSX.utils.encode_cell({r:r3,c:2})]={v:byDay[minD],s:S.pos,t:'n'};
+  }
+  ws3['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:r3+1,c:3}});
+  ws3['!cols']=[{wch:14},{wch:18},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws3,'📅 По дням');
+
+  // ── ЛИСТ 4: ОПЕРАЦИИ ──
+  const ws4={};
+  let r4=0;
+  ws4[XLSX.utils.encode_cell({r:r4,c:0})]={v:'ОПЕРАЦИИ — '+period,s:{font:{bold:true,sz:14,name:'Arial',color:{rgb:'D78EA8'}}},t:'s'};
+  r4+=2;
+  ['Дата','Тип','Категория','Сумма, ₽','Кто','Комментарий','FC/VC'].forEach((h,i)=>{
+    ws4[XLSX.utils.encode_cell({r:r4,c:i})]={v:h,s:{font:{bold:true,sz:10,name:'Arial',color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'C07090'}},alignment:{horizontal:'center'}},t:'s'};
+  });
+  r4++;
+  sorted.forEach(e=>{
+    const type=e.type==='expense'?'Расход':'Доход';
+    const fcvc=e.type==='expense'?(isFcCat(e.cat)?'FC':'VC'):'';
+    [e.date,type,e.cat,e.amount,e.who,e.comment||'',fcvc].forEach((v,i)=>{
+      ws4[XLSX.utils.encode_cell({r:r4,c:i})]={
+        v:v||'',
+        s:i===3?(e.type==='income'?S.pos:S.num):S.label,
+        t:i===3?'n':'s'
+      };
+    });
+    r4++;
+  });
+  r4++;
+  ws4[XLSX.utils.encode_cell({r:r4,c:2})]={v:'ИТОГО расходы',s:S.bold,t:'s'};
+  ws4[XLSX.utils.encode_cell({r:r4,c:3})]={v:totalExpFact,s:S.boldNum,t:'n'};
+  r4++;
+  ws4[XLSX.utils.encode_cell({r:r4,c:2})]={v:'ИТОГО доходы',s:S.bold,t:'s'};
+  ws4[XLSX.utils.encode_cell({r:r4,c:3})]={v:totalIncFact,s:{numFmt:'# ##0.00 "₽"',font:{bold:true,color:{rgb:'2A9D78'},name:'Arial',sz:10}},t:'n'};
+  r4++;
+  ws4[XLSX.utils.encode_cell({r:r4,c:2})]={v:'БАЛАНС',s:S.bold,t:'s'};
+  ws4[XLSX.utils.encode_cell({r:r4,c:3})]={v:totalIncFact-totalExpFact,s:(totalIncFact-totalExpFact)>=0?{numFmt:'# ##0.00 "₽"',font:{bold:true,color:{rgb:'2A9D78'},name:'Arial',sz:10}}:S.neg,t:'n'};
+  ws4['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:r4+1,c:7}});
+  ws4['!cols']=[{wch:12},{wch:10},{wch:35},{wch:16},{wch:12},{wch:22},{wch:6}];
+  XLSX.utils.book_append_sheet(wb,ws4,'📝 Операции');
+
+  XLSX.writeFile(wb,'ea_budget_'+period+'.xlsx');
+}
+
+syncFromSheets();
+</script>
+</body>
+</html>
