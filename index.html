@@ -3213,13 +3213,13 @@ function renderWishes(){
     dateMap[d].push({w,origIdx});
   });
 
-  let html='';
+  let html='<div class="card-flush">';
   const mn=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
   dateGroups.forEach(d=>{
-    {
-      let lbl='';
-      if(d){const dt=new Date(d);const today=new Date().toDateString();const yest=new Date(Date.now()-86400000).toDateString();lbl=d===today?'сегодня':d===yest?'вчера':`${dt.getDate()} ${mn[dt.getMonth()]}`;}
-      html+=`<div class="card-flush" style="margin-bottom:8px;overflow:hidden">${lbl?`<div class="wish-date-sep">${lbl}</div>`:''}`; 
+    if(d){
+      const dt=new Date(d);const today=new Date().toDateString();const yest=new Date(Date.now()-86400000).toDateString();
+      const lbl=d===today?'сегодня':d===yest?'вчера':`${dt.getDate()} ${mn[dt.getMonth()]}`;
+      html+=`<div class="date-sep">${lbl}</div>`;
     }
     dateMap[d].forEach(({w,origIdx:ri})=>{
       const imgs=w.imgs&&w.imgs.length?w.imgs:(w.img?[w.img]:[]);
@@ -3250,8 +3250,8 @@ function renderWishes(){
         </div>
       </div>`;
     });
-    html+='</div>'; // закрываем card-flush группы
   });
+  html+='</div>';
   el.innerHTML=html;
   // Свайпы
   el.querySelectorAll('.swipe-wrap').forEach(wrap=>{
