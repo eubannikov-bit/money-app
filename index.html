@@ -186,6 +186,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .wish-check.done{background:var(--accent);border-color:var(--accent)}
 .wish-link-row{display:flex;align-items:center;gap:6px;position:relative}
 .wish-link-paste{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--accent);font-size:13px;padding:4px;line-height:1}
+
+/* wish unseen highlight */
+.wish-unseen{border-left:3px solid var(--accent) !important;background:rgba(215,142,168,.07) !important}
+.wish-unseen .wish-new-dot{display:flex !important}
+.wish-new-dot{display:none;width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-left:4px;align-self:center}
 </style>
 <script>
 // Инлайн — доступно до загрузки основного скрипта
@@ -2777,6 +2782,11 @@ function openNewWish(){
 }
 function openEditWish(idx){
   const w=wishes[idx];editingWishIdx=idx;
+  // Пометить как просмотренное
+  if(whoAmI&&!(w.seenBy||[]).includes(whoAmI)){
+    w.seenBy=[...(w.seenBy||[]),whoAmI];
+    saveWishesData(); // тихо синхронизируем
+  }
   _openWishModal();
   document.getElementById('wish-modal-title').textContent='Редактировать желание';
   document.getElementById('btn-del-wish').style.display='';
@@ -2949,16 +2959,18 @@ function addWish(){
   const name=document.getElementById('ws-name').value.trim();
   if(!name)return;
   const imgUrl=document.getElementById('ws-img-url').value||'';
-  const obj={id:(editingWishIdx>=0?wishes[editingWishIdx].id:null)||'loc_w_'+Date.now(),name,who:document.getElementById('ws-who').value,link:document.getElementById('ws-link').value.trim(),note:document.getElementById('ws-note').value.trim(),img:imgUrl,reserved:editingWishIdx>=0?wishes[editingWishIdx].reserved:false};
-  // Push уведомление партнёру
+  const isChanged=editingWishIdx>=0&&(()=>{const p=wishes[editingWishIdx];return p.name!==name||p.link!==(document.getElementById('ws-link').value.trim())||p.img!==imgUrl||p.note!==(document.getElementById('ws-note').value.trim());})();
+  const obj={id:(editingWishIdx>=0?wishes[editingWishIdx].id:null)||'loc_w_'+Date.now(),name,who:document.getElementById('ws-who').value,link:document.getElementById('ws-link').value.trim(),note:document.getElementById('ws-note').value.trim(),img:imgUrl,reserved:editingWishIdx>=0?wishes[editingWishIdx].reserved:false,
+    // Флаги «видел» — при создании/изменении только автор уже видел
+    updatedBy:whoAmI||'',
+    seenBy:editingWishIdx<0||isChanged?[whoAmI||'']:(wishes[editingWishIdx].seenBy||[whoAmI||''])
+  };
   const partner=whoAmI==='Евгений'?'Аннушка':'Евгений';
   const isEdit=editingWishIdx>=0;
-  const prev=isEdit?wishes[editingWishIdx]:null;
   if(isEdit){wishes[editingWishIdx]=obj;}else{wishes.unshift(obj);}
-  // Push уведомления партнёру
   if(!isEdit){
     sendTaskPush(partner,name,'',`У ${whoAmI==='Евгений'?'Евгения':'Аннушки'} новое желание ✨`);
-  } else if(prev&&(prev.name!==obj.name||prev.link!==obj.link||prev.img!==obj.img||prev.note!==obj.note)){
+  } else if(isChanged){
     const actor=whoAmI||'партнёр';
     const verb=actor==='Аннушка'?'обновила':'обновил';
     sendTaskPush(partner,name,'',`${actor} ${verb} желание 📝`);
@@ -2979,7 +2991,8 @@ function renderWishes(){
     const imgHtml=w.img
       ?`<img src="${w.img}" style="width:100%;height:100%;object-fit:cover;border-radius:9px">`
       :`<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="var(--line2)" stroke-width="1.3"/><circle cx="8.5" cy="8.5" r="1.5" stroke="var(--line2)" stroke-width="1.3"/><path d="M3 16l5-5 4 4 3-3 4 4" stroke="var(--line2)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-    return`<div class="card-flush" style="transition:opacity .25s;${w.reserved?'opacity:.5':''}" onclick="openEditWish(${ri})">
+    const isUnseen=whoAmI&&w.updatedBy&&w.updatedBy!==whoAmI&&!(w.seenBy||[]).includes(whoAmI);
+    return`<div class="card-flush${isUnseen?' wish-unseen':''}" style="transition:opacity .25s,border-left .3s,background .3s;${w.reserved?'opacity:.5':''}" onclick="openEditWish(${ri})">
       <div style="display:flex;gap:12px;padding:12px 14px;align-items:center">
         <div class="wish-check${w.reserved?' done':''}" onclick="toggleReserved(${ri},event)">
           ${w.reserved?'<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}
@@ -2987,7 +3000,7 @@ function renderWishes(){
         <div class="wish-img-box" style="width:64px;height:64px;flex-shrink:0">${imgHtml}</div>
         <div style="flex:1;min-width:0">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px">
-            <span style="font-size:15px;font-weight:500;color:var(--text);${w.reserved?'text-decoration:line-through;color:var(--text3)':''};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:calc(100% - 60px)">${w.name}</span>
+            <span style="font-size:15px;font-weight:500;color:var(--text);${w.reserved?'text-decoration:line-through;color:var(--text3)':''};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:calc(100% - 70px)">${w.name}</span><span class="wish-new-dot"></span>
             <span class="chip" style="margin-left:6px;flex-shrink:0">${w.who==='me'?'Евгений':'Аннушка'}</span>
           </div>
           ${w.note?`<div style="font-size:13px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px">${w.note}</div>`:''}
