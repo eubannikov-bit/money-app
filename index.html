@@ -2788,38 +2788,96 @@ async function pasteWishLink(){
   }catch(e){}
 }
 async function parseWishUrl(url){
-  // Показать skeleton
   const imgBox=document.getElementById('ws-img-box');
   const nameSkel=document.getElementById('ws-name-skel');
   const nameInp=document.getElementById('ws-name');
   if(imgBox)imgBox.classList.add('loading');
   if(nameSkel)nameSkel.style.display='';
   if(nameInp)nameInp.style.opacity='0';
-  try{
-    // Используем allorigins для CORS
-    const api=`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-    const resp=await fetch(api,{signal:AbortSignal.timeout(8000)});
-    const data=await resp.json();
-    const html=data.contents||'';
-    // Парсим title
-    const titleMatch=html.match(/<title[^>]*>([^<]{1,120})<\/title>/i);
-    let title=titleMatch?titleMatch[1].trim():'';
-    // Убираем суффиксы магазина
-    title=title.replace(/\s*[|\-–—].*$/, '').trim();
-    // Парсим og:image
-    const ogImg=html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
-              ||html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
-    const imgUrl=ogImg?ogImg[1]:'';
-    // Применяем
+
+  function applyResult(title,img){
     if(title&&nameInp&&!nameInp.value)nameInp.value=title;
-    if(imgUrl){
-      document.getElementById('ws-img-url').value=imgUrl;
+    if(img){
+      document.getElementById('ws-img-url').value=img;
       const preview=document.getElementById('ws-img-preview');
-      const placeholder=document.getElementById('ws-img-placeholder');
-      if(preview&&placeholder){
-        preview.src=imgUrl;
-        preview.onload=()=>{preview.style.display='';placeholder.style.display='none';};
-        preview.onerror=()=>{};
+      const ph=document.getElementById('ws-img-placeholder');
+      if(preview){
+        preview.src=img;
+        preview.style.display='';
+        preview.onerror=()=>{preview.style.display='none';if(ph)ph.style.display='';};
+        if(ph)ph.style.display='none';
+      }
+    }
+  }
+
+  try{
+    // Стратегия 1: microlink.io — работает с маркетплейсами, CORS открыт
+    let ok=false;
+    try{
+      const ml=await fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}&meta=false`,
+        {signal:AbortSignal.timeout(8000)});
+      const mj=await ml.json();
+      if(mj.status==='success'&&mj.data){
+        const title=mj.data.title||'';
+        const img=mj.data.image?.url||mj.data.screenshot?.url||'';
+        if(title||img){applyResult(title,img);ok=true;}
+      }
+    }catch(e){}
+
+    // Стратегия 2: наш сервер (работает для Lamoda, Яндекс Маркет и др.)
+    if(!ok){
+      try{
+        const sr=await fetch(API+'/parse-url?url='+encodeURIComponent(url),
+          {headers:{'x-token':SERVER_TOKEN},signal:AbortSignal.timeout(8000)});
+        const sj=await sr.json();
+        if(sj.title||sj.img){applyResult(sj.title,sj.img);ok=true;}
+      }catch(e){}
+    }
+
+    // Стратегия 3: WB — специальный парсинг артикула из URL
+    if(!ok&&url.includes('wildberries')){
+      const nm=url.match(/catalog\/(\d+)/)?.[1];
+      if(nm){
+        try{
+          // WB публичный API карточки
+          const wbr=await fetch(
+            `https://card.wb.ru/cards/v1/detail?appType=1&curr=rub&dest=-1257786&nm=${nm}`,
+            {signal:AbortSignal.timeout(6000)});
+          const wbj=await wbr.json();
+          const prod=wbj?.data?.products?.[0];
+          if(prod){
+            const title=[prod.brand,prod.name].filter(Boolean).join(' ');
+            const basket=String(Math.floor(+nm/144000)+1).padStart(2,'0');
+            const vol=Math.floor(+nm/1000);
+            const part=Math.floor(+nm/100);
+            const img=`https://basket-${basket}.wbbasket.ru/vol${vol}/part${part}/${nm}/images/big/1.webp`;
+            applyResult(title,img);ok=true;
+          }
+        }catch(e){}
+      }
+    }
+
+    // Стратегия 4: Ozon — артикул из URL
+    if(!ok&&url.includes('ozon.ru')){
+      const itemId=url.match(/-(\d{5,})\//)?.[1];
+      if(itemId){
+        try{
+          const ozr=await fetch(
+            `https://api.ozon.ru/entrypoint-api.bx/page/json/v2?url=/product/${itemId}/`,
+            {headers:{'User-Agent':'Mozilla/5.0','Content-Type':'application/json'},
+             signal:AbortSignal.timeout(6000)});
+          const ozj=await ozr.json();
+          // Ищем название в виджетах
+          const widgets=ozj?.widgetStates||{};
+          let title='',img='';
+          Object.values(widgets).forEach(v=>{
+            try{const w=typeof v==='string'?JSON.parse(v):v;
+              if(!title&&w?.title)title=w.title;
+              if(!img&&w?.images?.[0]?.url)img=w.images[0].url;
+            }catch(e){}
+          });
+          if(title||img){applyResult(title,img);ok=true;}
+        }catch(e){}
       }
     }
   }catch(e){}
