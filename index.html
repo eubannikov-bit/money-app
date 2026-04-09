@@ -2719,7 +2719,19 @@ function renderTasks(){
       html+=`<div class="date-sep">${grp}</div>`;
     }
     const ovd=taskOverdue(t);
-    const whenLbl=t.when&&t.when!=='none'?WHEN_LBL[t.when]:'';
+    // Дедлайн: сегодня/завтра — словами, иначе ГГГГ/ММ/ДД
+    let whenLbl='';
+    if(t.when&&t.when!=='none'){
+      const dl=taskDeadline(t);
+      if(dl){
+        const diff=Math.round((dl-new Date())/(1000*60*60*24));
+        if(diff<=0)whenLbl='сегодня';
+        else if(diff<=1)whenLbl='завтра';
+        else{const y=dl.getFullYear();const mo=String(dl.getMonth()+1).padStart(2,'0');const d2=String(dl.getDate()).padStart(2,'0');whenLbl=`${y}/${mo}/${d2}`;}
+      } else {
+        whenLbl=WHEN_LBL[t.when]||'';
+      }
+    }
     const whoLbl=t.who==='Евгений'?'🐗 Евгений':'🐘 Аннушка';
     const sub=[whoLbl,whenLbl].filter(Boolean).join(' · ');
     const borderStyle=ovd?'border-left:3px solid #ffb3b3':'';
@@ -3130,9 +3142,19 @@ function exportTasks(){
     s2.onload=exportTasks;document.head.appendChild(s2);return;
   }
   const WHEN={'today':'сегодня','tomorrow':'завтра','week':'неделя','month':'месяц','none':'без срока'};
-  const rows=[['Задача','Кому','Когда','Комментарий','Статус','Создана']];
-  tasks.forEach(t=>{rows.push([t.name,t.who,WHEN[t.when]||'',t.note||'',t.done?'выполнена':'открыта',t.createdAt?new Date(t.createdAt).toLocaleDateString('ru'):'']);});
-  const ws=XLSX.utils.aoa_to_sheet(rows);
+  const taskRows=[['Задача','Кому','Дедлайн','Комментарий','Статус','Создана']];
+  tasks.forEach(t=>{
+    const dl=taskDeadline(t);
+    let dlStr='';
+    if(dl){
+      const diff=Math.round((dl-new Date())/(1000*60*60*24));
+      if(diff<=0)dlStr='сегодня';
+      else if(diff<=1)dlStr='завтра';
+      else{const y=dl.getFullYear();const mo=String(dl.getMonth()+1).padStart(2,'0');const d2=String(dl.getDate()).padStart(2,'0');dlStr=`${y}/${mo}/${d2}`;}
+    }
+    taskRows.push([t.name,t.who,dlStr||WHEN[t.when]||'',t.note||'',t.done?'выполнена':'открыта',t.createdAt?new Date(t.createdAt).toISOString().slice(0,10):'']);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(taskRows);
   ws['!cols']=[{wch:40},{wch:14},{wch:14},{wch:30},{wch:12},{wch:12}];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Задачи');
   XLSX.writeFile(wb,'tasks_'+new Date().toISOString().slice(0,10)+'.xlsx');
@@ -3145,10 +3167,10 @@ function exportWishes(){
     s2.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
     s2.onload=exportWishes;document.head.appendChild(s2);return;
   }
-  const rows=[['Название','Чьё','Ссылка','Заметка','Статус']];
-  wishes.forEach(w=>{rows.push([w.name,w.who==='me'?'Евгений':'Аннушка',w.link||'',w.note||'',w.reserved?'выполнено':'хочу']);});
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:40},{wch:14},{wch:40},{wch:30},{wch:12}];
+  const wishRows=[['Название','Чьё','Ссылка','Заметка','Статус','Добавлено']];
+  wishes.forEach(w=>{wishRows.push([w.name,w.who==='me'?'Евгений':'Аннушка',w.link||'',w.note||'',w.reserved?'выполнено':'хочу',w.updatedAt?new Date(w.updatedAt).toISOString().slice(0,10):'']);});
+  const ws=XLSX.utils.aoa_to_sheet(wishRows);
+  ws['!cols']=[{wch:40},{wch:14},{wch:40},{wch:30},{wch:12},{wch:12}];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Желания');
   XLSX.writeFile(wb,'wishes_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
@@ -3205,12 +3227,12 @@ function renderWishes(){
           <button class="swipe-btn delete" data-waction="delete" data-widx="${ri}">удалить</button>
         </div>
         <div class="swipe-content">
-          <div class="row-item" style="align-items:center;gap:12px" onclick="openViewWish(${ri})">
+          <div class="row-item" style="align-items:center;gap:12px">
             <div class="wish-check${w.reserved?' done':''}" onclick="event.stopPropagation();toggleReserved(${ri},event)">
               ${w.reserved?'<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}
             </div>
-            <div class="wish-img-box" style="width:52px;height:52px;flex-shrink:0;position:relative">${imgHtml}${imgs.length>1?`<div style="position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,.45);color:#fff;font-size:9px;border-radius:4px;padding:1px 4px">${imgs.length}</div>`:''}</div>
-            <div style="flex:1;min-width:0">
+            <div class="wish-img-box" style="width:52px;height:52px;flex-shrink:0;position:relative" onclick="if(${imgs.length}>0){openWishCarousel(${ri},0,event);event.stopPropagation();}">${imgHtml}${imgs.length>1?`<div style="position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,.45);color:#fff;font-size:9px;border-radius:4px;padding:1px 4px">${imgs.length}</div>`:''}</div>
+            <div style="flex:1;min-width:0" onclick="openViewWish(${ri})">
               <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
                 <span style="font-size:15px;font-weight:500;color:${w.reserved?'var(--text3)':'var(--text)'};${w.reserved?'text-decoration:line-through':''}overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${w.name}</span>
                 <span class="wish-new-dot"></span>
